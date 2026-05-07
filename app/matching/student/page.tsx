@@ -1,0 +1,333 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ChevronLeft } from "lucide-react"
+import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import {  calculateMatch } from "@/lib/matchScore"
+import { supabase } from "@/lib/supabase"
+interface Job {
+  id: number
+  title: string
+  company: string
+  location: string
+  pay: string
+  tips?: boolean
+  matchScore: number
+  status: "new" | "applied" | "interviewing"
+  shifts: { day: string; active: boolean }[]
+  shift_Preference: string
+}
+
+interface Availability {
+  day: string
+  available: boolean
+  start: string
+  end: string
+}
+export default function MatchesPage() {
+  const router = useRouter()
+  const [availability, setAvailability] = useState<Availability[]>([])
+  const [matchedJobs, setMatchedJobs] = useState<Job[]>([])
+  const [filter, setFilter] =
+  useState<"pay" | "tips" | "matchScore">("matchScore")
+
+const [gpa, setGpa] = useState<number | null>(null)  
+  const params = useParams()
+  const jobId = Number(params.id)
+  const [shift_Preference, setShift_Preference] =
+  useState<"morning" | "night" | "flexible">("flexible")
+  
+  // Load availability
+  useEffect(() => {
+    const saved = localStorage.getItem("availability")
+    if (saved) {
+      setAvailability(JSON.parse(saved))
+    }
+  
+    const savedShift = localStorage.getItem("shift_Preference")
+    if (savedShift) {
+      setShift_Preference(savedShift as "morning" | "night" | "flexible")
+    }
+  }, [])
+
+  // ✅ Clean helper (FIXED)
+  const parseHours = (hours: string): number => {
+    if (!hours) return 0
+    if (hours.includes("Weekends")) return 8
+
+    const match = hours.match(/(\d+)-?(\d+)?/)
+    if (!match) return 0
+
+    const start = parseInt(match[1])
+    const end = match[2] ? parseInt(match[2]) : start
+
+    if (isNaN(start) || isNaN(end)) return 0
+
+    return (start + end) / 2
+  }
+
+
+ // Recalculate scores
+useEffect(() => {
+  const fetchJobs = async () => {
+    // GET CURRENT USER
+    const { data: authData } = await supabase.auth.getUser()
+
+    const userId = authData?.user?.id
+
+    if (!userId) {
+      console.log("No student user found")
+      return
+    }
+
+    // GET STUDENT DATA FROM DB
+    const { data: studentData, error: studentError } = await supabase
+      .from("Students")
+      .select("availability, shift_preference")
+      .eq("user_id", userId)
+      .single()
+
+    if (studentError) {
+      console.log("STUDENT FETCH ERROR:", studentError)
+      return
+    }
+
+    const studentAvailability = studentData?.availability ?? []
+
+    const studentShiftPreference =
+      studentData?.shift_preference || "flexible"
+
+    // GET JOBS
+    const { data, error } = await supabase
+      .from("job")
+      .select(`
+        id,
+        title,
+        company,
+        location,
+        pay,
+        details,
+        available_shifts,
+        shift_preference,
+        status,
+        hours,
+        has_tips
+      `)
+
+    if (error) {
+      console.log("JOB FETCH ERROR:", error)
+      return
+    }
+
+    const updated = (data || []).map((job: any) => {
+      let shifts = job.available_shifts ?? []
+
+      // 🔥 IMPORTANT FIX
+      if (!Array.isArray(shifts)) {
+        shifts = Object.values(shifts || {})
+      }
+      
+      const activeShifts = shifts.filter(
+        (s: any) =>
+          s.active === true ||
+          s.active === "true" ||
+          s.active === 1
+      )
+      
+      const base = calculateMatch(
+        {
+          availability: studentAvailability,
+          shiftPreference: studentShiftPreference,
+        },
+        {
+          shifts: activeShifts.map((s: any) => s.day || s),
+          shiftPreference: job.shift_preference || "flexible",
+        }
+      )
+
+      return {
+        id: job.id,
+        title: job.title || "Untitled Job",
+        company: job.company || "Unknown",
+        pay: job.pay || "$0",
+        status: job.status || "new",
+        tips: Boolean(job.has_tips),
+        shift_Preference:
+          job.shift_preference || "flexible",
+
+        matchScore: Math.round(base),
+      }
+    })
+
+    setMatchedJobs(updated)
+  }
+
+  fetchJobs()
+}, [])
+
+  // Sorting
+  const parseDistance = (d: string) => parseFloat(d.split(" ")[0]) || 0
+  const parsePay = (p: string) => parseFloat(p.replace(/[^0-9.]/g, "")) || 0
+
+  const sortedJobs = [...matchedJobs].sort((a, b) => {
+    switch (filter) {
+      case "pay":
+        return parsePay(b.pay) - parsePay(a.pay)
+  
+      case "tips":
+        return Number(b.tips) - Number(a.tips)
+  
+      default:
+        return b.matchScore - a.matchScore
+    }
+  })
+
+  return (
+    <div className="min-h-screen bg-background p-4 sm:p-8">
+      <Button
+    variant="ghost"
+    className="flex items-center gap-2 mb-4"
+    onClick={() => router.push("/student")}
+  >
+    <ChevronLeft className="h-4 w-4" />
+    Back
+  </Button>
+
+      <h1 className="text-2xl font-bold mb-4">Jobs Near You</h1>
+
+      <div className="flex gap-3 mb-6">
+      <Button
+  variant={filter === "pay" ? "default" : "outline"}
+  size="sm"
+  onClick={() => setFilter("pay")}
+>
+  Pay
+</Button>
+
+<Button
+  variant={filter === "tips" ? "default" : "outline"}
+  size="sm"
+  onClick={() => setFilter("tips")}
+>
+  Tips
+</Button>
+
+<Button
+  variant={filter === "matchScore" ? "default" : "outline"}
+  size="sm"
+  onClick={() => setFilter("matchScore")}
+>
+  Match
+</Button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {sortedJobs.map(job => (
+          <Link key={job.id} href={`/matching/student/${job.id}`}>
+            <Card className="border-border bg-card hover:shadow-md transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  {job.title}
+                  {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
+                  {job.status === "applied" && <Badge variant="secondary" className="text-xs">Applied</Badge>}
+                  {job.status === "interviewing" && <Badge className="bg-accent text-accent-foreground text-xs">Interview</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm text-muted-foreground">{job.company}</p>
+
+                
+                <div className="mt-1">
+  <Badge variant="outline" className="text-xs capitalize">
+    {job.shift_Preference} shifts
+  </Badge>
+</div>
+                
+                <p className="font-semibold text-primary">{job.pay}</p>
+               
+                {job.tips ? (
+      <Badge className="bg-green-500/10 text-green-600 border border-green-500/20 text-[10px] px-2 py-0">
+       + Tips
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="text-[10px] px-2 py-0">
+        no tips
+      </Badge>
+    )}
+               
+                <p className="mt-1 text-xs text-muted-foreground">
+                {job.matchScore}% Match
+                </p>
+                <Button
+  size="sm"
+  className="w-full mt-2"
+  onClick={async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    // 1. Get current student user
+    const { data: authData } = await supabase.auth.getUser()
+    const studentId = authData?.user?.id
+
+    if (!studentId) {
+      console.log("No student user")
+      return
+    }
+
+    // 2. Get student's name (for message)
+    const { data: studentData } = await supabase
+      .from("Students")
+      .select("name")
+      .eq("user_id", studentId)
+      .single()
+
+    const studentName = studentData?.name || "A student"
+
+    // 3. Get employer ID from job
+    const { data: jobData, error: jobError } = await supabase
+      .from("job")
+      .select("user_id, title")
+      .eq("id", job.id)
+      .single()
+
+    if (jobError || !jobData) {
+      console.log("JOB FETCH ERROR:", jobError)
+      return
+    }
+
+    const employerId = jobData.user_id
+
+    // 4. Insert notification
+   // 4. Insert notification (UPDATED)
+const { error: notifError } = await supabase
+.from("notifications")
+.insert({
+  employer_id: employerId,
+  student_id: studentId, // 👈 ADD THIS LINE
+  title: "New Applicant",
+  message: `${studentName} applied to ${jobData.title}`,
+  type: "application"
+})
+
+    if (notifError) {
+      console.log("NOTIFICATION ERROR:", notifError)
+    }
+
+    // 5. Optional: update job status locally
+    alert(`Applied to ${job.title}`)
+  }}
+>
+  Apply
+</Button>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}

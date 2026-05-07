@@ -1,0 +1,778 @@
+"use client"
+
+import { useState, useEffect, useMemo } from "react"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Slider } from "@/components/ui/slider"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { supabase } from "@/lib/supabase"
+import { calculateEmployerMatch } from "@/lib/employerMatchScore"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu"
+  
+  import { ChevronDown, User, LogOut } from "lucide-react"
+
+
+import { useRouter } from "next/navigation"
+import {
+
+  Briefcase,
+  MapPin,
+  Clock,
+  CheckCircle2,
+  Star,
+  Filter,
+  X,
+  Zap,
+  ChevronLeft,
+  Calendar,
+  DollarSign,
+  ArrowUpDown
+} from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+
+const getSavedStatus = (id: string) => {
+    if (typeof window === "undefined") return null
+    return localStorage.getItem(`student-status-${id}`)
+  }
+
+const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "new":
+        return <Badge className="bg-sky-100 text-sky-700">New</Badge>
+  
+      case "contacted":
+        return <Badge className="bg-blue-100 text-blue-700">Contacted</Badge>
+  
+      case "hired":
+        return <Badge className="bg-green-100 text-green-700">Hired</Badge>
+  
+      default:
+        return <Badge variant="secondary">Unknown</Badge>
+    }
+  }
+  
+const jobTypes = ["Retail", "Food Service", "Summer Jobs"]
+const daysOfWeek = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday"
+  ]
+function FilterContent({
+    minGpa,
+    setMinGpa,
+    selectedDays,
+    setSelectedDays,
+    verifiedOnly,
+    setVerifiedOnly,
+    daysOfWeek,
+    activeFiltersCount,
+    clearFilters,
+  }: any) {
+    return (
+      <div className="space-y-6">
+        {/* GPA INPUT (NEW) */}
+      
+      
+        <div>
+          
+          <Label className="text-sm font-medium">Minimum GPA</Label>
+          <input
+  type="number"
+  min="1.0"
+  max="4.0"
+  step="0.1"
+  value={minGpa[0] === "" ? "" : minGpa[0]}
+  onChange={(e) => {
+    const value = e.target.value
+  
+    // allow empty
+    if (value === "") {
+      setMinGpa([""])
+      return
+    }
+  
+    let val = parseFloat(value)
+  
+    // ✅ HARD CAP at 4 while typing
+    if (val > 4) val = 4
+  
+    setMinGpa([val])
+  }}
+  className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+/>
+        </div>
+  
+        {/* Job Type */}
+       
+  
+        {/* Availability */}
+        <div>
+          <Label className="mb-3 block text-sm font-medium">Availability</Label>
+          <div className="flex flex-wrap gap-2">
+            {daysOfWeek.map((day: string) => (
+              <Button
+                key={day}
+                variant={selectedDays.includes(day) ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (selectedDays.includes(day)) {
+                    setSelectedDays(selectedDays.filter((d: string) => d !== day))
+                  } else {
+                    setSelectedDays([...selectedDays, day])
+                  }
+                }}
+              >
+                {day}
+              </Button>
+            ))}
+          </div>
+        </div>
+  
+        {/* Verified Only */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            checked={verifiedOnly}
+            onCheckedChange={(checked) => setVerifiedOnly(checked === true)}
+          />
+          <label className="text-sm">Verified students only</label>
+        </div>
+  
+        {/* Clear Filters */}
+        {activeFiltersCount > 0 && (
+          <Button variant="outline" className="w-full" onClick={clearFilters}>
+            Clear all filters
+          </Button>
+        )}
+      </div>
+    )
+  }
+export default function MatchingPage() {
+    const [name, setName] = useState("Employer")
+    const [minGpa, setMinGpa] = useState<(number | "")[]>([1.0])
+  const [selectedDays, setSelectedDays] = useState<string[]>([])
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
+  const [sortBy, setSortBy] = useState<"matchScore" | "gpa">("matchScore")
+  const [filtersOpen, setFiltersOpen] = useState(false)
+ const [employerShifts, setEmployerShifts] = useState<any[]>([])
+const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
+const [mounted, setMounted] = useState(false)
+const [scoredCandidates, setScoredCandidates] = useState<any[]>([])  
+const router = useRouter()
+const [activeStatus, setActiveStatus] = useState("new")
+const [students, setStudents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    const loadStudents = async () => {
+      setLoading(true)
+  
+      console.log("🔥 Fetching students from Supabase...")
+  
+      try {
+        const { data, error, status } = await supabase
+          .from("Students")
+          .select("*")
+  
+        console.log("📡 Supabase status:", status)
+        console.log("📦 raw data:", data)
+        console.log("📊 students length:", data?.length) // ✅ FIXED HERE
+        console.log("⚠️ raw error:", error)
+  
+        if (error) {
+          console.error("❌ Supabase returned error:", error.message)
+          setStudents([])
+          return
+        }
+  
+        setStudents(
+          (data ?? []).map((s) => ({
+            ...s,
+            availability: s.availability ?? [],
+            gpa: s.gpa ?? 0,
+          }))
+        )
+      } catch (err) {
+        console.error("💥 Unexpected crash:", err)
+        setStudents([])
+      } finally {
+        setLoading(false)
+      }
+    }
+  
+    loadStudents()
+  }, [])
+
+  
+  const safeEmployerShifts = employerShifts?.length
+  ? employerShifts
+  : [
+      { day: "Monday", active: true },
+      { day: "Tuesday", active: true },
+      { day: "Wednesday", active: true },
+    ]
+   
+   useEffect(() => {
+  const loadJob = async () => {
+    const { data: user } = await supabase.auth.getUser()
+    if (!user?.user?.id) return
+
+    const { data } = await supabase
+      .from("job")
+      .select("available_shifts, shift_preference")
+      .eq("user_id", user.user.id)
+      .single()
+
+    if (!data) return
+
+    setEmployerShifts(data.available_shifts ?? [])
+    setShiftPreference(data.shift_preference ?? "flexible")
+  }
+
+  loadJob()
+}, [])
+   
+const activeShifts = useMemo(() => {
+    return Array.isArray(employerShifts)
+      ? employerShifts.filter((s) => s.active === true || s.active === "true" || s.active === 1)
+      : []
+  }, [employerShifts])
+  
+  const jobDays = useMemo(() => {
+    return activeShifts.map((s) => s.day)
+  }, [activeShifts])    
+
+useEffect(() => {
+        if (!students.length) return
+      
+        const results = students.map((candidate) => {
+            const matchScore = calculateEmployerMatch(
+                {
+                  shifts: jobDays,
+                  shiftPreference,
+                },
+                candidate.availability,
+                candidate.shift_preference
+              )
+      
+          return {
+            ...candidate,
+            matchScore: Math.round(matchScore),
+          }
+        })
+      
+        setScoredCandidates(results)
+      }, [students, employerShifts, shiftPreference])
+      useEffect(() => {
+        const loadEmployerName = async () => {
+          const {
+            data: { user },
+          } = await supabase.auth.getUser()
+      
+          if (!user) return
+      
+          const { data, error } = await supabase
+            .from("job")
+            .select("company")
+            .eq("user_id", user.id)
+            .single()
+      
+          if (error) {
+            console.error(error)
+            return
+          }
+      
+          setName(data?.company || "Employer")
+        }
+      
+        loadEmployerName()
+      }, [])
+      const statusPriority: Record<string, number> = {
+        new: 0,
+        contacted: 1,
+        hired: 2,
+      }
+      
+      const filteredCandidates = scoredCandidates
+        .map((candidate) => {
+          const savedStatus = getSavedStatus(candidate.id)
+      
+          return {
+            ...candidate,
+            status: savedStatus || candidate.status || "new",
+          }
+        })
+        .filter((candidate) => {
+          if (candidate.gpa < minGpa[0]) return false
+          if (verifiedOnly && !candidate.is_gpa_verified) return false  
+      
+          const safeAvailability = candidate.availability ?? []
+      
+          if (selectedDays.length > 0) {
+            const hasMatch = safeAvailability.some(
+              (a: any) => a.available && selectedDays.includes(a.day)
+            )
+      
+            if (!hasMatch) return false
+          }
+      
+          return true
+        })
+        .sort((a, b) => {
+          // 🔥 group by pipeline stage first
+          if (statusPriority[a.status] !== statusPriority[b.status]) {
+            return statusPriority[a.status] - statusPriority[b.status]
+          }
+      
+          // 🔥 then sort inside each group
+          if (sortBy === "matchScore") return b.matchScore - a.matchScore
+          if (sortBy === "gpa") return b.gpa - a.gpa
+      
+          return 0
+        })
+
+        const groupedCandidates = {
+            new: filteredCandidates.filter(c => c.status === "new"),
+            contacted: filteredCandidates.filter(c => c.status === "contacted"),
+            hired: filteredCandidates.filter(c => c.status === "hired"),
+          }
+
+
+
+  const clearFilters = () => {
+    setMinGpa([1.0])
+    
+
+    setSelectedDays([])
+    setVerifiedOnly(false)
+  }
+
+  const activeFiltersCount = [
+    minGpa[0] > 1.0,
+    selectedDays.length > 0,
+    verifiedOnly,
+  ].filter(Boolean).length
+
+ 
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+
+    {/* LEFT: Back button */}
+    <Button variant="ghost" size="icon" asChild>
+      <Link href="/employer">
+        <ChevronLeft className="h-5 w-5" />
+      </Link>
+    </Button>
+
+    {/* RIGHT: Profile dropdown */}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+            {(name || "")
+              .trim()
+              .split(" ")
+              .filter(Boolean)
+              .slice(0, 2)
+              .map(n => n[0]?.toUpperCase())
+              .join("") || "?"}
+          </div>
+
+          <span className="hidden text-sm font-medium sm:block">
+            {name}
+          </span>
+
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem asChild>
+          <Link href="/employer/profile">
+            <User className="mr-2 h-4 w-4" />
+            Profile
+          </Link>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem asChild>
+          <Link href="/">
+            <LogOut className="mr-2 h-4 w-4" />
+            Log out
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+
+  </div>
+</header>
+
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+            Find Your Perfect Match
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Browse verified students filtered by availability, GPA, and job preferences. No resumes to review.
+          </p>
+        </div>
+
+        {/* How Matching Works */}
+        <Card className="mb-8 border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Zap className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Smart Matching</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                Our algorithm matches students based on verified GPA, availability, job preferences, and location. A major factor is schedule fit — how many of your required workdays overlap with a student’s availability. The more overlap, the higher the match score. Higher scores mean a better overall fit for your position.                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+{/* Verified GPA Info */}
+<Card className="mb-8 border-primary/20 bg-gradient-to-r from-primary/5 to-blue-500/5">
+  <CardContent className="p-6">
+    <div className="flex items-start gap-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+        <CheckCircle2 className="h-5 w-5 text-primary" />
+      </div>
+
+      <div>
+        <h3 className="font-semibold text-foreground">
+          Verified GPA Badge
+        </h3>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Students with the verified badge have submitted proof of their GPA
+          for review. This helps employers confidently identify academically
+          reliable candidates and reduces the risk of inaccurate self-reported
+          grades.
+        </p>
+      </div>
+    </div>
+  </CardContent>
+</Card>
+
+        <div className="flex gap-8">
+          {/* Desktop Filters Sidebar */}
+          <aside className="hidden w-64 shrink-0 lg:block">
+            <Card className="sticky top-24 border-border bg-card">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <span className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filters
+                  </span>
+                  {activeFiltersCount > 0 && (
+                    <Badge variant="secondary">{activeFiltersCount}</Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+              <FilterContent
+  minGpa={minGpa}
+  setMinGpa={setMinGpa}
+  selectedDays={selectedDays}
+  setSelectedDays={setSelectedDays}
+  verifiedOnly={verifiedOnly}
+  setVerifiedOnly={setVerifiedOnly}
+  jobTypes={jobTypes}
+  daysOfWeek={daysOfWeek}
+  activeFiltersCount={activeFiltersCount}
+  clearFilters={clearFilters}
+/>
+              </CardContent>
+            </Card>
+          </aside>
+
+          {/* Main Content */}
+          <div className="flex-1">
+            {/* Mobile Filters & Sort */}
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="gap-2 lg:hidden">
+                    <Filter className="h-4 w-4" />
+                    Filters
+                    {activeFiltersCount > 0 && (
+                      <Badge variant="secondary" className="ml-1">
+                        {activeFiltersCount}
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-80">
+                  <SheetHeader>
+                    <SheetTitle>Filters</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-6">
+                  <FilterContent
+  minGpa={minGpa}
+  setMinGpa={setMinGpa}
+  selectedDays={selectedDays}
+  setSelectedDays={setSelectedDays}
+  verifiedOnly={verifiedOnly}
+  setVerifiedOnly={setVerifiedOnly}
+  jobTypes={jobTypes}
+  daysOfWeek={daysOfWeek}
+  activeFiltersCount={activeFiltersCount}
+  clearFilters={clearFilters}
+/>
+                  </div>
+                </SheetContent>
+              </Sheet>
+
+              <div className="flex items-center gap-2">
+                <span className="hidden text-sm text-muted-foreground sm:block">
+                  {filteredCandidates.length} candidates
+                </span>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-40 gap-2">
+                   
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+  <SelectItem value="matchScore">Best Match</SelectItem>
+  <SelectItem value="gpa">Highest GPA</SelectItem>
+</SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Active Filters Pills */}
+            {activeFiltersCount > 0 && (
+              <div className="mb-6 flex flex-wrap gap-2">
+                {minGpa[0] > 1.0 && (
+                  <Badge variant="secondary" className="gap-1">
+                    GPA ≥ {minGpa[0].toFixed(1)}
+                    <button onClick={() => setMinGpa([1.0])}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+              
+               
+                {selectedDays.length > 0 && (
+                  <Badge variant="secondary" className="gap-1">
+                    {selectedDays.join(", ")}
+                    <button onClick={() => setSelectedDays([])}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                {verifiedOnly && (
+                  <Badge variant="secondary" className="gap-1">
+                    Verified only
+                    <button onClick={() => setVerifiedOnly(false)}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            {/* Candidate Cards */}
+           {/* Candidate Columns */}
+{/* Status Tabs */}
+<div className="flex gap-2 mb-6">
+  {(["new", "contacted", "hired"] as const).map((status) => (
+    <Button
+      key={status}
+      variant={activeStatus === status ? "default" : "outline"}
+      onClick={() => setActiveStatus(status)}
+      className="capitalize"
+    >
+      {status} ({groupedCandidates[status].length})
+    </Button>
+  ))}
+</div>
+
+{/* Cards */}
+<div className="grid gap-4 sm:grid-cols-2">
+  {groupedCandidates[activeStatus].map((candidate) => (
+    <Link
+      key={candidate.id}
+      href={`/matching/employer/${candidate.id}`}
+      className="block"
+    >
+      <Card className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
+                {candidate.name.split(" ").map(n => n[0]).join("")}
+              </div>
+              <div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-semibold text-foreground">
+                      {candidate.name}
+                    </h3>
+
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Star className="h-4 w-4 fill-chart-4 text-chart-4" />
+                      <span>GPA: {candidate.gpa}</span>
+
+                      {candidate.is_gpa_verified && (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 border-primary/30 text-[10px]"
+                        >
+                          <CheckCircle2 className="h-3 w-3 text-primary" />
+                          Verified
+                        </Badge>
+                      )}
+                    </div>
+
+                    {getStatusBadge(candidate.status)}
+                  </div>
+
+                  <p className="text-sm text-muted-foreground">
+                    Age {candidate.age}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <Badge className="bg-primary/10 text-primary">
+                {candidate.matchScore}% match
+              </Badge>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Star className="h-4 w-4 fill-chart-4 text-chart-4" />
+              <span>GPA: {candidate.gpa}</span>
+            </div>
+
+            <div />
+
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              <span>{candidate.shift_preference} shift</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <span>
+                Available:{" "}
+                {(candidate.availability ?? [])
+                  .filter((a: any) => a?.available)
+                  .map((a: any) => a?.day)
+                  .join(", ") || "None"}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-5 flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              size="sm"
+              onClick={() => router.push(`/matching/employer/${candidate.id}`)}
+            >
+              View Profile
+            </Button>
+
+            <Select
+              value={candidate.status}
+              onValueChange={async (value) => {
+                const newStatus = value
+
+                setStudents((prev) =>
+                  prev.map((s) =>
+                    s.id === candidate.id ? { ...s, status: newStatus } : s
+                  )
+                )
+
+                await supabase
+                  .from("Students")
+                  .update({ status: newStatus })
+                  .eq("id", candidate.id)
+              }}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="new">New</SelectItem>
+                <SelectItem value="contacted">Contacted</SelectItem>
+                <SelectItem value="hired">Hired</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  ))}
+</div>
+
+            {loading ? (
+  <Card>
+    <CardContent className="py-12 text-center">
+      <p className="text-muted-foreground">Loading students...</p>
+    </CardContent>
+  </Card>
+) : students.length === 0 ? (
+  <Card className="border-dashed">
+    <CardContent className="py-12 text-center">
+      <p className="font-medium">No students in database</p>
+      <p className="text-sm text-muted-foreground">
+        Check Supabase table + RLS
+      </p>
+    </CardContent>
+  </Card>
+) : filteredCandidates.length === 0 ? (
+  <Card className="border-dashed">
+    <CardContent className="py-12 text-center">
+      <p className="font-medium">No matches found</p>
+      <p className="text-sm text-muted-foreground">
+        Try adjusting filters
+      </p>
+      <Button variant="outline" className="mt-4" onClick={clearFilters}>
+        Clear filters
+      </Button>
+    </CardContent>
+  </Card>
+) : null}        </div>
+</div>
+</main>
+</div>
+)
+}
