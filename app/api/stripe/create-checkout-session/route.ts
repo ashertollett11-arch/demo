@@ -5,20 +5,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20",
 })
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
-    const { userId } = await req.json()
+    console.log("🔥 checkout route hit")
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Missing userId" },
-        { status: 400 }
-      )
-    }
+    const baseUrl =
+      process.env.NEXT_PUBLIC_URL || "https://demo-tau-lac.vercel.app"
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-
       payment_method_types: ["card"],
 
       line_items: [
@@ -28,18 +23,15 @@ export async function POST(req: Request) {
         },
       ],
 
-      success_url: `${process.env.NEXT_PUBLIC_URL}/billing?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL}/billing?canceled=true`,
-
-      // 🔥 THIS is what connects Stripe → Supabase later
-      metadata: {
-        userId,
-      },
+      success_url: `${baseUrl}/billing?success=true`,
+      cancel_url: `${baseUrl}/billing?canceled=true`,
     })
+
+    console.log("SESSION CREATED:", session.id)
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
-    console.error("Checkout error:", err)
+    console.error("CHECKOUT ERROR:", err)
 
     return NextResponse.json(
       { error: err.message },
