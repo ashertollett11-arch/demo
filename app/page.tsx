@@ -359,7 +359,7 @@ export default function LandingPage() {
 
           <div className="mt-10 text-center">
             <Button variant="outline" size="lg" asChild>
-              <Link href="/matching">View All Opportunities</Link>
+              <Link href="/login">View All Opportunities</Link>
             </Button>
           </div>
         </div>
@@ -484,7 +484,7 @@ export default function LandingPage() {
               <h4 className="font-semibold text-foreground">For Students</h4>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/student" className="hover:text-foreground">Dashboard</Link></li>
-                <li><Link href="/matching" className="hover:text-foreground">Browse Jobs</Link></li>
+                <li><Link href="/login" className="hover:text-foreground">Browse Jobs</Link></li>
                 <li><Link href="#" className="hover:text-foreground">Success Stories</Link></li>
               </ul>
             </div>
