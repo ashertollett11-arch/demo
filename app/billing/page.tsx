@@ -120,11 +120,22 @@ export default function BillingPage() {
   }
 
   const startCheckout = async () => {
+    const { data: userData } = await supabase.auth.getUser()
+  
+    const userId = userData?.user?.id
+  
     const res = await fetch("/api/stripe/create-checkout-session", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+      }),
     })
-
+  
     const data = await res.json()
+  
     window.location.href = data.url
   }
 
