@@ -38,18 +38,32 @@ export async function POST(req: Request) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session
-
+  
     console.log("✅ Checkout completed")
-
+  
+    console.log("FULL SESSION:")
+    console.log(session)
+  
     const userId = session.metadata?.userId
-
+  
+    console.log("USER ID:")
+    console.log(userId)
+  
+    console.log("CUSTOMER:")
+    console.log(session.customer)
+  
+    console.log("SUBSCRIPTION:")
+    console.log(session.subscription)
+  
     if (!userId) {
       console.log("❌ No userId found")
-      return NextResponse.json({ received: true })
+  
+      return NextResponse.json({
+        received: true,
+      })
     }
-
-    // save Stripe info into Supabase
-    const { error } = await supabase
+  
+    const { data, error } = await supabase
       .from("job")
       .update({
         stripe_customer_id: session.customer,
@@ -57,12 +71,13 @@ export async function POST(req: Request) {
         subscription_status: "active",
       })
       .eq("user_id", userId)
-
-    if (error) {
-      console.error("Supabase update error:", error)
-    } else {
-      console.log("✅ Supabase updated")
-    }
+      .select()
+  
+    console.log("SUPABASE DATA:")
+    console.log(data)
+  
+    console.log("SUPABASE ERROR:")
+    console.log(error)
   }
 
   // =========================================
