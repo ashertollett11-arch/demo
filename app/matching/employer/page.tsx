@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useSearchParams } from "next/navigation"
 import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabase"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
@@ -190,8 +189,7 @@ const [userId, setUserId] = useState<string | null>(null)
 const [employerId, setEmployerId] = useState<string | null>(null) 
 const [loading, setLoading] = useState(true)
 const [statuses, setStatuses] = useState<any[]>([])  
-const searchParams = useSearchParams()
-const initialSearch = searchParams.get("search") || ""
+const [searchQuery, setSearchQuery] = useState("")
 useEffect(() => {
     const loadStudents = async () => {
       setLoading(true)
@@ -316,6 +314,17 @@ const activeShifts = useMemo(() => {
   
     loadStatuses()
   }, [employerId])
+ 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const search = params.get("search")
+  
+    if (!search) return
+  
+    setSearchQuery(search)
+    router.replace("/matching/employer")
+  }, [])
+ 
   useEffect(() => {
     if (!userId) return
   
@@ -385,13 +394,7 @@ useEffect(() => {
         setScoredCandidates(results)
       }, [students, employerShifts, shiftPreference])
      
-      const [searchQuery, setSearchQuery] = useState("")
-      useEffect(() => {
-        if (!initialSearch) return
-      
-        setSearchQuery(initialSearch)
-        router.replace("/matching/employer")
-      }, [])
+     
      
      useEffect(() => {
         const loadEmployerName = async () => {
