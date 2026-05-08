@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
+import { createClient } from "@supabase/supabase-js"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20",
 })
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 export async function POST(req: Request) {
   const body = await req.text()
+
   const sig = req.headers.get("stripe-signature")!
 
   let event: Stripe.Event
@@ -19,33 +26,63 @@ export async function POST(req: Request) {
     )
   } catch (err: any) {
     console.error("Webhook signature error:", err.message)
-    return new NextResponse("Webhook Error", { status: 400 })
+
+    return new NextResponse("Webhook Error", {
+      status: 400,
+    })
   }
 
-  // -------------------------
-  // HANDLE EVENTS
-  // -------------------------
+  // =========================================
+  // CHECKOUT COMPLETED
+  // =========================================
 
-  switch (event.type) {
-    case "checkout.session.completed":
-      console.log("✅ Checkout completed")
-      break
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session
 
-    case "customer.subscription.created":
-      console.log("✅ Subscription created")
-      break
+    console.log("✅ Checkout completed")
 
-    case "customer.subscription.deleted":
-      console.log("❌ Subscription canceled")
-      break
+    const userId = session.metadata?.userId
 
-    case "invoice.paid":
-      console.log("💰 Invoice paid")
-      break
+    if (!userId) {
+      console.log("❌ No userId found")
+      return NextResponse.json({ received: true })
+    }
 
-    default:
-      console.log("Unhandled event:", event.type)
+    // save Stripe info into Supabase
+    const { error } = await supabase
+      .from("job")
+      .update({
+        stripe_customer_id: session.customer,
+        stripe_subscription_id: session.subscription,
+        subscription_status: "active",
+      })
+      .eq("user_id", userId)
+
+    if (error) {
+      console.error("Supabase update error:", error)
+    } else {
+      console.log("✅ Supabase updated")
+    }
   }
 
-  return NextResponse.json({ received: true })
+  // =========================================
+  // SUBSCRIPTION CANCELED
+  // =========================================
+
+  if (event.type === "customer.subscription.deleted") {
+    const subscription = event.data.object as Stripe.Subscription
+
+    await supabase
+      .from("job")
+      .update({
+        subscription_status: "canceled",
+      })
+      .eq("stripe_subscription_id", subscription.id)
+
+    console.log("❌ Subscription canceled")
+  }
+
+  return NextResponse.json({
+    received: true,
+  })
 }
