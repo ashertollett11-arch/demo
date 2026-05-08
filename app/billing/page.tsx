@@ -50,39 +50,60 @@ export default function BillingPage() {
   // -------------------------
   useEffect(() => {
     const loadBilling = async () => {
-      setLoading(true)
-
-      const { data: user } = await supabase.auth.getUser()
-      if (!user?.user?.id) return
-
-      // 🔥 this assumes you store stripe_customer_id in your job table
-      const { data: profile } = await supabase
-        .from("job")
-        .select("stripe_customer_id")
-        .eq("user_id", user.user.id)
-        .single()
-
-      if (!profile?.stripe_customer_id) return
-
-      // ⚡ fetch from YOUR backend (recommended)
-      const res = await fetch("/api/stripe/get-billing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerId: profile.stripe_customer_id,
-        }),
-      })
-
-      const data = await res.json()
-
-      setSubscription(data.subscription)
-      setInvoices(data.invoices)
-      setPaymentMethod(data.paymentMethod)
-      setUsage(data.usage)
-
-      setLoading(false)
+      try {
+        setLoading(true)
+    
+        const { data: userData } = await supabase.auth.getUser()
+        const userId = userData?.user?.id
+    
+        if (!userId) {
+          setLoading(false)
+          return
+        }
+    
+        const { data: profile, error } = await supabase
+          .from("job")
+          .select("stripe_customer_id")
+          .eq("user_id", userId)
+          .single()
+    
+        if (error || !profile?.stripe_customer_id) {
+          console.log("No Stripe customer:", error)
+          setLoading(false)
+          return
+        }
+    
+        const res = await fetch("/api/stripe/get-billing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customerId: profile.stripe_customer_id,
+          }),
+        })
+    
+        if (!res.ok) {
+          console.log("Stripe API failed")
+          setLoading(false)
+          return
+        }
+    
+        const data = await res.json()
+    
+        setSubscription(data.subscription ?? null)
+        setInvoices(data.invoices ?? [])
+        setPaymentMethod(data.paymentMethod ?? null)
+        setUsage(data.usage ?? {
+          baseHires: 10,
+          usedHires: 0,
+          additionalHires: 0,
+        })
+    
+      } catch (err) {
+        console.error("Billing load error:", err)
+      } finally {
+        setLoading(false) // ✅ ALWAYS runs
+      }
     }
-
     loadBilling()
   }, [])
 
@@ -165,12 +186,29 @@ export default function BillingPage() {
             </div>
 
             {!subscription ? (
-              <Button onClick={startCheckout}>Start Subscription</Button>
-            ) : (
-              <Badge className="bg-green-100 text-green-700">
-                Active
-              </Badge>
-            )}
+  <div className="flex gap-2">
+    <Button onClick={startCheckout}>
+      Start Subscription
+    </Button>
+
+    <Button
+      variant="outline"
+      onClick={startCheckout}
+    >
+      Upgrade Now
+    </Button>
+  </div>
+) : (
+  <div className="flex items-center gap-3">
+    <Badge className="bg-green-100 text-green-700">
+      Active
+    </Badge>
+
+    <Button variant="outline" onClick={startCheckout}>
+      Upgrade Plan
+    </Button>
+  </div>
+)}
           </CardContent>
         </Card>
 
