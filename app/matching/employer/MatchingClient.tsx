@@ -319,7 +319,6 @@ const activeShifts = useMemo(() => {
     loadStatuses()
   }, [employerId])
  
-  const searchParams = useSearchParams()
 
   useEffect(() => {
     const search = searchParams.get("search")
