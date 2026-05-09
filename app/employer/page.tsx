@@ -1,231 +1,140 @@
 "use client"
-import { mapDbStudent } from "@/lib/students"
-import { useState, useEffect } from "react"
+
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { useMemo } from "react"
-import { useRef } from "react"
-import { 
-  Briefcase, 
-  Users, 
-  Clock, 
+import { supabase } from "@/lib/supabase"
+import {
+  Briefcase,
+  Users,
   TrendingUp,
-  CheckCircle2, 
-  Star,
-  Search,
+  CheckCircle2,
   Bell,
-  Settings,
-  LogOut,
   Building2,
-  Filter,
-  MessageSquare,
-  Calendar,
-  ChevronDown
+  LogOut,
+  ChevronDown,
+  CreditCard,
+  Activity,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
-import { supabase } from "@/lib/supabase"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
-const getSavedStatus = (id: string) => {
-  if (typeof window === "undefined") return null
-
-  return localStorage.getItem(`student-status-${id}`)
-}
-
 
 export default function EmployerDashboard() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [preferredJobs, setPreferredJobs] = useState<string[]>([])
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("Your Company")
   const [notifications, setNotifications] = useState<any[]>([])
-  const [ownerName, setOwnerName] = useState("")
-const [showGreatOnly, setShowGreatOnly] = useState(false)
-const [loadingStudents, setLoadingStudents] = useState(true)  
-const [employerShifts, setEmployerShifts] = useState<any[]>([])
-const [userId, setUserId] = useState<string | null>(null)
-
-const handleSearchStudent = (name: string) => {
-  setSearchQuery(name)
-}  
-
-  const studentDetailRef = useRef<HTMLDivElement | null>(null)
-  const studentRefs = useRef<Record<string, HTMLDivElement | null>>({})
- 
-  const dismissNotification = async (id: string) => {
-    // optimistic UI update
-    setNotifications((prev) =>
-      prev.filter((n) => n.id !== id)
-    )
-  
-    await supabase
-      .from("notifications")
-      .update({ read: true })
-      .eq("id", id)
-  }
+  const [students, setStudents] = useState<any[]>([])
+  const [employerShifts, setEmployerShifts] = useState<any[]>([])
+  const [statuses, setStatuses] = useState<any[]>([])
   const [shiftPreference, setShiftPreference] = useState<
     "morning" | "night" | "flexible"
   >("flexible")
+  const [preferredJobs, setPreferredJobs] = useState<string[]>([])
 
-  useEffect(() => {
-    const loadStudents = async () => {
-      const { data, error } = await supabase
-        .from("Students")
-        .select("*")
-  
-      if (error) {
-        console.log("STUDENTS ERROR:", error)
-        setLoadingStudents(false)
-        return
-      }
-  
-      console.log("RAW STUDENTS:", data)
-  
-      const mapped = (data || []).map((s) => {
-        try {
-          return mapDbStudent(s)
-        } catch (e) {
-          console.log("MAP ERROR:", e, s)
-          return s // fallback so UI still works
-        }
-      })
-  
-      setStudents(mapped)
-      setLoadingStudents(false)
-    }
-  
-    loadStudents()
-  }, [])
+  // -------------------------
+  // AUTH USER
+  // -------------------------
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()
       setUserId(data.user?.id ?? null)
     }
-  
     getUser()
   }, [])
+
+  // -------------------------
+  // LOAD COMPANY
+  // -------------------------
   useEffect(() => {
     if (!userId) return
-  
-    const loadCompanyInfo = async () => {
-      const { data, error } = await supabase
+
+    const loadCompany = async () => {
+      const { data } = await supabase
         .from("job")
         .select("company, owner_name")
         .eq("user_id", userId)
         .single()
-  
-      if (error) {
-        console.log("COMPANY LOAD ERROR:", error)
-        return
-      }
-  
-      setCompanyName(data?.company || "Your Company")
-      setOwnerName(data?.owner_name || "")
+
+      if (!data) return
+
+      setCompanyName(data.company || "Your Company")
     }
-  
-    loadCompanyInfo()
+
+    loadCompany()
   }, [userId])
+
+  // -------------------------
+  // LOAD STUDENTS
+  // -------------------------
+  useEffect(() => {
+    const loadStudents = async () => {
+      const { data } = await supabase.from("Students").select("*")
+      setStudents(data || [])
+    }
+
+    loadStudents()
+  }, [])
+
+  // -------------------------
+  // LOAD JOB SETTINGS
+  // -------------------------
   useEffect(() => {
     if (!userId) return
-  
-    const loadEmployerData = async () => {
-      if (!userId) return
-    
-      const { data, error } = await supabase
+
+    const loadJob = async () => {
+      const { data } = await supabase
         .from("job")
-        .select("available_shifts, shift_preference, preferred_jobs")        .eq("user_id", userId)
+        .select("available_shifts, shift_preference, preferred_jobs")
+        .eq("user_id", userId)
         .single()
-    
-      if (error) {
-        console.log("JOB LOAD ERROR:", error)
-        return
-      }
-    
+
       if (!data) return
-    
-      let shifts = data.available_shifts ?? []
-    
-      if (typeof shifts === "string") {
-        try {
-          shifts = JSON.parse(shifts)
-        } catch {
-          shifts = []
-        }
-      }
-    
-      if (!Array.isArray(shifts)) {
-        shifts = Object.values(shifts || {})
-      }
-    
-      setEmployerShifts(shifts)
+
+      setEmployerShifts(data.available_shifts || [])
       setShiftPreference(data.shift_preference || "flexible")
       setPreferredJobs(data.preferred_jobs || [])
     }
-    loadEmployerData()
-  
-    const channel = supabase
-      .channel("job-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "job",
-          filter: `employer_id=eq.${userId}`,
-        },
-        () => loadEmployerData()
-      )
-      .subscribe()
-  
-    return () => {
-      supabase.removeChannel(channel)
-    }
+
+    loadJob()
   }, [userId])
 
+  // -------------------------
+  // NOTIFICATIONS
+  // -------------------------
   useEffect(() => {
     if (!userId) return
-  
+
     const loadNotifications = async () => {
-      const { data, error } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("employer_id", userId)
-      .eq("read", false)
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("employer_id", userId)
+        .eq("read", false)
         .order("created_at", { ascending: false })
-        .limit(20)
-  
-      if (error) {
-        console.log("NOTIFICATION LOAD ERROR:", error)
-        return
-      }
-  
+
       setNotifications(data || [])
     }
-  
+
     loadNotifications()
   }, [userId])
+
+  // realtime
   useEffect(() => {
     if (!userId) return
-  
+
     const channel = supabase
-      .channel("notifications-realtime")
+      .channel("notifications-dashboard")
       .on(
         "postgres_changes",
         {
@@ -239,378 +148,320 @@ const handleSearchStudent = (name: string) => {
         }
       )
       .subscribe()
-  
+
     return () => {
       supabase.removeChannel(channel)
     }
   }, [userId])
- 
-  const [students, setStudents] = useState<any[]>([])
+  useEffect(() => {
+    if (!userId) return
   
+    const loadStatuses = async () => {
+      const { data, error } = await supabase
+        .from("student_statuses")
+        .select("*")
+        .eq("employer_id", userId)
+  
+      if (error) {
+        console.error(error)
+        return
+      }
+  
+      setStatuses(data || [])
+    }
+  
+    loadStatuses()
+  }, [userId])
+  const dismissNotification = async (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
 
+    await supabase.from("notifications").update({ read: true }).eq("id", id)
+  }
 
+  // -------------------------
+  // MATCH SCORES
+  // -------------------------
   const candidatesWithScores = useMemo(() => {
-    return students.map((candidate: any) => {
-      const activeShifts = Array.isArray(employerShifts)
-        ? employerShifts.filter(
-            (s) => s.active === true || s.active === "true" || s.active === 1
-          )
-        : []
-  
-      const jobDays = activeShifts.map((s) => s.day)
-  
-      const matchScore = calculateEmployerMatch(
+    const activeShifts = employerShifts.filter(
+      (s) => s.active === true || s.active === "true" || s.active === 1
+    )
+
+    const jobDays = activeShifts.map((s) => s.day)
+
+    return students.map((s) => {
+      const score = calculateEmployerMatch(
         {
           shifts: jobDays,
           shiftPreference,
           preferred_jobs: preferredJobs,
         },
-        candidate.availability,
-        candidate.shiftPreference,
-        candidate.gpa,
-        candidate.preferredJobs
+        s.availability,
+        s.shiftPreference,
+        s.gpa,
+        s.preferredJobs
       )
-  
-      // 🔥 FIND STATUS FROM TABLE
-  
+
       return {
-        ...candidate,
-        matchScore,
+        ...s,
+        matchScore: Math.round(score),
       }
     })
-  }, [students, employerShifts, shiftPreference, userId])
-const hiresThisMonth = candidatesWithScores.filter(
-  (c) => false
-).length
+  }, [students, employerShifts, shiftPreference])
 
-const greatCandidates = candidatesWithScores.filter(
-  (c) => c.matchScore >= 75
-).length
+  // -------------------------
+  // METRICS
+  // -------------------------
+  const hiresThisMonth = 0 // placeholder (no hiring tracking yet)
+  const greatCandidates = candidatesWithScores.filter(
+    (c) => c.matchScore >= 75
+  ).length
 
-const filteredCandidates = candidatesWithScores
-.filter((candidate) => {
-  const matchesSearch = candidate.name
-    .toLowerCase()
-    .includes(searchQuery.toLowerCase())
+  const perfectMatches = candidatesWithScores.filter(
+    (c) => c.matchScore === 100
+  ).length
 
-  const matchesStatus =
-    statusFilter === "all" || candidate.status === statusFilter
+  const topMatch = Math.max(
+    0,
+    ...candidatesWithScores.map((c) => c.matchScore || 0)
+  )
 
-  const matchesGreat = !showGreatOnly || candidate.matchScore >= 75
+  const recentActivity = notifications.slice(0, 4)
 
-  return matchesSearch && matchesStatus && matchesGreat
-})
-  .sort((a, b) => b.matchScore - a.matchScore)
- 
- 
-
+  // -------------------------
+  // UI
+  // -------------------------
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-              <Briefcase className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">SimplyApply</span>
-          </Link>
+  {/* HEADER (REPLACEMENT) */}
+<header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+  <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
 
-          <div className="hidden items-center gap-6 md:flex">
-            <Link href="/employer" className="text-sm font-medium text-foreground">
-              Dashboard
-            </Link>
-            <Link href="/matching/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Find Candidates
-            </Link>
-            <Link href="/billing" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Billing
-            </Link>
-          </div>
-        
-
-          <div className="flex items-center gap-4">
-          <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-  <Button variant="ghost" size="icon" className="relative overflow-visible">
-    <Bell className="h-5 w-5" />
-
-    {notifications.filter((n) => !n.read).length > 0 && (
- <span className="absolute -top-1 -right-1 z-50 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-black shadow-md">
- {notifications.filter((n) => !n.read).length > 9 ? "9+" : notifications.filter((n) => !n.read).length}
-</span>
-    )}
-  </Button>
-</DropdownMenuTrigger>
-
-  <DropdownMenuContent align="end" className="w-80">
-  <div className="max-h-80 overflow-y-auto">
-  {notifications.filter((n) => !n.read).length === 0 ? (
-    <div className="p-4 text-sm text-muted-foreground">
-      No notifications yet
-    </div>
-  ) : (
-    notifications.map((n) => (
-      <div
-      key={n.id}
-      className="relative border-b p-3 hover:bg-muted/50"
-    >
-      {/* X button */}
-      <button
-        onClick={() => dismissNotification(n.id)}
-        className="absolute right-2 top-2 text-muted-foreground hover:text-red-500"
-      >
-        ✕
-      </button>
-    
-      <p className="text-sm font-medium pr-6">{n.title}</p>
-    
-      <p className="mt-1 text-xs text-muted-foreground pr-6">
-        {n.message}
-      </p>
-    
-      {n.student_user_id && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="mt-3 w-full"
-          onClick={() => {
-            dismissNotification(n.id)            
-            handleSearchStudent(n.message?.split(" ")[0] || "")
-          }}
-        >
-          View Profile
-        </Button>
-      )}
-    </div>
-    ))
-  )}
-</div>
-  </DropdownMenuContent>
-</DropdownMenu>
-            
-<DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" className="flex items-center gap-2 rounded-full border border-border px-3 py-2 hover:bg-muted/50">
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-sm font-semibold text-accent">
-        {(companyName || "")
-          .trim()
-          .split(" ")
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((w) => w[0]?.toUpperCase())
-          .join("") || "?"}
+    {/* LEFT SIDE */}
+    <Link href="/employer" className="flex items-center gap-2">
+      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+        <Briefcase className="h-5 w-5 text-primary-foreground" />
       </div>
+      <span className="text-xl font-bold text-foreground">SimplyApply</span>
+    </Link>
 
-      <span className="hidden text-sm font-medium sm:block">
-        {companyName}
-      </span>
-
-      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-    </Button>
-  </DropdownMenuTrigger>
-
-  <DropdownMenuContent
-    align="end"
-    className="w-52 rounded-xl border border-border bg-card p-2 shadow-lg"
-  >
-    {/* Profile */}
-    <DropdownMenuItem asChild className="p-0">
-      <Link
-        href="/employer/profile"
-        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm outline-none transition-colors hover:bg-muted focus:bg-muted"
-      >
-        <Building2 className="mr-2 h-4 w-4" />
-        Company Profile
+    {/* CENTER NAV */}
+    <div className="hidden items-center gap-6 md:flex">
+      <Link href="/employer" className="text-sm font-medium text-foreground">
+        Dashboard
       </Link>
-    </DropdownMenuItem>
 
-    <DropdownMenuSeparator />
-
-    {/* Logout FIXED */}
-    <DropdownMenuItem asChild className="p-0">
       <Link
-        href="/"
-        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 outline-none transition-colors hover:bg-red-50 focus:bg-red-50"
+        href="/matching/employer"
+        className="text-sm font-medium text-muted-foreground hover:text-foreground"
       >
-        <LogOut className="mr-2 h-4 w-4" />
-        Log out
+        Find Candidates
       </Link>
-    </DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>
-          </div>
-        </div>
-      </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Welcome Section */}
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-              Employer Dashboard
-            </h1>
-            <p className="mt-1 text-muted-foreground">
-              Find and hire motivated students for your team.
-            </p>
-          </div>
-          <Button className="gap-2" asChild>
-            <Link href="/matching/employer">
-              <Users className="h-4 w-4" />
-              Find Candidates
-            </Link>
-          </Button>
-        </div>
-   
-        {/* Metrics */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-border bg-card">
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-chart-2/10">
-                <CheckCircle2 className="h-6 w-6 text-chart-2" />
-              </div>
-              <div>
-              <p className="text-2xl font-bold text-foreground">
-  {hiresThisMonth}
-</p>
-                <p className="text-sm text-muted-foreground">Hires this month</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card
-  className={`border-border bg-card cursor-pointer transition ${
-    showGreatOnly ? "ring-2 ring-primary" : ""
-  }`}
-  onClick={() => setShowGreatOnly((prev) => !prev)}
->
-  <CardContent className="flex items-center gap-4 p-6">
-    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-      <TrendingUp className="h-6 w-6 text-primary" />
+      <Link
+        href="/billing"
+        className="text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        Billing
+      </Link>
     </div>
 
-    <div>
-      <p className="text-2xl font-bold text-foreground">
-        {greatCandidates}
-      </p>
-      <p className="text-sm text-muted-foreground">
-        {showGreatOnly ? "Showing 75%+ matches" : "Great candidates"}
-      </p>
-    </div>
-  </CardContent>
-</Card>
-          
+    {/* RIGHT SIDE */}
+    <div className="flex items-center gap-4">
 
-        
-        </div>
+    
 
-        {/* Candidate Feed */}
-        <Card className="border-border bg-card">
-          <CardHeader className="border-b border-border">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <CardTitle className="text-lg">Candidate Feed</CardTitle>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search candidates..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 sm:w-64"
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-40">
-                    <Filter className="mr-2 h-4 w-4" />
-                    <SelectValue placeholder="Filter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="matched">Matched</SelectItem>
-                    <SelectItem value="interviewing">Interviewing</SelectItem>
-                    <SelectItem value="hired">Hired</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold">
+              {companyName?.[0] || "?"}
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border">
-         
-            {filteredCandidates.slice(0, 3).map((candidate) => (  <Link
-  key={candidate.id}
-  href={`/matching/employer?search=${encodeURIComponent(candidate.name)}`}
-  className="block"
->
-    <div className="flex flex-col gap-4 p-6 transition-colors hover:bg-secondary/30 sm:flex-row sm:items-center sm:justify-between cursor-pointer border-b border-border">
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
 
-      <div className="flex items-start gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
-          {candidate.name.split(" ").map(n => n[0]).join("")}
-        </div>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem asChild>
+            <Link href="/employer/profile">Company Profile</Link>
+          </DropdownMenuItem>
 
-        <div>
-  <h3 className="font-semibold flex items-center gap-2">
-    {candidate.name}
+          <DropdownMenuSeparator />
 
-    {/* VERIFIED BADGE */}
-    {candidate.is_gpa_verified && (
-      <Badge variant="outline" className="text-[10px] gap-1">
-        <CheckCircle2 className="h-3 w-3" />
-        Verified
-      </Badge>
-    )}
-  </h3>
+          <DropdownMenuItem asChild>
+            <Link href="/">Log out</Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-  <p className="text-sm text-muted-foreground">
-    GPA: {candidate.gpa}
-  </p>
-
-  {/* STATUS BADGE */}
-  <div className="mt-1">
-  
+    </div>
   </div>
-</div>
-      </div>
+</header>
+      <main className="mx-auto max-w-7xl px-4 py-8 space-y-8">
 
-      <div className="flex items-center gap-2">
-  <span className="text-sm font-medium text-primary">
-    {candidate.matchScore}% match
-  </span>
+        {/* WELCOME */}
+        <div>
+          <h1 className="text-3xl font-bold">Welcome, {companyName}</h1>
+          <p className="text-muted-foreground">
+            Here’s your hiring overview
+          </p>
+        </div>
 
-  <Button size="sm">
-    View More
-  </Button>
-</div>
+      
+     
+
+        {/* PIPELINE */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Hiring Pipeline</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-3 gap-4">
+  
+  <Link href="/matching/employer?status=new">
+    <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
+      <p className="text-sm text-muted-foreground">New</p>
+      <p className="mt-2 text-3xl font-bold">
+        {statuses.filter((s) => s.status === "new").length}
+      </p>
     </div>
   </Link>
-))}
 
-            </div>
+  <Link href="/matching/employer?status=contacted">
+    <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
+      <p className="text-sm text-muted-foreground">Contacted</p>
+      <p className="mt-2 text-3xl font-bold">
+        {statuses.filter((s) => s.status === "contacted").length}
+      </p>
+    </div>
+  </Link>
 
-            {filteredCandidates.length > 3 && (
-  <div className="flex justify-center p-6">
-    <Button asChild variant="outline">
-      <Link href="/matching/employer">
-        View All Candidates
-      </Link>
-    </Button>
-  </div>
-)}
+  <Link href="/matching/employer?status=hired">
+    <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
+      <p className="text-sm text-muted-foreground">Hired</p>
+      <p className="mt-2 text-3xl font-bold">
+        {statuses.filter((s) => s.status === "hired").length}
+      </p>
+    </div>
+  </Link>
 
-            {loadingStudents ? (
-  <div className="flex flex-col items-center justify-center py-12 text-center">
-    <p className="text-muted-foreground">Loading students...</p>
+</CardContent>
+        </Card>
+
+        {/* INSIGHT */}
+        <Card className="cursor-pointer hover:bg-muted/40 transition"
+      onClick={() => window.location.href = "/matching/employer"}>
+          <CardContent className="p-6 flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <div className="flex flex-col gap-1">
+  <p>
+    You have <b>{greatCandidates}</b> strong candidates (75%+ match) ready to review.
+  </p>
+
+  <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+    <span>
+      Top Match: <b>{topMatch}%</b>
+    </span>
+
+    <span>•</span>
+
+    <Link
+  href="/matching/employer?perfect=true"
+  className="hover:text-foreground transition"
+>
+  Perfect Matches: <b>{perfectMatches}</b>
+</Link>
   </div>
-) : filteredCandidates.length === 0 ? (
-  <div className="flex flex-col items-center justify-center py-12 text-center">
-    <Users className="h-12 w-12 text-muted-foreground/50" />
-    <p className="mt-4 text-muted-foreground">No students found</p>
-  </div>
-) : null}
+</div>
           </CardContent>
         </Card>
+
+        {/* RECENT ACTIVITY */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+
+          <CardContent className="space-y-3">
+  {recentActivity.length === 0 ? (
+    <p className="text-sm text-muted-foreground">
+      No recent activity
+    </p>
+  ) : (
+    recentActivity.map((n) => {
+      const studentName =
+        n.student_name ||
+        n.message?.split(" applied to ")[0]?.trim()
+
+      return (
+        <div
+          key={n.id}
+          className="flex justify-between items-center text-sm border-b pb-2"
+        >
+          <span>{n.message}</span>
+
+          <div className="flex items-center gap-2">
+            {studentName && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  window.location.href = `/matching/employer?search=${encodeURIComponent(
+                    studentName
+                  )}`
+                }}
+              >
+                View Profile
+              </Button>
+            )}
+
+            <button
+              onClick={() => dismissNotification(n.id)}
+              className="text-muted-foreground"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )
+    })
+  )}
+</CardContent>
+        </Card>
+
+        {/* BILLING SNAPSHOT */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Billing Overview</CardTitle>
+          </CardHeader>
+
+          <CardContent className="space-y-2">
+            <p>Current Plan: Employer Plan</p>
+         
+            <Button asChild>
+              <Link href="/billing">Manage Billing</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* CTA */}
+        <Card className="bg-primary text-white">
+          <CardContent className="p-6 flex justify-between items-center">
+            <div>
+              <p className="font-bold text-lg">
+                Ready to hire your next student?
+              </p>
+              <p className="text-sm opacity-80">
+                View your full candidate pool
+              </p>
+            </div>
+
+            <Button asChild variant="secondary">
+              <Link href="/matching/employer">
+                Go to Candidates <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
       </main>
     </div>
   )

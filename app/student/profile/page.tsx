@@ -29,6 +29,7 @@ export default function ProfilePage() {
   
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   // Profile Info  
+  const [newInterest, setNewInterest] = useState("")
   const [gpaProofUrl, setGpaProofUrl] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const [name, setName] = useState("")
@@ -97,10 +98,7 @@ const DEFAULT_AVAILABILITY = [
     preferredJobs: preferredJobs.length > 0,
     interests: interests.length > 0,
   });
-// Check if profile info is fully filled
-const isProfileComplete = () => {
-  return name && age && gpa && location && email && school
-}
+
 
   // Interests
   const [interests, setInterests] = useState<string[]>([
@@ -145,6 +143,20 @@ const isProfileComplete = () => {
   const [isEditingAvailability, setIsEditingAvailability] = useState(false)
   const [phone, setPhone] = useState("")
   const isPhoneValid = /^\d{10}$/.test(phone)
+ // Check if profile info is fully filled
+const isProfileComplete =
+name.trim().length > 0 &&
+age.trim().length > 0 &&
+gpa.trim().length > 0 &&
+location.trim().length > 0 &&
+emailRegex.test(email) &&
+school.trim().length > 0 &&
+isAgeValid &&
+isEmailValid &&
+phone.length === 10 &&
+preferredJobs.length > 0 &&
+interests.length > 0 &&
+availability.some((d) => d.available)
   const timeOptions = Array.from({ length: 24 }, (_, i) => {
     const hour = i % 12 === 0 ? 12 : i % 12
     const ampm = i < 12 ? "AM" : "PM"
@@ -281,11 +293,30 @@ const isProfileComplete = () => {
           <ChevronLeft className="h-4 w-4" /> Back
         </Button>
 
+        
+        
+        
+        
         {/* Next Button */}
         <Button
+  className={!isProfileComplete ? "opacity-50 cursor-not-allowed" : ""}
+  onClick={async () => {
 
-onClick={async () => {
-  const { data: { session } } = await supabase.auth.getSession()
+    // ✅ THIS IS THE KEY FIX
+    if (!isProfileComplete) {
+      toast.error("Please complete your profile", {
+        description:
+          "Make sure you filled: name, age, GPA, email, phone, jobs, interests, and availability.",
+      })
+      return
+    }
+
+    // 👇 everything below stays EXACTLY the same
+    // 👇 if everything passes, continue normal flow
+
+    // ---- rest of your existing logic stays exactly the same ----
+ 
+    const { data: { session } } = await supabase.auth.getSession()
 
   const user = session?.user
 
@@ -681,35 +712,66 @@ router.push("/student")
 </Card>
 
       {/* Interests */}
-      <Card className="border-border bg-card mb-4">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Briefcase className="h-5 w-5 text-primary" /> Interests
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2 items-center">
-            {interests.map((interest, index) => (
-              <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                {interest}
-                <button
-                  className="ml-1 text-xs text-red-500"
-                  onClick={ () => {
-                    const newInterests = interests.filter((_, i) => i !== index)
-                    setInterests(newInterests)
-                   
-                  }}
-                >
-                  ×
-                </button>
-              </Badge>
-            ))}
-            
-          </div>
-        </CardContent>
-      </Card>
+      <input
+  value={newInterest}
+  onChange={(e) => setNewInterest(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
 
+      const trimmed = newInterest.trim()
+      if (!trimmed) return
 
+      if (interests.includes(trimmed)) {
+        toast.error("Interest already added")
+        return
+      }
+
+      setInterests([...interests, trimmed])
+      setNewInterest("")
+    }
+  }}
+  placeholder="Add interest (e.g. Coding)"
+  className="w-full border rounded px-2 py-1 text-sm mt-2"
+/>
+<Button
+  className="mt-2 w-full"
+  onClick={() => {
+    const trimmed = newInterest.trim()
+
+    if (!trimmed) return
+
+    if (interests.includes(trimmed)) {
+      toast.error("Interest already added")
+      return
+    }
+
+    setInterests([...interests, trimmed])
+    setNewInterest("")
+  }}
+>
+  Add Interest
+</Button>
+<div className="flex flex-wrap gap-2 mt-3">
+  {interests.map((interest, index) => (
+    <Badge
+      key={index}
+      variant="secondary"
+      className="flex items-center gap-1"
+    >
+      {interest}
+      <button
+        className="ml-1 text-xs text-red-500"
+        onClick={() => {
+          setInterests(interests.filter((_, i) => i !== index))
+        }}
+      >
+        ×
+      </button>
+    </Badge>
+  ))}
+</div>
+<div className="h-6" />
 
 
       {/* Availability */}

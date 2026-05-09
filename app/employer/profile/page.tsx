@@ -51,14 +51,13 @@ const [hasTips, setHasTips] = useState(false)
   const phoneRegex = /^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/
 
   const isProfileComplete =
-  companyName &&
-  ownerName &&
-  email &&
-  location &&
-  businessType &&
-  phone &&
-  details
-
+  companyName.trim().length > 0 &&
+  ownerName.trim().length > 0 &&
+  location.trim().length > 0 &&
+  businessType.trim().length > 0 &&
+  details.trim().length > 0 &&
+  emailRegex.test(email) &&
+  phoneRegex.test(phone)
   // ===== TIME OPTIONS =====
   const timeOptions = Array.from({ length: 24 }, (_, i) => {
     const hour = i % 12 === 0 ? 12 : i % 12
@@ -139,9 +138,13 @@ const [hasTips, setHasTips] = useState(false)
           <ChevronLeft className="h-4 w-4" /> Back
         </Button>
 
-        <Button
-        onClick={async () => {
-            const {
+    
+    <Button
+  disabled={!isProfileComplete}
+  className={!isProfileComplete ? "opacity-50 cursor-not-allowed" : ""}
+  onClick={async () => {        
+    
+    const {
                 data: { user },
               } = await supabase.auth.getUser()
           

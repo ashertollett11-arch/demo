@@ -22,7 +22,7 @@ import {
   import { ChevronDown, User, Bell, LogOut } from "lucide-react"
 
 
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
 
   Briefcase,
@@ -177,8 +177,12 @@ export default function MatchingPage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [sortBy, setSortBy] = useState<"matchScore" | "gpa">("matchScore")
   const [filtersOpen, setFiltersOpen] = useState(false)
- const [employerShifts, setEmployerShifts] = useState<any[]>([])
-const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
+  const searchParams = useSearchParams()
+  const statusParam = searchParams.get("status")
+  const [employerShifts, setEmployerShifts] = useState<any[]>([])
+  const [companyName, setCompanyName] = useState("Your Company")
+
+  const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
 const [mounted, setMounted] = useState(false)
 const [scoredCandidates, setScoredCandidates] = useState<any[]>([])  
 const router = useRouter()
@@ -369,7 +373,54 @@ const activeShifts = useMemo(() => {
       supabase.removeChannel(channel)
     }
   }, [userId])
-useEffect(() => {
+  useEffect(() => {
+    if (!employerId || students.length === 0) return
+  
+    const seedStatuses = async () => {
+      // get existing statuses first
+      const { data: existing, error: existingError } = await supabase
+        .from("student_statuses")
+        .select("student_id")
+        .eq("employer_id", employerId)
+  
+      if (existingError) {
+        console.error(existingError)
+        return
+      }
+  
+      const existingIds = new Set(
+        (existing || []).map((s) => s.student_id)
+      )
+  
+      // only create missing rows
+      const rowsToInsert = students
+        .filter((student) => !existingIds.has(student.id))
+        .map((student) => ({
+          employer_id: employerId,
+          student_id: student.id,
+          status: "new",
+        }))
+  
+      // nothing new to insert
+      if (rowsToInsert.length === 0) return
+  
+      const { error } = await supabase
+        .from("student_statuses")
+        .insert(rowsToInsert)
+  
+      if (error) {
+        console.error("Error seeding statuses:", error.message)
+        return
+      }
+  
+      // refresh local state
+      setStatuses((prev) => [...prev, ...rowsToInsert])
+    }
+  
+    seedStatuses()
+  }, [employerId, students])
+
+  useEffect(() => {
         if (!students.length) return
       
         const results = students.map((candidate) => {
@@ -394,7 +445,15 @@ useEffect(() => {
         setScoredCandidates(results)
       }, [students, employerShifts, shiftPreference])
      
-     
+      useEffect(() => {
+        if (
+          statusParam === "new" ||
+          statusParam === "contacted" ||
+          statusParam === "hired"
+        ) {
+          setActiveStatus(statusParam)
+        }
+      }, [statusParam])
      
      useEffect(() => {
         const loadEmployerName = async () => {
@@ -451,6 +510,14 @@ useEffect(() => {
       })
         .filter((candidate) => {
           if (candidate.gpa < minGpa[0]) return false
+          
+          
+          const perfect = searchParams.get("perfect")
+
+          if (perfect === "true" && candidate.matchScore !== 100) {
+            return false
+          }
+          
           if (verifiedOnly && !candidate.is_gpa_verified) return false  
       
           const safeAvailability = candidate.availability ?? []
@@ -486,6 +553,9 @@ useEffect(() => {
           useEffect(() => {
             if (!filteredCandidates.length) return
           
+            // 🚨 if status came from URL, NEVER override it
+            if (statusParam) return
+          
             // if current tab has data, keep it
             if (groupedCandidates[activeStatus]?.length > 0) return
           
@@ -497,7 +567,7 @@ useEffect(() => {
             if (firstAvailableTab) {
               setActiveStatus(firstAvailableTab)
             }
-          }, [filteredCandidates])
+          }, [filteredCandidates, activeStatus, statusParam])
 
 
   const clearFilters = () => {
@@ -621,9 +691,42 @@ useEffect(() => {
     )}
   </DropdownMenuContent>
 </DropdownMenu>
+    
+    
+<div className="flex items-center gap-4">
+
+    
+
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+  <Button variant="ghost" className="flex items-center gap-2">
+    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold">
+    {name?.[0]?.toUpperCase() || "?"}
+    </div>
+    <ChevronDown className="h-4 w-4" />
+  </Button>
+</DropdownMenuTrigger>
+
+  <DropdownMenuContent align="end" className="w-48">
+    <DropdownMenuItem asChild>
+      <Link href="/employer/profile">Company Profile</Link>
+    </DropdownMenuItem>
+
+    <DropdownMenuSeparator />
+
+    <DropdownMenuItem asChild>
+      <Link href="/">Log out</Link>
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+
+</div>
+
+    
     </div>
   </div>
 </header>
+
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
@@ -710,6 +813,7 @@ useEffect(() => {
           {/* Main Content */}
           <div className="flex-1">
             {/* Search Bar */}
+{/* Search Bar */}
 <div className="mb-4 flex items-center gap-2">
   <input
     placeholder="Search students by name..."
@@ -717,6 +821,16 @@ useEffect(() => {
     onChange={(e) => setSearchQuery(e.target.value)}
     className="w-64 rounded-md border border-border bg-background px-3 py-2 text-sm"
   />
+
+  {searchQuery.trim() !== "" && (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setSearchQuery("")}
+    >
+      Clear search
+    </Button>
+  )}
 </div>
             {/* Mobile Filters & Sort */}
             <div className="mb-6 flex items-center justify-between gap-4">

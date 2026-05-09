@@ -303,15 +303,16 @@ useEffect(() => {
 
     // 4. Insert notification
    // 4. Insert notification (UPDATED)
-const { error: notifError } = await supabase
-.from("notifications")
-.insert({
-  employer_id: employerId,
-  student_id: studentId, // 👈 ADD THIS LINE
-  title: "New Applicant",
-  message: `${studentName} applied to ${jobData.title}`,
-  type: "application"
-})
+   const { error: notifError } = await supabase
+   .from("notifications")
+   .insert({
+     employer_id: employerId,
+     student_user_id: studentId,
+     type: "application",
+     title: "New Applicant",
+     message: `${studentName} applied to ${jobData.title}`,
+     read: false,
+   })
 
     if (notifError) {
       console.log("NOTIFICATION ERROR:", notifError)
