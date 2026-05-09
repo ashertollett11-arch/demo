@@ -935,11 +935,11 @@ const activeShifts = useMemo(() => {
 
 {/* Cards */}
 <div className="grid gap-4 sm:grid-cols-2">
-(groupedCandidates[activeStatus] ?? []).map(
-        <Card
-      key={candidate.id}
-      className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer"
-    >
+{(groupedCandidates[activeStatus] ?? []).map((candidate) => (
+  <Card
+    key={candidate.id}
+    className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer"
+  >
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           
