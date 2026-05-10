@@ -673,7 +673,7 @@ router.push("/student")
   <CardHeader>
     <CardTitle className="flex items-center gap-2 text-lg">
       <Briefcase className="h-5 w-5 text-primary" />
-      Preferred Jobs
+      Preferred Positions
     </CardTitle>
   </CardHeader>
 

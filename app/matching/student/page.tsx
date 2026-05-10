@@ -4,11 +4,32 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft } from "lucide-react"
+import {
+  Briefcase,
+  Users,
+  TrendingUp,
+  CheckCircle2,
+  Bell,
+  Building2,
+  LogOut,
+  ChevronDown,
+  CreditCard,
+  Activity,
+  ChevronLeft,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import {  calculateMatch } from "@/lib/matchScore"
 import { supabase } from "@/lib/supabase"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 interface Job {
   id: number
   title: string
@@ -37,6 +58,7 @@ export default function MatchesPage() {
 
 const [gpa, setGpa] = useState<number | null>(null)  
   const params = useParams()
+  const [name, setName] = useState("")
   const jobId = Number(params.id)
   const [shift_Preference, setShift_Preference] =
   useState<"morning" | "night" | "flexible">("flexible")
@@ -168,7 +190,30 @@ useEffect(() => {
 
   fetchJobs()
 }, [])
+useEffect(() => {
+  const fetchStudentName = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
 
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from("Students")
+      .select("name")
+      .eq("user_id", user.id)
+      .single()
+
+    if (error) {
+      console.log("NAME FETCH ERROR:", error)
+      return
+    }
+
+    setName(data?.name || "")
+  }
+
+  fetchStudentName()
+}, [])
   // Sorting
   const parseDistance = (d: string) => parseFloat(d.split(" ")[0]) || 0
   const parsePay = (p: string) => parseFloat(p.replace(/[^0-9.]/g, "")) || 0
@@ -188,15 +233,93 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
-      <Button
-    variant="ghost"
-    className="flex items-center gap-2 mb-4"
-    onClick={() => router.push("/student")}
-  >
-    <ChevronLeft className="h-4 w-4" />
-    Back
-  </Button>
+  {/* STICKY HEADER */}
+  <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
 
+          {/* LEFT */}
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2"
+            onClick={() => (window.location.href = "/student")}
+          >
+            <ChevronLeft className="h-5 w-5" />
+            Back
+          </Button>
+
+          {/* CENTER NAV */}
+          <div className="hidden items-center gap-6 md:flex">
+
+{/* NOT ACTIVE */}
+<Link
+  href="/student"
+  className="text-sm font-medium text-muted-foreground transition-all hover:text-foreground"
+>
+  Dashboard
+</Link>
+
+{/* ACTIVE PAGE */}
+<Link
+  href="/matching/student"
+  className="text-base font-semibold text-foreground transition-all"
+>
+  Jobs near you
+</Link>
+
+</div>
+
+          {/* RIGHT */}
+          <div className="flex items-center gap-4">
+
+           
+
+            {/* PROFILE */}
+           {/* PROFILE */}
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" className="flex items-center gap-2">
+
+      {/* PROFILE CIRCLE */}
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+      {(name || "")         
+       .trim()
+          .split(" ")
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((n) => n[0]?.toUpperCase())
+          .join("") || "?"}
+      </div>
+
+      {/* COMPANY NAME */}
+      <span className="hidden text-sm font-medium sm:block">
+      {name}     
+       </span>
+
+    </Button>
+  </DropdownMenuTrigger>
+
+  <DropdownMenuContent align="end" className="w-48">
+
+    <DropdownMenuItem asChild>
+    <Link href="/student/profile">
+  Profile
+</Link>
+    </DropdownMenuItem>
+
+    <DropdownMenuSeparator />
+
+    <DropdownMenuItem asChild>
+      <Link href="/">
+        Log out
+      </Link>
+    </DropdownMenuItem>
+
+  </DropdownMenuContent>
+</DropdownMenu>
+
+          </div>
+        </div>
+      </header>
       <h1 className="text-2xl font-bold mb-4">Jobs Near You</h1>
 
       <div className="flex gap-3 mb-6">

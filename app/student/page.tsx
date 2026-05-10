@@ -310,85 +310,88 @@ useEffect(() => {
       <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+  <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
 
-              <Briefcase className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">SimplyApply</span>
-          </Link>
-
-          <div className="flex items-center gap-4">
-          <div className="relative">
-   <button
-    className="notification-button relative p-2 rounded-full hover:bg-secondary"
-    onClick={() => setNotificationsOpen(!notificationsOpen)}
-   >
-    <Bell className="h-5 w-5 text-foreground" />
-    {notifications.some(n => !n.read) && (
-     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-white">
-     {notifications.filter(n => !n.read).length}
-   </span>
-    )}
-   </button>
-
-   {notificationsOpen && (
-    <div className="notification-dropdown absolute right-0 mt-2 w-64 bg-card border border-border rounded shadow-lg z-50">
-      <div className="p-2 border-b border-border font-semibold">Notifications</div>
-      <div className="max-h-64 overflow-y-auto">
-        {notifications.length === 0 && (
-          <div className="p-2 text-sm text-muted-foreground">No notifications</div>
-        )}
-        {notifications.map(n => (
-          <div
-            key={n.id}
-            className={`p-2 text-sm cursor-pointer hover:bg-secondary ${
-              n.read ? "text-muted-foreground" : "font-medium"
-            }`}
-            onClick={() => {
-              setNotifications(prev =>
-                prev.map(x => (x.id === n.id ? { ...x, read: true } : x))
-              )
-            }}
-          >
-            {n.title}
-          </div>
-        ))}
+    {/* LEFT */}
+    <Link href="/" className="flex items-center gap-2">
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+        <Briefcase className="h-5 w-5 text-primary-foreground" />
       </div>
+
+      <span className="text-xl font-bold text-foreground">
+        SimplyApply
+      </span>
+    </Link>
+
+    {/* CENTER NAV */}
+    <div className="hidden items-center gap-6 md:flex">
+
+      {/* ACTIVE PAGE */}
+      <Link
+        href="/student"
+        className="text-base font-semibold text-foreground transition-all"
+      >
+        Dashboard
+      </Link>
+
+      {/* NOT ACTIVE */}
+      <Link
+        href="/matching/student"
+        className="text-sm font-medium text-muted-foreground transition-all hover:text-foreground"
+      >
+        Jobs near you
+      </Link>
+
     </div>
-  )}
-</div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                  {(name || "")
-  .trim()
-  .split(" ")
-  .filter(Boolean)
-  .slice(0, 2)
-  .map(n => n[0]?.toUpperCase())
-  .join("") || "?"}
-                  </div>
-                  <span className="hidden text-sm font-medium sm:block">{name}.</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48"><DropdownMenuItem asChild>
-                <Link href="/student/profile">
-                  <User className="mr-2 h-4 w-4" /> Profile
-                </Link>
-              </DropdownMenuItem>
-                
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/"><LogOut className="mr-2 h-4 w-4" />Log out</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
+
+    {/* RIGHT */}
+    <div className="flex items-center gap-4">
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="flex items-center gap-2">
+
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+              {(name || "")
+                .trim()
+                .split(" ")
+                .filter(Boolean)
+                .slice(0, 2)
+                .map(n => n[0]?.toUpperCase())
+                .join("") || "?"}
+            </div>
+
+            <span className="hidden text-sm font-medium sm:block">
+              {name}.
+            </span>
+
+          </Button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="end" className="w-48">
+
+          <DropdownMenuItem asChild>
+            <Link href="/student/profile">
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem asChild>
+            <Link href="/">
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
+            </Link>
+          </DropdownMenuItem>
+
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+    </div>
+  </div>
+</header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Welcome Section */}
