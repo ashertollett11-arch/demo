@@ -426,16 +426,71 @@ const [hasTips, setHasTips] = useState(false)
 
     {/* SAVE */}
     <Button
-      className="w-full mt-3"
-      onClick={() => {
-       
-        toast.success("Saved!", {
-          description: "Availability updated successfully.",
-        })
-      }}
-    >
-      Save Shifts
-    </Button>
+  className="w-full mt-3"
+  onClick={async () => {
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      toast.error("Not logged in")
+      return
+    }
+
+    const { data, error } = await supabase
+      .from("job")
+      .upsert(
+        {
+          id: jobId || undefined,
+          user_id: user.id,
+
+          title: companyName || "Untitled Job",
+          company: companyName || "Unknown Company",
+
+          owner_name: ownerName || null,
+          business_type: businessType || null,
+          email: email || null,
+          phone: phone || null,
+
+          location: location || "Unknown",
+          details: details || "No description",
+
+          pay: hourlyPay ? `$${hourlyPay}/hr` : null,
+          hourly_pay: hourlyPay ? Number(hourlyPay) : null,
+          has_tips: hasTips,
+
+          shift_preference: shiftPreference,
+          available_shifts: availableShifts,
+          preferred_jobs: preferredJobs,
+
+          status: "new",
+          distance: "0",
+        },
+        {
+          onConflict: "user_id",
+        }
+      )
+      .select()
+      .single()
+
+    if (error) {
+      console.error(error)
+      toast.error(error.message)
+      return
+    }
+
+    if (data?.id) {
+      setJobId(data.id)
+    }
+
+    toast.success("Saved!", {
+      description: "Profile updated successfully.",
+    })
+  }}
+>
+  Save Shifts
+</Button>
   </CardContent>
 </Card>
     </div>

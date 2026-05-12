@@ -197,6 +197,7 @@ availability.some((d) => d.available)
           preferred_jobs,
           availability,
           shift_preference,
+            gpa_proof_path,
           gpa_proof_url,
           gpa_verification_status
         `)
@@ -275,7 +276,59 @@ availability.some((d) => d.available)
  
   // Load saved data from localStorage
  
-
+  const saveStudentProfile = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+  
+    const user = session?.user
+  
+    if (!user) {
+      toast.error("Not logged in")
+      return false
+    }
+  
+    const { error } = await supabase
+    .from("Students")
+    .upsert(
+      {
+        user_id: user.id,
+  
+        name,
+        age: Number(age),
+        location,
+        email,
+        school,
+        phone,
+        interests,
+        preferred_jobs: preferredJobs,
+        availability,
+        shift_preference: shiftPreference,
+  
+        // 👇 ONLY allow GPA edit if NOT locked
+        ...(gpaStatus !== "pending" && gpaStatus !== "approved"
+          ? { gpa: Number(gpa) }
+          : {}),
+  
+        // 👇 ONLY allow GPA upload overwrite if not approved
+        ...(gpaStatus === "rejected" || gpaStatus === "none"
+          ? {
+              gpa_proof_url: gpaProofUrl,
+              gpa_verification_status: gpaStatus,
+            }
+          : {}),
+      },
+      { onConflict: "user_id" }
+    )
+  
+    if (error) {
+      console.log(error)
+      toast.error(error.message)
+      return false
+    }
+  
+    return true
+  }
   
   return (
     <>
@@ -397,31 +450,38 @@ availability.some((d) => d.available)
 
 
 
-
-const { error } = await supabase
+  const { error } = await supabase
   .from("Students")
-  .upsert({
-    user_id: user.id,
-    name,
-    age: Number(age),
-    gpa: Number(gpa),
-    location,
-    email,
-    school,
-    phone,
-    interests,
-    preferred_jobs: preferredJobs,
-    availability,
-    shift_preference: shiftPreference,
-    ...(shouldSendGpa
-      ? {
-          gpa_proof_url: proofUrl,
-          gpa_verification_status: "pending",
-          is_gpa_verified: false,
-        }
-      : {})
-  
-  }, { onConflict: "user_id" })
+  .upsert(
+    {
+      user_id: user.id,
+
+      name,
+      age: Number(age),
+      location,
+      email,
+      school,
+      phone,
+      interests,
+      preferred_jobs: preferredJobs,
+      availability,
+      shift_preference: shiftPreference,
+
+      // 👇 ONLY allow GPA edit if NOT locked
+      ...(gpaStatus !== "pending" && gpaStatus !== "approved"
+        ? { gpa: Number(gpa) }
+        : {}),
+
+      // 👇 ONLY allow GPA upload overwrite if not approved
+      ...(gpaStatus === "rejected" || gpaStatus === "none"
+        ? {
+            gpa_proof_url: gpaProofUrl,
+            gpa_verification_status: gpaStatus,
+          }
+        : {}),
+    },
+    { onConflict: "user_id" }
+  )
 
 if (error) {
   console.log("SUPABASE ERROR:", error)
@@ -471,7 +531,7 @@ router.push("/student")
   type="text"
   inputMode="numeric"
   value={age}
-  disabled={!isEditingProfile}
+  disabled={!isEditingProfile || gpaStatus === "approved"}  
   onChange={(e) => {
     const value = e.target.value
 
@@ -549,7 +609,7 @@ router.push("/student")
   min="0"
   max="4"
   value={gpa}
-  disabled={!isEditingProfile}
+  disabled={!isEditingProfile || isGpaLocked}
   onChange={(e) => {
     const value = e.target.value
 
@@ -564,7 +624,9 @@ router.push("/student")
       }
     }
   }}
-  className="w-full border rounded px-2 py-1 text-sm"
+  className={`w-full border rounded px-2 py-1 text-sm ${
+    isGpaLocked ? "bg-gray-100 opacity-70 cursor-not-allowed" : ""
+  }`}
   placeholder="GPA"
 />
 {gpaStatus === "pending" && (
@@ -599,8 +661,8 @@ router.push("/student")
 )}
 
 
-  {showUpload && (
-  <label className="flex w-full items-center justify-center rounded border px-3 py-2 text-sm hover:bg-muted cursor-pointer">
+{showUpload && !isGpaLocked && (
+    <label className="flex w-full items-center justify-center rounded border px-3 py-2 text-sm hover:bg-muted cursor-pointer">
     Upload GPA Image
     <input
       type="file"
@@ -632,12 +694,13 @@ router.push("/student")
         const publicUrl = data.publicUrl
 
         await supabase
-          .from("Students")
-          .update({
-            gpa_proof_url: publicUrl,
-            gpa_verification_status: "pending",
-            is_gpa_verified: false,
-          })
+        .from("Students")
+        .update({
+          gpa_proof_url: publicUrl,
+          gpa_proof_path: filePath,
+          gpa_verification_status: "pending",
+          is_gpa_verified: false,
+        })
           .eq("user_id", user.id)
 
         const { data: updatedProfile } = await supabase
@@ -657,7 +720,11 @@ router.push("/student")
 
 <Button
   className="w-full mt-2"
-  onClick={() => {
+  onClick={async () => {
+    const success = await saveStudentProfile()
+
+    if (!success) return
+
     toast.success("Saved!", {
       description: "Your profile has been updated.",
     })
@@ -887,8 +954,11 @@ router.push("/student")
 
 <Button
   className="w-full mt-2"
-  onClick={ () => {
-   
+  onClick={async () => {
+    const success = await saveStudentProfile()
+
+    if (!success) return
+
     toast.success("Saved!", {
       description: "Your availability has been updated.",
     })

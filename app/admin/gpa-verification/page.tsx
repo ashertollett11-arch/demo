@@ -12,9 +12,9 @@ type Student = {
   name: string
   gpa: number
   gpa_proof_url: string | null
+  gpa_proof_path: string | null
   gpa_verification_status: string
 }
-
 export default function GpaVerificationPage() {
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,27 +43,55 @@ export default function GpaVerificationPage() {
   }, [])
 
   const updateStatus = async (
-    user_id: string,
+    student: Student,
     status: "approved" | "rejected"
   ) => {
+  
+    // 🔥 DELETE IMAGE IF REJECTED
+    if (
+      status === "rejected" &&
+      student.gpa_proof_path
+    ) {
+      const { error: storageError } = await supabase.storage
+        .from("gpa-proofs")
+        .remove([student.gpa_proof_path])
+  
+      if (storageError) {
+        console.log("STORAGE DELETE ERROR:", storageError)
+        toast.error("Failed to delete image")
+        return
+      }
+    }
+  
+    const updateData =
+      status === "rejected"
+        ? {
+            gpa_verification_status: "rejected",
+            is_gpa_verified: false,
+  
+            // 🔥 CLEAR OLD IMAGE
+            gpa_proof_url: null,
+            gpa_proof_path: null,
+          }
+        : {
+            gpa_verification_status: "approved",
+            is_gpa_verified: true,
+          }
+  
     const { error } = await supabase
       .from("Students")
-      .update({
-        gpa_verification_status: status,
-        is_gpa_verified: status === "approved",
-      })
-      .eq("user_id", user_id)
-
+      .update(updateData)
+      .eq("user_id", student.user_id)
+  
     if (error) {
       console.log(error)
       toast.error("Update failed")
       return
     }
-
+  
     toast.success(`Marked as ${status}`)
     fetchPending()
   }
-
   return (
     <div className="min-h-screen p-6 bg-background">
       <h1 className="text-2xl font-bold mb-6">GPA Verification</h1>
@@ -101,9 +129,9 @@ export default function GpaVerificationPage() {
 
               <div className="flex gap-2">
                 <Button
-                  onClick={() =>
-                    updateStatus(student.user_id, "approved")
-                  }
+                 onClick={() =>
+                  updateStatus(student, "approved")
+                }
                 >
                   Approve
                 </Button>
@@ -111,7 +139,7 @@ export default function GpaVerificationPage() {
                 <Button
                   variant="destructive"
                   onClick={() =>
-                    updateStatus(student.user_id, "rejected")
+                    updateStatus(student, "rejected")
                   }
                 >
                   Reject

@@ -419,7 +419,7 @@ useEffect(() => {
 <p className="text-sm text-muted-foreground">
 {gpaStatus === "approved"
   ? "Verified GPA"
-  : "Enter your school email to verify"}</p>
+  : "Upload a photo of your GPA to verify"}</p>
               </div>
             </CardContent>
           </Card>
