@@ -409,7 +409,7 @@ availability.some((d) => d.available)
     
     if (preferredJobs.length === 0) {
       jobsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      toast.error("Select at least one preferred job")
+      toast.error("Select at least one preferred positions")
       return
     }
     
