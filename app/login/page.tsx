@@ -74,7 +74,7 @@ export default function LoginPage() {
       password,
     })
 
-    setLoading(false)npm ru
+    setLoading(false)
 
     if (error) {
       const message = error.message.toLowerCase()
