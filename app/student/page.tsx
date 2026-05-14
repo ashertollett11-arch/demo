@@ -346,49 +346,47 @@ useEffect(() => {
 
     {/* RIGHT */}
     <div className="flex items-center gap-4">
+    <DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" className="flex items-center gap-2">
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-2">
+      {/* PROFILE CIRCLE */}
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+      {(name || "")         
+       .trim()
+          .split(" ")
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((n) => n[0]?.toUpperCase())
+          .join("") || "?"}
+      </div>
 
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-              {(name || "")
-                .trim()
-                .split(" ")
-                .filter(Boolean)
-                .slice(0, 2)
-                .map(n => n[0]?.toUpperCase())
-                .join("") || "?"}
-            </div>
+      {/* COMPANY NAME */}
+      <span className="hidden text-sm font-medium sm:block">
+      {name}     
+       </span>
 
-            <span className="hidden text-sm font-medium sm:block">
-              {name}.
-            </span>
+    </Button>
+  </DropdownMenuTrigger>
 
-          </Button>
-        </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-48">
 
-        <DropdownMenuContent align="end" className="w-48">
+    <DropdownMenuItem asChild>
+    <Link href="/student/profile">
+  Profile
+</Link>
+    </DropdownMenuItem>
 
-          <DropdownMenuItem asChild>
-            <Link href="/student/profile">
-              <User className="mr-2 h-4 w-4" />
-              Profile
-            </Link>
-          </DropdownMenuItem>
+    <DropdownMenuSeparator />
 
-          <DropdownMenuSeparator />
+    <DropdownMenuItem asChild>
+      <Link href="/">
+        Log out
+      </Link>
+    </DropdownMenuItem>
 
-          <DropdownMenuItem asChild>
-            <Link href="/">
-              <LogOut className="mr-2 h-4 w-4" />
-              Log out
-            </Link>
-          </DropdownMenuItem>
-
-        </DropdownMenuContent>
-      </DropdownMenu>
-
+  </DropdownMenuContent>
+</DropdownMenu>
     </div>
   </div>
 </header>

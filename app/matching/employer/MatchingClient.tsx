@@ -377,44 +377,31 @@ const activeShifts = useMemo(() => {
     if (!employerId || students.length === 0) return
   
     const seedStatuses = async () => {
-      // get existing statuses first
-      const { data: existing, error: existingError } = await supabase
-        .from("student_statuses")
-        .select("student_id")
-        .eq("employer_id", employerId)
-  
-      if (existingError) {
-        console.error(existingError)
-        return
-      }
-  
-      const existingIds = new Set(
-        (existing || []).map((s) => s.student_id)
-      )
-  
-      // only create missing rows
-      const rowsToInsert = students
-        .filter((student) => !existingIds.has(student.id))
-        .map((student) => ({
-          employer_id: employerId,
-          student_id: student.id,
-          status: "new",
-        }))
-  
-      // nothing new to insert
-      if (rowsToInsert.length === 0) return
+      const rows = students.map((student) => ({
+        employer_id: employerId,
+        student_id: student.id,
+        status: "new",
+      }))
   
       const { error } = await supabase
         .from("student_statuses")
-        .insert(rowsToInsert)
+        .upsert(rows, {
+          onConflict: "employer_id,student_id",
+          ignoreDuplicates: true,
+        })
   
       if (error) {
         console.error("Error seeding statuses:", error.message)
         return
       }
   
-      // refresh local state
-      setStatuses((prev) => [...prev, ...rowsToInsert])
+      // reload statuses after seeding
+      const { data } = await supabase
+        .from("student_statuses")
+        .select("*")
+        .eq("employer_id", employerId)
+  
+      setStatuses(data || [])
     }
   
     seedStatuses()
