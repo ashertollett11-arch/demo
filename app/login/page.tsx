@@ -1,5 +1,5 @@
 "use client"
-
+import { toast } from "sonner"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
@@ -33,17 +33,35 @@ export default function LoginPage() {
     setLoading(false)
 
     if (error) {
-      alert(error.message)
+      const message = error.message.toLowerCase()
+    
+      if (
+        message.includes("user already registered") ||
+        message.includes("already registered")
+      ) {
+        toast.error("Account already exists", {
+          description: "Try logging in instead.",
+        })
+      } else if (
+        message.includes("anonymous") ||
+        !email ||
+        !password
+      ) {
+        toast.error("Missing email or password", {
+          description: "Please fill out both fields.",
+        })
+      } else {
+        toast.error("Signup failed", {
+          description: error.message,
+        })
+      }
+    
       return
     }
 
     const user = data.user
 
-    if (!user) {
-      alert("Check your email to confirm account")
-      return
-    }
-
+   
     router.push("/choose-role")
   }
 
@@ -56,10 +74,28 @@ export default function LoginPage() {
       password,
     })
 
-    setLoading(false)
+    setLoading(false)npm ru
 
     if (error) {
-      alert(error.message)
+      const message = error.message.toLowerCase()
+    
+      if (
+        message.includes("invalid login credentials") ||
+        message.includes("invalid credentials")
+      ) {
+        toast.error("Incorrect email or password", {
+          description: "Please try again.",
+        })
+      } else if (!email || !password) {
+        toast.error("Missing email or password", {
+          description: "Please fill out both fields.",
+        })
+      } else {
+        toast.error("Login failed", {
+          description: error.message,
+        })
+      }
+    
       return
     }
 
@@ -73,10 +109,13 @@ export default function LoginPage() {
       .eq("id", user.id)
       .single()
 
-    if (roleError || !roleData) {
-      alert("No role found. Please contact support.")
-      return
-    }
+      if (roleError || !roleData) {
+        toast.error("No role found", {
+          description: "Please contact support.",
+        })
+      
+        return
+      }
 
     if (roleData.role === "student") {
       router.push("/student")

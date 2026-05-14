@@ -1,6 +1,6 @@
 "use client"
 import { calculateMatch } from "@/lib/matchScore"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -87,6 +87,17 @@ const DEFAULT_AVAILABILITY = [
    
   const [saved, setSaved] = useState(false)
   
+  const nameRef = useRef<HTMLInputElement>(null)
+  const ageRef = useRef<HTMLInputElement>(null)
+  const gpaRef = useRef<HTMLInputElement>(null)
+  const locationRef = useRef<HTMLInputElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const phoneRef = useRef<HTMLInputElement>(null)
+  const schoolRef = useRef<HTMLInputElement>(null)
+  const jobsRef = useRef<HTMLDivElement>(null)
+  const interestsRef = useRef<HTMLInputElement>(null)
+  const availabilityRef = useRef<HTMLDivElement>(null)
+
   const getProfileCompletion = () => ({
     name: !!name,
     age: !!age,
@@ -337,16 +348,7 @@ availability.some((d) => d.available)
     <div className="min-h-screen bg-background p-4 sm:p-8">
       {/* Back Button */}
       <div className="flex items-center justify-between mb-4">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2"
-          onClick={() => router.back()}
-        >
-          <ChevronLeft className="h-4 w-4" /> Back
-        </Button>
-
-        
+  
         
         
         
@@ -356,14 +358,73 @@ availability.some((d) => d.available)
   onClick={async () => {
 
     // ✅ THIS IS THE KEY FIX
-    if (!isProfileComplete) {
-      toast.error("Please complete your profile", {
-        description:
-          "Make sure you filled: name, age, GPA, email, phone, jobs, interests, and availability.",
-      })
+    if (!name.trim()) {
+      nameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      nameRef.current?.focus()
+      toast.error("Please enter your name")
       return
     }
-
+    
+    if (!age.trim() || !isAgeValid) {
+      ageRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      ageRef.current?.focus()
+      toast.error("Please enter a valid age")
+      return
+    }
+    
+    if (!gpa.trim()) {
+      gpaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      gpaRef.current?.focus()
+      toast.error("Please enter your GPA")
+      return
+    }
+    
+    if (!location.trim()) {
+      locationRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      locationRef.current?.focus()
+      toast.error("Please enter your address")
+      return
+    }
+    
+    if (!emailRegex.test(email)) {
+      emailRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      emailRef.current?.focus()
+      toast.error("Please enter a valid email")
+      return
+    }
+    
+    if (!/^\d{10}$/.test(phone)) {
+      phoneRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      phoneRef.current?.focus()
+      toast.error("Please enter a valid phone number")
+      return
+    }
+    
+    if (!school.trim()) {
+      schoolRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      schoolRef.current?.focus()
+      toast.error("Please enter your school")
+      return
+    }
+    
+    if (preferredJobs.length === 0) {
+      jobsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      toast.error("Select at least one preferred job")
+      return
+    }
+    
+    if (interests.length === 0) {
+      interestsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      interestsRef.current?.focus()
+      toast.error("Add at least one interest")
+      return
+    }
+    
+    if (!availability.some((d) => d.available)) {
+      availabilityRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      toast.error("Please add availability")
+      return
+    }
     // 👇 everything below stays EXACTLY the same
     // 👇 if everything passes, continue normal flow
 
@@ -506,7 +567,7 @@ if (refreshedProfile) {
 router.push("/student")
 }}
 >
-  Next
+  Save and contuine to dashbaord
 </Button>
       </div>
       <h1 className="text-2xl font-bold mb-4">My Profile</h1>
@@ -520,6 +581,7 @@ router.push("/student")
           
           
           <input
+            ref={nameRef}
             value={name}
             disabled={!isEditingProfile}
             onChange={(e) => setName(e.target.value)}
@@ -529,7 +591,7 @@ router.push("/student")
 
 <input
   type="text"
-  inputMode="numeric"
+  ref={ageRef}
   value={age}
   disabled={!isEditingProfile || gpaStatus === "approved"}  
   onChange={(e) => {
@@ -554,7 +616,8 @@ router.push("/student")
 />
 
           <input
-            value={location}
+           ref={locationRef}
+           value={location}
             disabled={!isEditingProfile}
             onChange={(e) => setLocation(e.target.value)}
             className="w-full border rounded px-2 py-1 text-sm"
@@ -562,7 +625,8 @@ router.push("/student")
           />
 
           <input
-            type="email"
+           ref={emailRef}
+           type="email"
             value={email}
             disabled={!isEditingProfile}
             onChange={(e) => setEmail(e.target.value)}
@@ -572,6 +636,7 @@ router.push("/student")
 
 <input
   type="tel"
+  ref={phoneRef}
   value={phone}
   disabled={!isEditingProfile}
   onChange={(e) => {
@@ -593,6 +658,7 @@ router.push("/student")
 
 
           <input
+            ref={schoolRef}
             value={school}
             disabled={!isEditingProfile}
             onChange={(e) => setSchool(e.target.value)}
@@ -608,6 +674,7 @@ router.push("/student")
   step="0.01"
   min="0"
   max="4"
+  ref={gpaRef}
   value={gpa}
   disabled={!isEditingProfile || isGpaLocked}
   onChange={(e) => {
@@ -780,7 +847,8 @@ router.push("/student")
 
       {/* Interests */}
       <input
-  value={newInterest}
+ ref={interestsRef}
+ value={newInterest}
   onChange={(e) => setNewInterest(e.target.value)}
   onKeyDown={(e) => {
     if (e.key === "Enter") {
@@ -797,6 +865,19 @@ router.push("/student")
       setInterests([...interests, trimmed])
       setNewInterest("")
     }
+  }}
+  onBlur={() => {
+    const trimmed = newInterest.trim()
+
+    if (!trimmed) return
+
+    if (interests.includes(trimmed)) {
+      setNewInterest("")
+      return
+    }
+
+    setInterests([...interests, trimmed])
+    setNewInterest("")
   }}
   placeholder="Add interest (e.g. Coding)"
   className="w-full border rounded px-2 py-1 text-sm mt-2"

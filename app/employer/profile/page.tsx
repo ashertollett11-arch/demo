@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,6 +23,14 @@ export default function EmployerProfilePage() {
   const [jobId, setJobId] = useState<string | null>(null)
   const [jobTitle, setJobTitle] = useState("")
   const [details, setDetails] = useState("")
+  const [errors, setErrors] = useState<Record<string, boolean>>({})
+  // ===== toast errors
+  const companyRef = useRef<HTMLInputElement>(null)
+const ownerRef = useRef<HTMLInputElement>(null)
+const emailRef = useRef<HTMLInputElement>(null)
+const phoneRef = useRef<HTMLInputElement>(null)
+const detailsRef = useRef<HTMLTextAreaElement>(null)
+  
   // ===== JOB PAY INFO =====
 const [hourlyPay, setHourlyPay] = useState("")
 const [hasTips, setHasTips] = useState(false)
@@ -31,6 +39,26 @@ const [hasTips, setHasTips] = useState(false)
     "morning" | "night" | "flexible"
   >("flexible")
 
+  type FieldRef = React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>
+
+  const scrollToField = (ref: FieldRef) => {
+    ref.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    })
+  
+    ref.current?.focus?.()
+  }
+  const markError = (key: string, ref: FieldRef) => {
+    setErrors((prev) => ({ ...prev, [key]: true }))
+  
+    ref.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    })
+  
+    ref.current?.focus?.()
+  }
   // ===== AVAILABLE SHIFTS (REBRANDED AVAILABILITY) =====
   const [availableShifts, setAvailableShifts] = useState([
     { day: "Monday", start: "9:00 AM", end: "5:00 PM", active: true },
@@ -51,13 +79,71 @@ const [hasTips, setHasTips] = useState(false)
   const phoneRegex = /^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/
 
   const isProfileComplete =
-  companyName.trim().length > 0 &&
-  ownerName.trim().length > 0 &&
-  location.trim().length > 0 &&
-  businessType.trim().length > 0 &&
-  details.trim().length > 0 &&
+  companyName.trim() &&
+  ownerName.trim() &&
+  location.trim() &&
+  businessType.trim() &&
+  details.trim() &&
   emailRegex.test(email) &&
-  phoneRegex.test(phone)
+  phoneRegex.test(phone) &&
+  hourlyPay.trim() &&
+  Number(hourlyPay) > 0 &&
+  preferredJobs.length > 0
+  
+  const validateProfile = () => {
+    if (!companyName.trim()) {
+      toast.error("Missing company name")
+      scrollToField(companyRef)
+      return false
+    }
+  
+    if (!ownerName.trim()) {
+      toast.error("Missing owner name")
+      scrollToField(ownerRef)
+      return false
+    }
+  
+    if (!emailRegex.test(email)) {
+      toast.error("Invalid email")
+      scrollToField(emailRef)
+      return false
+    }
+  
+    if (!phoneRegex.test(phone)) {
+      toast.error("Invalid phone number")
+      scrollToField(phoneRef)
+      return false
+    }
+  
+    if (!businessType.trim()) {
+      toast.error("Missing business type")
+      return false
+    }
+  
+    if (!location.trim()) {
+      toast.error("Missing location")
+      return false
+    }
+  
+    if (!details.trim()) {
+      toast.error("Missing description")
+      scrollToField(detailsRef)
+      return false
+    }
+  
+    if (!hourlyPay.trim() || Number(hourlyPay) <= 0) {
+      toast.error("Missing hourly pay")
+      return false
+    }
+  
+    if (preferredJobs.length === 0) {
+      toast.error("Select at least one Hiring Role")
+      return false
+    }
+  
+    return true
+  }
+
   // ===== TIME OPTIONS =====
   const timeOptions = Array.from({ length: 24 }, (_, i) => {
     const hour = i % 12 === 0 ? 12 : i % 12
@@ -132,139 +218,155 @@ const [hasTips, setHasTips] = useState(false)
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-4">
-        <Button variant="ghost" onClick={() => router.back()}>
-          <ChevronLeft className="h-4 w-4" /> Back
-        </Button>
+    {/* HEADER */}
+  {/* HEADER */}
+<div className="flex items-center justify-between mb-4">
+  <Button
+    onClick={async () => {
+      const isValid = validateProfile()
+      if (!isValid) return
 
-    
-    <Button
-  disabled={!isProfileComplete}
-  className={!isProfileComplete ? "opacity-50 cursor-not-allowed" : ""}
-  onClick={async () => {        
-    
-    const {
-                data: { user },
-              } = await supabase.auth.getUser()
-          
-            if (!user) {
-              toast.error("Not logged in")
-              return
-            }
-            const { data, error } = await supabase
-            .from("job")
-            .upsert(
-              {
-                id: jobId || undefined,
-                user_id: user.id,
-          
-                title: companyName || "Untitled Job",
-                company: companyName || "Unknown Company",
-          
-                owner_name: ownerName || null,
-                business_type: businessType || null,
-                email: email || null,
-                phone: phone || null,
-          
-                location: location || "Unknown",
-                details: details || "No description",
-          
-                pay: hourlyPay ? `$${hourlyPay}/hr` : null,
-                hourly_pay: hourlyPay ? Number(hourlyPay) : null,
-                has_tips: hasTips,
-          
-                shift_preference: shiftPreference,
-                available_shifts: availableShifts,
-                preferred_jobs: preferredJobs,           
-                status: "new",
-                distance: "0",
-              },
-              {
-                onConflict: "user_id",
-              }
-            )
-            .select()
-            .single()
-          
-          console.log("SUPABASE RESULT:", { data, error })
-          
-          if (error) {
-            console.error("FULL SUPABASE ERROR:", error)
-            toast.error(error.message)
-            return
-          }
-          
-          if (data?.id) {
-            setJobId(data.id)
-          }
-            console.log("SAVING JOB:", {
-                user_id: user.id,
-                companyName,
-                hourlyPay,
-                availableShifts,
-              })
-              console.log("ERROR:", error)
-              toast.success("Saved!")
-            router.push("/employer")
-          }}
-        >
-          Next
-        </Button>
-      </div>
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-      <h1 className="text-2xl font-bold mb-4">Employer Profile</h1>
+      if (!user) {
+        toast.error("Not logged in")
+        return
+      }
 
-      {/* COMPANY INFO */}
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Company Info
-          </CardTitle>
-        </CardHeader>
+      const { data, error } = await supabase
+        .from("job")
+        .upsert(
+          {
+            id: jobId || undefined,
+            user_id: user.id,
 
-        <CardContent className="space-y-2">
-          <input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Company Name" />
-          <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Owner / Manager Name" />
-          <input value={businessType} onChange={(e) => setBusinessType(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Business Type" />
-          <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Location" />
-          <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Email" />
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Phone Number" />
-          <textarea
-  value={details}
-  onChange={(e) => setDetails(e.target.value)}
-  className="w-full border rounded px-2 py-1 text-sm"
-  placeholder="Company Description"
-/>          {/* PAY PER HOUR */}
-<input
-  value={hourlyPay}
-  onChange={(e) => setHourlyPay(e.target.value)}
-  className="w-full border rounded px-2 py-1 text-sm"
-  placeholder="Pay per hour (e.g. 15.50)"
-  type="number"
-  step="0.01"
-/>
+            title: companyName || "Untitled Job",
+            company: companyName || "Unknown Company",
 
-{/* TIPS TOGGLE */}
-{/* TIPS TOGGLE */}
-<div className="flex items-center justify-between mt-2">
-  <span className="text-sm">Tips?</span>
+            owner_name: ownerName || null,
+            business_type: businessType || null,
+            email: email || null,
+            phone: phone || null,
 
-  <button
-    type="button"
-    onClick={() => setHasTips(prev => !prev)}
-    className={`px-3 py-1 text-xs rounded border transition-all ${
-      hasTips
-        ? "bg-blue-700 text-blue-700 border-blue-700"
-        : "bg-white text-blue-600 border-blue-400"
-    }`}
+            location: location || "Unknown",
+            details: details || "No description",
+
+            pay: hourlyPay ? `$${Number(hourlyPay).toFixed(2)}/hr` : null,
+            hourly_pay: hourlyPay ? Number(hourlyPay) : null,
+            has_tips: hasTips,
+
+            shift_preference: shiftPreference,
+            available_shifts: availableShifts,
+            preferred_jobs: preferredJobs,
+
+            status: "new",
+            distance: "0",
+          },
+          { onConflict: "user_id" }
+        )
+        .select()
+        .single()
+
+      if (error) {
+        console.error(error)
+        toast.error(error.message)
+        return
+      }
+
+      if (data?.id) setJobId(data.id)
+
+      toast.success("Saved!")
+      router.push("/employer")
+    }}
+    className="w-full"
   >
-    {hasTips ? "Yes" : "No"}
-  </button>
+    Save and continue to dashboard
+  </Button>
 </div>
-        </CardContent>
-      </Card>
+    <h1 className="text-2xl font-bold mb-4">Employer Profile</h1>
+  
+    {/* COMPANY INFO */}
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          Company Info
+        </CardTitle>
+      </CardHeader>
+  
+      <CardContent className="space-y-2">
+        <input ref={companyRef} value={companyName}
+          onChange={(e) => setCompanyName(e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm"
+          placeholder="Company Name"
+        />
+  
+        <input ref={ownerRef} value={ownerName}
+          onChange={(e) => setOwnerName(e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm"
+          placeholder="Owner / Manager Name"
+        />
+  
+        <input value={businessType}
+          onChange={(e) => setBusinessType(e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm"
+          placeholder="Business Type"
+        />
+  
+        <input value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm"
+          placeholder="Location"
+        />
+  
+        <input ref={emailRef} value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm"
+          placeholder="Email"
+        />
+  
+        <input ref={phoneRef} value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm"
+          placeholder="Phone Number"
+        />
+  
+        <textarea ref={detailsRef} value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm"
+          placeholder="Company Description"
+        />
+  
+        {/* PAY */}
+        <input
+          value={hourlyPay}
+          onChange={(e) => setHourlyPay(e.target.value)}
+          className="w-full border rounded px-2 py-1 text-sm"
+          placeholder="Pay per hour (e.g. 15.50)"
+          type="number"
+          step="0.01"
+        />
+  
+        {/* TIPS */}
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-sm">Tips?</span>
+          <button
+  type="button"
+  onClick={() => setHasTips(prev => !prev)}
+  className={`px-4 py-1 text-xs rounded border font-semibold transition-all min-w-[80px] text-center
+    ${hasTips
+      ? "bg-white text-blue-700 border-blue-400"
+      : "bg-white text-blue-700 border-blue-400"
+    }
+  `}
+>
+  {hasTips ? "Yes" : "No"}
+</button>
+        </div>
+      </CardContent>
+    </Card>
 
 {/* HIRING ROLE (NEW SYSTEM) */}
 <Card className="mb-4">
@@ -428,42 +530,44 @@ const [hasTips, setHasTips] = useState(false)
     <Button
   className="w-full mt-3"
   onClick={async () => {
-
+    const isValid = validateProfile()
+    if (!isValid) return
+  
     const {
       data: { user },
     } = await supabase.auth.getUser()
-
+  
     if (!user) {
       toast.error("Not logged in")
       return
     }
-
+  
     const { data, error } = await supabase
       .from("job")
       .upsert(
         {
           id: jobId || undefined,
           user_id: user.id,
-
+  
           title: companyName || "Untitled Job",
           company: companyName || "Unknown Company",
-
+  
           owner_name: ownerName || null,
           business_type: businessType || null,
           email: email || null,
           phone: phone || null,
-
+  
           location: location || "Unknown",
           details: details || "No description",
-
+  
           pay: hourlyPay ? `$${hourlyPay}/hr` : null,
           hourly_pay: hourlyPay ? Number(hourlyPay) : null,
           has_tips: hasTips,
-
+  
           shift_preference: shiftPreference,
           available_shifts: availableShifts,
           preferred_jobs: preferredJobs,
-
+  
           status: "new",
           distance: "0",
         },
@@ -473,17 +577,17 @@ const [hasTips, setHasTips] = useState(false)
       )
       .select()
       .single()
-
+  
     if (error) {
       console.error(error)
       toast.error(error.message)
       return
     }
-
+  
     if (data?.id) {
       setJobId(data.id)
     }
-
+  
     toast.success("Saved!", {
       description: "Profile updated successfully.",
     })
