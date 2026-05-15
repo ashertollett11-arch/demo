@@ -154,9 +154,29 @@ export default function EmployerDashboard() {
     }
   }, [userId])
   useEffect(() => {
-    if (!userId) return
+    if (!userId || students.length === 0) return
   
-    const loadStatuses = async () => {
+    const loadAndSeedStatuses = async () => {
+      // 1. seed missing statuses
+      const rows = students.map((student) => ({
+        employer_id: userId,
+        student_id: student.id,
+        status: "new",
+      }))
+  
+      const { error: seedError } = await supabase
+        .from("student_statuses")
+        .upsert(rows, {
+          onConflict: "employer_id,student_id",
+          ignoreDuplicates: true,
+        })
+  
+      if (seedError) {
+        console.error(seedError)
+        return
+      }
+  
+      // 2. reload statuses
       const { data, error } = await supabase
         .from("student_statuses")
         .select("*")
@@ -170,8 +190,8 @@ export default function EmployerDashboard() {
       setStatuses(data || [])
     }
   
-    loadStatuses()
-  }, [userId])
+    loadAndSeedStatuses()
+  }, [userId, students])
   const dismissNotification = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
 

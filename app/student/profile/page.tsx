@@ -696,40 +696,15 @@ router.push("/student")
   }`}
   placeholder="GPA"
 />
-{gpaStatus === "pending" && (
-  <div className="rounded border p-3 bg-yellow-50 text-yellow-700 text-sm">
-    ⏳ Your GPA is under review. You cannot upload a new image yet.
-  </div>
+
+{gpa.trim() === "" && !isGpaLocked && (
+  <p className="text-xs text-muted-foreground mt-1">
+    Enter your GPA before uploading proof.
+  </p>
 )}
 
-{gpaStatus === "approved" && (
-  <div className="rounded border p-3 bg-green-50 text-green-700 text-sm">
-    🎉 Your GPA has been verified.
-  </div>
-)}
-
-{gpaStatus === "rejected" && (
-  <div className="rounded border p-3 bg-red-50 text-red-700 text-sm">
-    ❌ Your submission was rejected. Please re-upload.
-  </div>
-)}
-
-{gpaProofUrl && (
-  <div className="text-sm p-2 border rounded bg-gray-50">
-    📄 GPA uploaded:{" "}
-    <a
-      href={gpaProofUrl}
-      target="_blank"
-      className="text-blue-600 underline"
-    >
-      View file
-    </a>
-  </div>
-)}
-
-
-{showUpload && !isGpaLocked && (
-    <label className="flex w-full items-center justify-center rounded border px-3 py-2 text-sm hover:bg-muted cursor-pointer">
+{showUpload && !isGpaLocked && gpa.trim() !== "" && (
+      <label className="flex w-full items-center justify-center rounded border px-3 py-2 text-sm hover:bg-muted cursor-pointer">
     Upload GPA Image
     <input
       type="file"
