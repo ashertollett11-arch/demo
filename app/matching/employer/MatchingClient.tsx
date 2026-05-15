@@ -181,7 +181,7 @@ export default function MatchingPage() {
   const statusParam = searchParams.get("status")
   const [employerShifts, setEmployerShifts] = useState<any[]>([])
   const [companyName, setCompanyName] = useState("Your Company")
-
+  const [scrollToStudent, setScrollToStudent] = useState<string | null>(null)
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
 const [mounted, setMounted] = useState(false)
 const [scoredCandidates, setScoredCandidates] = useState<any[]>([])  
