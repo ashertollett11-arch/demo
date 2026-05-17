@@ -31,7 +31,6 @@ export default function StudentPage() {
   }, [router])
  
   const params = useParams()
-  const router = useRouter()
   const studentId = params.id as string
   const [student, setStudent] = useState<any>(null)
   const [loading, setLoading] = useState(true)  
@@ -60,12 +59,9 @@ const [preferredJobs, setPreferredJobs] = useState<string[]>([])
       .eq("user_id", userId)
       .single()
     
-    const employerShifts = employerJob?.available_shifts ?? []
-    const shiftPreference =
-      employerJob?.shift_preference ?? "flexible"
-    
-    const preferredJobs =
-      employerJob?.preferred_jobs ?? []
+      setEmployerShifts(employerJob?.available_shifts ?? [])
+      setShiftPreference(employerJob?.shift_preference ?? "flexible")
+      setPreferredJobs(employerJob?.preferred_jobs ?? [])
       if (!userId) {
         console.log("No employer user found")
         setLoading(false)
@@ -130,8 +126,7 @@ const [preferredJobs, setPreferredJobs] = useState<string[]>([])
     }
   
     loadStudent()
-  }, [studentId])
-
+  }, [studentId, router])
   const updateStatus = async (newStatus: "new" | "contacted" | "hired") => {
     // 1. update UI immediately
     setStudent((prev: any) => ({
