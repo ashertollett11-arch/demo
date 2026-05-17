@@ -61,15 +61,13 @@ export default function LandingPage() {
             <Link href="#how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               How it Works
             </Link>
+            <Link href="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              Create an account
+            </Link>
             <Link href="/pricing" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              Pricing
+            pricing
             </Link>
-            <Link href="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              For Students
-            </Link>
-            <Link href="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              For Employers
-            </Link>
+          
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
