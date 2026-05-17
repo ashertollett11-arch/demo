@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, MapPin, Star, Calendar } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
 import {
@@ -41,10 +41,12 @@ const [shiftPreference, setShiftPreference] = useState<
 >("flexible")
 
 const [preferredJobs, setPreferredJobs] = useState<string[]>([])
-  // Load employer data + student
+
+// Load employer data + student
 
   
-  useEffect(() => {
+
+useEffect(() => {
     if (!studentId) return
   
     const loadStudent = async () => {
@@ -91,35 +93,14 @@ const [preferredJobs, setPreferredJobs] = useState<string[]>([])
         .eq("employer_id", userId)
         .single()
   
-        const activeShifts = Array.isArray(employerShifts)
-        ? employerShifts.filter(
-            (s) =>
-              s.active === true ||
-              s.active === "true" ||
-              s.active === 1
-          )
-        : []
-      
-      const jobDays = activeShifts.map((s) => s.day)
-      
-      const matchScore = calculateEmployerMatch(
-        {
-          shifts: jobDays,
-          shiftPreference,
-          preferred_jobs: preferredJobs,
-        },
-        data.availability,
-        data.shift_preference,
-        data.gpa,
-        data.preferred_jobs
-      )
+  
      
         // FINAL OBJECT
-      const finalStudent = {
-        ...data,
-        status: statusRow?.status || "new",
-        matchScore: Math.round(matchScore),
-      }
+        const finalStudent = {
+          ...data,
+          status: statusRow?.status || "new",
+          // temporary until second effect runs
+        }
   
       setStudent(finalStudent)
       setLoading(false)
@@ -127,6 +108,31 @@ const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   
     loadStudent()
   }, [studentId, router])
+  
+  const matchScore = useMemo(() => {
+    if (!student) return 0
+    if (!employerShifts.length) return 22
+  
+    const activeShifts = employerShifts.filter(
+      (s) => s.active === true || s.active === "true" || s.active === 1
+    )
+  
+    const jobDays = activeShifts.map((s) => s.day)
+  
+    if (!jobDays.length) return 22
+   
+    return calculateEmployerMatch(
+      {
+        shifts: jobDays,
+        shiftPreference,
+        preferred_jobs: preferredJobs,
+      },
+      student.availability,
+      student.shift_preference,
+      student.gpa,
+      student.preferred_jobs
+    )
+  }, [student, employerShifts, shiftPreference, preferredJobs])
   const updateStatus = async (newStatus: "new" | "contacted" | "hired") => {
     // 1. update UI immediately
     setStudent((prev: any) => ({
@@ -201,8 +207,8 @@ const [preferredJobs, setPreferredJobs] = useState<string[]>([])
           </div>
 
           <Badge className="mt-2 sm:mt-0 bg-primary text-primary-foreground">
-            {student.matchScore}% Match
-          </Badge>
+  {matchScore}% Match
+</Badge>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -290,7 +296,7 @@ const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   <h2 className="font-semibold text-lg mb-2">Status</h2>
 
   <Select
-    value={student.status}
+value={student?.status ?? "new"}
     onValueChange={(value) => {
       const newStatus = value as "new" | "contacted" | "hired"
 

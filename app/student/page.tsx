@@ -442,8 +442,12 @@ useEffect(() => {
         {/* Stats Cards */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* GPA Card */}
-          <Card ref={profileRef} className="border-border bg-card">
-            <CardContent className="flex items-center gap-4 p-6">
+          <Card
+  ref={profileRef}
+  className="border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
+  onClick={() => router.push("/student/profile")}
+>
+  <CardContent className="flex items-center gap-4 p-6">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-chart-4/10">
                 <Star className="h-6 w-6 text-chart-4" />
               </div>
@@ -460,7 +464,10 @@ useEffect(() => {
           </Card>
 
           {/* Match Score Card */}
-          <Card className="border-border bg-card">
+          <Card
+  className="border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
+  onClick={() => router.push("/matching/student")}
+>
   <CardContent className="flex items-center gap-4 p-6">
     
   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-chart-2/10">
@@ -593,13 +600,35 @@ useEffect(() => {
     <p className="text-sm text-yellow-600">
       ⏳ Your GPA is under review
     </p>
-  ) : (
+) : (
+  <div className="space-y-4">
     <Button onClick={() => router.push("/student/profile")}>
       Verify GPA
     </Button>
-  )}
+
+    <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
+      <p className="text-base font-medium text-foreground">
+        How GPA verification works
+      </p>
+
+      <p>
+        It’s quick and simple. Just upload a screenshot that clearly shows
+        your <span className="font-semibold text-foreground">full name</span>{" "}
+        and your <span className="font-semibold text-foreground">unweighted GPA</span>.
+      </p>
+
+      <p>
+        Once submitted, your GPA will be reviewed and verified automatically.
+        Verified students get higher trust from employers and better match results.
+      </p>
+
+      <p className="text-sm text-muted-foreground/80">
+        Tip: Make sure your screenshot is readable and not cropped.
+      </p>
+    </div>
+  </div>
+)}
 </CardContent>
- 
 </Card>
             
       

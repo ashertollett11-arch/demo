@@ -977,8 +977,7 @@ const activeShifts = useMemo(() => {
           </div>
 
           <Badge className="bg-primary/10 text-primary">
-            {candidate.matchScore}% match
-          </Badge>
+          ≈ {candidate.matchScore}% match          </Badge>
 
         </div>
 

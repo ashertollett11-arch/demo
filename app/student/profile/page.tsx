@@ -53,6 +53,9 @@ useEffect(() => {
   
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   // Profile Info  
+  const [saving, setSaving] = useState(false)
+  const MAX_INTERESTS = 3
+const MAX_JOBS = 3
   const [newInterest, setNewInterest] = useState("")
   const [gpaProofUrl, setGpaProofUrl] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
@@ -371,229 +374,69 @@ availability.some((d) => d.available)
     
     <div className="min-h-screen bg-background p-4 sm:p-8">
       {/* Back Button */}
-      <div className="flex items-center justify-between mb-4">
-  
-        
-        
-        
-        {/* Next Button */}
-        <Button
-  className={!isProfileComplete ? "opacity-50 cursor-not-allowed" : ""}
+    {/* STICKY SAVE HEADER */}
+<div className="sticky top-0 z-50 bg-background/90 backdrop-blur border-b border-border">
+  <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+
+    <div className="flex items-center gap-2">
+    
+      <p className="text-sm text-muted-foreground hidden sm:block">
+        Complete your profile
+      </p>
+    </div>
+
+    <Button
+  disabled={saving}
+  className={`text-sm px-4 ${
+    !isProfileComplete ? "opacity-50" : ""
+  }`}
   onClick={async () => {
-
-    // ✅ THIS IS THE KEY FIX
-    if (!name.trim()) {
-      nameRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      nameRef.current?.focus()
-      toast.error("Please enter your name")
-      return
-    }
-    
-    if (!age.trim() || !isAgeValid) {
-      ageRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      ageRef.current?.focus()
-      toast.error("Please enter a valid age")
-      return
-    }
-    
-    if (!gpa.trim()) {
-      gpaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      gpaRef.current?.focus()
-      toast.error("Please enter your GPA")
-      return
-    }
-    
-    if (!location.trim()) {
-      locationRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      locationRef.current?.focus()
-      toast.error("Please enter your address")
-      return
-    }
-    
-    if (!emailRegex.test(email)) {
-      emailRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      emailRef.current?.focus()
-      toast.error("Please enter a valid email")
-      return
-    }
-    
-    if (!/^\d{10}$/.test(phone)) {
-      phoneRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      phoneRef.current?.focus()
-      toast.error("Please enter a valid phone number")
-      return
-    }
-    
-    if (!school.trim()) {
-      schoolRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      schoolRef.current?.focus()
-      toast.error("Please enter your school")
-      return
-    }
-    
-    if (preferredJobs.length === 0) {
-      jobsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      toast.error("Select at least one preferred positions")
-      return
-    }
-    
-    if (interests.length === 0) {
-      interestsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      interestsRef.current?.focus()
-      toast.error("Add at least one interest")
-      return
-    }
-    
-    if (!availability.some((d) => d.available)) {
-      availabilityRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      toast.error("Please add availability")
-      return
-    }
-    // 👇 everything below stays EXACTLY the same
-    // 👇 if everything passes, continue normal flow
-
-    // ---- rest of your existing logic stays exactly the same ----
- 
-    const { data: { session } } = await supabase.auth.getSession()
-
-  const user = session?.user
-
-  if (!user) {
-    toast.error("Not logged in")
-    return
-  }
- 
-  let proofUrl = null
-
-  if (shouldSendGpa) {
-    const safeName = gpaProof!.name.replace(/\s/g, "-")
-    const filePath = `${user.id}/${Date.now()}-${safeName}`
+    if (!isProfileComplete) {
+      const missingFields = []
   
-    const { error: uploadError } = await supabase.storage
-      .from("gpa-proofs")
-      .upload(filePath, gpaProof!, {
-        contentType: gpaProof!.type,
-        upsert: false,
+      if (!name.trim()) missingFields.push("name")
+      if (!age.trim()) missingFields.push("age")
+      if (!gpa.trim()) missingFields.push("GPA")
+      if (!location.trim()) missingFields.push("location")
+      if (!emailRegex.test(email)) missingFields.push("valid email")
+      if (!school.trim()) missingFields.push("school")
+      if (phone.length !== 10) missingFields.push("phone number")
+      if (preferredJobs.length === 0) missingFields.push("preferred jobs")
+      if (interests.length === 0) missingFields.push("interests")
+      if (!availability.some((d) => d.available)) {
+        missingFields.push("availability")
+      }
+  
+      toast.error("Profile incomplete", {
+        description: `Please complete: ${missingFields.join(", ")}`,
       })
   
-    if (uploadError) {
-      console.log("UPLOAD ERROR:", uploadError)
-      toast.error(uploadError.message)
       return
     }
   
-    const { data } = supabase.storage
-      .from("gpa-proofs")
-      .getPublicUrl(filePath)
+    try {
+      setSaving(true)
   
-    proofUrl = data.publicUrl
-  }
+      const success = await saveStudentProfile()
+  
+      if (!success) return
+  
+      toast.success("Saved!", {
+        description: "Your profile has been updated.",
+        duration: 1000,
+      })
+  
+      router.push("/student")
+    } finally {
+      setSaving(false)
+    }
+  }}
+    >
+      {saving ? "Saving..." : "Save Profile"}
+    </Button>
 
-  if (phone.length !== 10 || !/^\d+$/.test(phone)) {
-    toast.error("Invalid Phone Number", {
-      description: "Phone number must be exactly 10 digits.",
-    })
-    return
-  }
-
-  if (!emailRegex.test(email)) {
-    toast.error("Invalid Email", {
-      description: "Please enter a valid email.",
-    })
-    return
-  }
-
-  if (isNaN(numAge) || numAge < 14 || numAge > 21) {
-    toast.error("Invalid Age", {
-      description: "Age must be between 14 and 21.",
-    })
-    return
-  }
-
-  if (!name || !age || !gpa || !location || !email || !school) {
-    toast.warning("Profile Incomplete", {
-      description: "Please fill out all required fields.",
-    })
-    return
-  }
-
-  await createStudent({
-    user_id: session.user.id,
-    name,
-    age: Number(age),
-    gpa: Number(gpa),
-    location,
-    email,
-    school,
-    phone,
-    interests,
-    preferred_jobs: preferredJobs,
-    availability,
-    shift_preference: shiftPreference,
-  })
-
-
-
-
-  const { error } = await supabase
-  .from("Students")
-  .upsert(
-    {
-      user_id: user.id,
-      profile_complete: isProfileComplete,
-      name,
-      age: Number(age),
-      location,
-      email,
-      school,
-      phone,
-      interests,
-      preferred_jobs: preferredJobs,
-      availability,
-      shift_preference: shiftPreference,
-
-      // 👇 ONLY allow GPA edit if NOT locked
-      ...(gpaStatus !== "pending" && gpaStatus !== "approved"
-        ? { gpa: Number(gpa) }
-        : {}),
-
-      // 👇 ONLY allow GPA upload overwrite if not approved
-      ...(gpaStatus === "rejected" || gpaStatus === "none"
-        ? {
-            gpa_proof_url: gpaProofUrl,
-            gpa_verification_status: gpaStatus,
-          }
-        : {}),
-    },
-    { onConflict: "user_id" }
-  )
-
-if (error) {
-  console.log("SUPABASE ERROR:", error)
-toast.error(error.message)
-  return
-}
-
-// 🔥 FORCE REFRESH UPDATED PROFILE
-const { data: refreshedProfile } = await supabase
-  .from("Students")
-  .select("*")
-  .eq("user_id", user.id)
-  .single()
-
-if (refreshedProfile) {
-  setPreferredJobs(refreshedProfile.preferred_jobs || [])
-  setInterests(refreshedProfile.interests || [])
-  setAvailability(refreshedProfile.availability || [])
-  setShiftPreference(refreshedProfile.shift_preference || "flexible")
-}
-
-router.push("/student")
-}}
->
-  Save and contuine to dashbaord
-</Button>
-      </div>
+  </div>
+</div>
       <h1 className="text-2xl font-bold mb-4">My Profile</h1>
 
       {/* Profile Info */}
@@ -617,7 +460,7 @@ router.push("/student")
   type="text"
   ref={ageRef}
   value={age}
-  disabled={!isEditingProfile || gpaStatus === "approved"}  
+  disabled={!isEditingProfile}
   onChange={(e) => {
     const value = e.target.value
 
@@ -627,13 +470,30 @@ router.push("/student")
       return
     }
 
-    // only digits
+    // ONLY digits allowed
     if (!/^\d+$/.test(value)) return
 
-    // limit length (prevents nonsense like 999)
-    if (value.length <= 2) {
-      setAge(value)
+    // limit to 2 digits max
+    if (value.length > 2) return
+
+    const num = parseInt(value)
+
+    // live clamp while typing
+    if (num > 21) return
+
+    setAge(value)
+  }}
+  onBlur={() => {
+    // final enforcement when leaving field
+    const num = parseInt(age)
+
+    if (isNaN(num)) {
+      setAge("")
+      return
     }
+
+    if (num < 14) setAge("14")
+    if (num > 21) setAge("21")
   }}
   className="w-full border rounded px-2 py-1 text-sm"
   placeholder="Age"
@@ -819,11 +679,20 @@ router.push("/student")
           <button
             key={job}
             onClick={() => {
-              setPreferredJobs((prev) =>
-                prev.includes(job)
-                  ? prev.filter((j) => j !== job)
-                  : [...prev, job]
-              )
+              setPreferredJobs((prev) => {
+                const alreadySelected = prev.includes(job)
+            
+                if (alreadySelected) {
+                  return prev.filter((j) => j !== job)
+                }
+            
+                if (prev.length >= MAX_JOBS) {
+                  toast.error(`You can only select up to ${MAX_JOBS} positions`)
+                  return prev
+                }
+            
+                return [...prev, job]
+              })
             }}
             className={`px-3 py-1 text-xs rounded-full border transition-all ${
               selected
@@ -845,9 +714,10 @@ router.push("/student")
 </Card>
 
       {/* Interests */}
-      <input
- ref={interestsRef}
- value={newInterest}
+{/* Interests */}
+<input
+  ref={interestsRef}
+  value={newInterest}
   onChange={(e) => setNewInterest(e.target.value)}
   onKeyDown={(e) => {
     if (e.key === "Enter") {
@@ -858,6 +728,11 @@ router.push("/student")
 
       if (interests.includes(trimmed)) {
         toast.error("Interest already added")
+        return
+      }
+
+      if (interests.length >= MAX_INTERESTS) {
+        toast.error(`You can only add up to ${MAX_INTERESTS} interests`)
         return
       }
 
@@ -875,14 +750,23 @@ router.push("/student")
       return
     }
 
+    if (interests.length >= MAX_INTERESTS) return
+
     setInterests([...interests, trimmed])
     setNewInterest("")
   }}
-  placeholder="Add interest (e.g. Coding)"
+  placeholder={
+    interests.length >= MAX_INTERESTS
+      ? `Max ${MAX_INTERESTS} interests reached`
+      : "Add interest (e.g. Coding)"
+  }
+  disabled={interests.length >= MAX_INTERESTS}
   className="w-full border rounded px-2 py-1 text-sm mt-2"
 />
+
 <Button
   className="mt-2 w-full"
+  disabled={interests.length >= MAX_INTERESTS}
   onClick={() => {
     const trimmed = newInterest.trim()
 
@@ -893,12 +777,20 @@ router.push("/student")
       return
     }
 
+    if (interests.length >= MAX_INTERESTS) {
+      toast.error(`You can only add up to ${MAX_INTERESTS} interests`)
+      return
+    }
+
     setInterests([...interests, trimmed])
     setNewInterest("")
   }}
 >
-  Add Interest
+  {interests.length >= MAX_INTERESTS
+    ? "Max interests reached"
+    : "Add Interest"}
 </Button>
+
 <div className="flex flex-wrap gap-2 mt-3">
   {interests.map((interest, index) => (
     <Badge
@@ -918,6 +810,8 @@ router.push("/student")
     </Badge>
   ))}
 </div>
+
+
 <div className="h-6" />
 
 

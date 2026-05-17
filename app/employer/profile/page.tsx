@@ -241,74 +241,100 @@ const [hasTips, setHasTips] = useState(false)
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
+{/* STICKY SAVE HEADER (FULL WIDTH FIXED) */}
+<div className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
+  <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
 
+    {/* LEFT SIDE */}
+    <div className="flex flex-col">
+      <h2 className="text-sm font-semibold text-gray-900">
+        Employer Profile
+      </h2>
+      <p className="text-xs text-gray-500">
+        Save changes to continue to your dashboard
+      </p>
+    </div>
+
+    {/* RIGHT SIDE */}
+    <div className="flex items-center gap-2">
+
+      
+
+      <Button
+        className={`text-xs sm:text-sm px-4 ${
+          !isProfileComplete
+            ? "opacity-50 cursor-not-allowed"
+            : ""
+        }`}
+        onClick={async () => {
+          const isValid = validateProfile()
+          if (!isValid) return
+
+          const {
+            data: { user },
+          } = await supabase.auth.getUser()
+
+          if (!user) {
+            toast.error("Not logged in")
+            return
+          }
+
+          const { data, error } = await supabase
+            .from("job")
+            .upsert(
+              {
+                id: jobId || undefined,
+                user_id: user.id,
+
+                title: companyName || "Untitled Job",
+                company: companyName || "Unknown Company",
+
+                owner_name: ownerName || null,
+                business_type: businessType || null,
+                email: email || null,
+                phone: phone || null,
+
+                location: location || "Unknown",
+                details: details || "No description",
+
+                pay: hourlyPay
+                  ? `$${Number(hourlyPay).toFixed(2)}/hr`
+                  : null,
+                hourly_pay: hourlyPay ? Number(hourlyPay) : null,
+                has_tips: hasTips,
+
+                shift_preference: shiftPreference,
+                available_shifts: availableShifts,
+                preferred_jobs: preferredJobs,
+
+                status: "new",
+                distance: "0",
+              },
+              { onConflict: "user_id" }
+            )
+            .select()
+            .single()
+
+          if (error) {
+            console.error(error)
+            toast.error(error.message)
+            return
+          }
+
+          if (data?.id) setJobId(data.id)
+
+          toast.success("Saved!")
+          router.push("/employer")
+        }}
+      >
+        Save & Continue
+      </Button>
+    </div>
+  </div>
+</div>
     {/* HEADER */}
   {/* HEADER */}
-<div className="flex items-center justify-between mb-4">
-  <Button
-    onClick={async () => {
-      const isValid = validateProfile()
-      if (!isValid) return
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        toast.error("Not logged in")
-        return
-      }
-
-      const { data, error } = await supabase
-        .from("job")
-        .upsert(
-          {
-            id: jobId || undefined,
-            user_id: user.id,
-
-            title: companyName || "Untitled Job",
-            company: companyName || "Unknown Company",
-
-            owner_name: ownerName || null,
-            business_type: businessType || null,
-            email: email || null,
-            phone: phone || null,
-
-            location: location || "Unknown",
-            details: details || "No description",
-
-            pay: hourlyPay ? `$${Number(hourlyPay).toFixed(2)}/hr` : null,
-            hourly_pay: hourlyPay ? Number(hourlyPay) : null,
-            has_tips: hasTips,
-
-            shift_preference: shiftPreference,
-            available_shifts: availableShifts,
-            preferred_jobs: preferredJobs,
-
-            status: "new",
-            distance: "0",
-          },
-          { onConflict: "user_id" }
-        )
-        .select()
-        .single()
-
-      if (error) {
-        console.error(error)
-        toast.error(error.message)
-        return
-      }
-
-      if (data?.id) setJobId(data.id)
-
-      toast.success("Saved!")
-      router.push("/employer")
-    }}
-    className="w-full"
-  >
-    Save and continue to dashboard
-  </Button>
-</div>
     <h1 className="text-2xl font-bold mb-4">Employer Profile</h1>
   
     {/* COMPANY INFO */}
@@ -351,11 +377,23 @@ const [hasTips, setHasTips] = useState(false)
           placeholder="Email"
         />
   
-        <input ref={phoneRef} value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="w-full border rounded px-2 py-1 text-sm"
-          placeholder="Phone Number"
-        />
+  <input
+  ref={phoneRef}
+  value={phone}
+  onChange={(e) => {
+    // remove anything that's not a number
+    let value = e.target.value.replace(/\D/g, "")
+
+    // HARD LIMIT: max 10 digits
+    if (value.length > 10) {
+      value = value.slice(0, 10)
+    }
+
+    setPhone(value)
+  }}
+  className="w-full border rounded px-2 py-1 text-sm"
+  placeholder="Phone Number (10 digits)"
+/>
   
         <textarea ref={detailsRef} value={details}
           onChange={(e) => setDetails(e.target.value)}
@@ -416,12 +454,24 @@ const [hasTips, setHasTips] = useState(false)
   <button
     key={role}
     onClick={() => {
-        setPreferredJobs((prev) =>
-          prev.includes(role)
-            ? prev.filter((r) => r !== role) // remove if already selected
-            : [...prev, role] // add if not selected
-        )
-      }}    className={`px-3 py-1 text-xs rounded-full border transition-all ${
+      setPreferredJobs((prev) => {
+        const isSelected = prev.includes(role)
+    
+        // REMOVE if already selected (always allowed)
+        if (isSelected) {
+          return prev.filter((r) => r !== role)
+        }
+    
+        // BLOCK if already at 3
+        if (prev.length >= 3) {
+          toast.error("You can only select up to 3 hiring roles")
+          return prev
+        }
+    
+        // OTHERWISE ADD
+        return [...prev, role]
+      })
+    }}className={`px-3 py-1 text-xs rounded-full border transition-all ${
         preferredJobs.includes(role)       
          ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm"
         : "bg-gray-100 text-gray-600 border-gray-200"
