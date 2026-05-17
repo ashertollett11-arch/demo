@@ -24,27 +24,17 @@ export default function EmployerProfilePage() {
     checkAuth()
   }, [router])
 
- 
-  const searchParams = useSearchParams()
+  useEffect(() => {
+    const missing = window.location.search.includes("missing=true")
+  
+    if (missing) {
+      setTimeout(() => {
+        toast.error("Please complete your profile")
+      }, 300)
+    }
+  }, [])
 
-  useEffect(() => {
-    const missing = searchParams?.get("missing")
-  
-    if (missing === "true") {
-      setTimeout(() => {
-        toast.error("Please complete your profile")
-      }, 300)
-    }
-  }, [searchParams])
-  useEffect(() => {
-    const missing = searchParams.get("missing")
-  
-    if (missing === "true") {
-      setTimeout(() => {
-        toast.error("Please complete your profile")
-      }, 300)
-    }
-  }, [searchParams])
+
 
   // ===== PROFILE STATE =====
   const [companyName, setCompanyName] = useState("")
