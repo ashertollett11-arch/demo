@@ -1,7 +1,7 @@
 "use client"
 import { calculateMatch } from "@/lib/matchScore"
 import { useState, useEffect, useRef } from "react"
-import { useRouter, useSearchParams  } from "next/navigation"
+import { useRouter  } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -13,15 +13,16 @@ import { supabase } from "@/lib/supabase"
 export default function ProfilePage() {
   const router = useRouter()
 
-  const searchParams = useSearchParams()
 
   useEffect(() => {
-    const missing = searchParams.get("missing")
+    const missing = window.location.search.includes("missing=true")
   
-    if (missing === "true") {
-      toast.error("Please complete your profile before continuing")
+    if (missing) {
+      setTimeout(() => {
+        toast.error("Please complete your profile before continuing")
+      }, 300)
     }
-  }, [searchParams])
+  }, [])
 
 useEffect(() => {
   const checkAuth = async () => {
