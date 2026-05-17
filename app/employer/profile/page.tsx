@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,40 @@ import { supabase } from "@/lib/supabase"
 export default function EmployerProfilePage() {
   const router = useRouter()
 
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser()
+  
+      if (!data.user) {
+        router.replace("/login")
+      }
+    }
+  
+    checkAuth()
+  }, [router])
+
+ 
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const missing = searchParams?.get("missing")
+  
+    if (missing === "true") {
+      setTimeout(() => {
+        toast.error("Please complete your profile")
+      }, 300)
+    }
+  }, [searchParams])
+  useEffect(() => {
+    const missing = searchParams.get("missing")
+  
+    if (missing === "true") {
+      setTimeout(() => {
+        toast.error("Please complete your profile")
+      }, 300)
+    }
+  }, [searchParams])
 
   // ===== PROFILE STATE =====
   const [companyName, setCompanyName] = useState("")

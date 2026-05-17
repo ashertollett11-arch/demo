@@ -1,7 +1,8 @@
 "use client"
 import { toast } from "sonner"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -21,7 +22,28 @@ import {
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
+  const [featuredJobs, setFeaturedJobs] = useState<any[]>([])
+  
+  useEffect(() => {
+    const loadFeaturedJobs = async () => {
+      const { data, error } = await supabase
+        .from("job")
+        .select("id, title, company, location, pay, has_tips, shift_preference")
+        .limit(6)
+        .order("created_at", { ascending: false })
+  
+      if (error) {
+        console.log(error)
+        return
+      }
+  
+      setFeaturedJobs(data || [])
+    }
+  
+    loadFeaturedJobs()
+  }, [])
+  
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -111,8 +133,8 @@ export default function LandingPage() {
 
         <div className="mx-auto max-w-4xl text-center">
           <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm font-medium">
-            Trusted by 10,000+ students and 500+ employers
-          </Badge>
+          Trusted by growing students and local employers
+                    </Badge>
 
           <h1 className="text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             The easiest way to land your{" "}
@@ -250,7 +272,7 @@ export default function LandingPage() {
                     "Access verified student profiles",
                     "Filter by availability and GPA",
                     "Hire faster with instant matching",
-                    "Simple $99/month pricing",
+                    "Simple $9.99/month pricing",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-3">
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
@@ -283,50 +305,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                title: "Retail Associate",
-                company: "Target",
-                location: "Downtown Mall",
-                hours: "15-20 hrs/week",
-                pay: "$15/hr",
-              },
-              {
-                title: "Host/Hostess",
-                company: "Olive Garden",
-                location: "Main Street",
-                hours: "10-15 hrs/week",
-                pay: "$14/hr + tips",
-              },
-              {
-                title: "Camp Counselor",
-                company: "YMCA",
-                location: "Community Center",
-                hours: "Full-time summer",
-                pay: "$16/hr",
-              },
-              {
-                title: "Barista",
-                company: "Local Coffee Co.",
-                location: "University Ave",
-                hours: "20 hrs/week",
-                pay: "$13/hr + tips",
-              },
-              {
-                title: "Lifeguard",
-                company: "City Pool",
-                location: "Recreation Center",
-                hours: "Weekends",
-                pay: "$17/hr",
-              },
-              {
-                title: "Grocery Clerk",
-                company: "Whole Foods",
-                location: "Maple Plaza",
-                hours: "15-25 hrs/week",
-                pay: "$15/hr",
-              },
-            ].map((job, index) => (
+          {featuredJobs.map((job, index) => (
               <Card key={index} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -343,8 +322,8 @@ export default function LandingPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5" />
-                      {job.hours}
-                    </span>
+                      {job.shift_preference || "Flexible"}
+                                          </span>
                   </div>
                   <div className="mt-4 flex items-center justify-between">
                     <span className="font-semibold text-primary">{job.pay}</span>

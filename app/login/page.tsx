@@ -58,7 +58,6 @@ export default function LoginPage() {
     
       return
     }
-
     const user = data.user
 
    
@@ -109,11 +108,8 @@ export default function LoginPage() {
       .eq("id", user.id)
       .single()
 
-      if (roleError || !roleData) {
-        toast.error("No role found", {
-          description: "Please contact support.",
-        })
-      
+      if (roleError || !roleData || !roleData.role) {
+        router.push("/choose-role")
         return
       }
 

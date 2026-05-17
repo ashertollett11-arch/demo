@@ -52,9 +52,46 @@ const parseHours = (hours: string) => {
 }
 
 // Simple match calculation using availability, GPA, and interests
+export default function StudentDashboard() {
+  const router = useRouter()
 
+  // ALL hooks must be here
+  useEffect(() => {
+    const checkProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+  
+      const { data, error } = await supabase
+        .from("Students")
+        .select("profile_complete")
+        .eq("user_id", user.id)
+        .single()
+  
+      if (error || !data) {
+        router.replace("/student/profile?missing=true")
+        return
+      }
+  
+      if (!data.profile_complete) {
+        router.replace("/student/profile?missing=true")
+      }
+    }
+  
+    checkProfile()
+  }, [router])
+useEffect(() => {
+  const checkAuth = async () => {
+    const { data } = await supabase.auth.getUser()
 
-export default function StudentDashboard() { 
+    if (!data.user) {
+      router.replace("/login")
+    }
+  }
+
+  checkAuth()
+}, [router])
+  
+  
   // <--- add this
   const [shiftPreference, setShiftPreference] =
   useState<"morning" | "night" | "flexible">("flexible")
@@ -70,7 +107,6 @@ const [phone, setPhone] = useState("")
   
   const [notifications, setNotifications] = useState<Notification[]>([])
   
-  const router = useRouter()
   const [name, setName] = useState("")
   const [age, setAge] = useState("")
   const [gpa, setGpa] = useState<number | null>(null)

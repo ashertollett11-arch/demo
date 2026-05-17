@@ -16,6 +16,20 @@ import {
     SelectValue,
   } from "@/components/ui/select"
 export default function StudentPage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser()
+  
+      if (!data.user) {
+        router.replace("/login")
+      }
+    }
+  
+    checkAuth()
+  }, [router])
+ 
   const params = useParams()
   const router = useRouter()
   const studentId = params.id as string

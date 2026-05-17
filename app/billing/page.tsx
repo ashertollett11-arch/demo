@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -16,6 +17,21 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export default function BillingPage() {
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser()
+  
+      if (!data.user) {
+        router.replace("/login")
+      }
+    }
+  
+    checkAuth()
+  }, [router])
+
   const [loading, setLoading] = useState(true)
 
   const [subscription, setSubscription] = useState<any>(null)

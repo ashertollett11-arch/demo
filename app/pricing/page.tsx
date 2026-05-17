@@ -26,12 +26,10 @@ const features = [
   "Smart matching algorithm",
   "Instant messaging with candidates",
   "GPA verification included",
-  "Up to 10 hires per month",
   "Email support",
 ]
 
 const additionalFeatures = [
-  "Additional hires: $10 per hire after 10",
   "No long-term contracts",
   "Cancel anytime",
 ]
@@ -56,16 +54,16 @@ const benefits = [
 
 const faqs = [
   {
-    question: "What does the $99/month include?",
-    answer: "Your monthly subscription includes unlimited access to all verified student profiles, our smart matching algorithm, instant messaging, and up to 10 hires per month. If you need more than 10 hires, additional hires are just $10 each.",
+    question: "What does the $9.99/month include?",
+    answer: "Your monthly subscription includes unlimited access to all verified student profiles, our smart matching algorithm, all contact information.",
   },
   {
     question: "How does the verification process work?",
-    answer: "Students submit their school information and GPA, which we verify directly with their educational institution. This ensures you&apos;re seeing accurate, trustworthy information about each candidate.",
+    answer: "Students submit their school information and GPA, which we verify directly with their educational institution. This ensures you're seeing accurate, trustworthy information about each candidate.",
   },
   {
     question: "Can I cancel my subscription?",
-    answer: "Yes! There are no long-term contracts. You can cancel your subscription at any time, and you&apos;ll continue to have access until the end of your billing period.",
+    answer: "Yes! There are no long-term contracts. You can cancel your subscription at any time, and you'll continue to have access until the end of your billing period.",
   },
   {
     question: "What types of jobs can I post?",
@@ -139,12 +137,10 @@ export default function PricingPage() {
               <CardHeader className="pb-4 pt-8 text-center">
                 <CardTitle className="text-2xl font-bold">Employer Plan</CardTitle>
                 <div className="mt-4 flex items-baseline justify-center gap-1">
-                  <span className="text-5xl font-bold text-foreground">$99</span>
+                  <span className="text-5xl font-bold text-foreground">$9.99</span>
                   <span className="text-muted-foreground">/month</span>
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Includes up to 10 hires per month
-                </p>
+              
               </CardHeader>
               <CardContent className="space-y-6 pb-8">
                 <ul className="space-y-3">
@@ -156,12 +152,7 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
-                <div className="rounded-xl bg-secondary/50 p-4">
-                  <p className="text-sm font-medium text-foreground">Additional hires</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Need more than 10 hires? Additional hires are just <span className="font-semibold text-foreground">$10 each</span>.
-                  </p>
-                </div>
+             
 
                 <Button size="lg" className="w-full gap-2" asChild>
                   <Link href="/employer">
@@ -269,7 +260,7 @@ export default function PricingPage() {
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button size="lg" className="w-full gap-2 px-8 sm:w-auto" asChild>
                 <Link href="/employer">
-                  Get Started for $99/mo
+                  Get Started for $9.99/mo
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>

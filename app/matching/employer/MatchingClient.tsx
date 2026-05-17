@@ -1,5 +1,5 @@
 "use client"
-
+import { toast } from "sonner"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -171,7 +171,11 @@ function FilterContent({
     )
   }
 export default function MatchingPage() {
-    const [name, setName] = useState("Employer")
+  const router = useRouter()
+
+
+  
+  const [name, setName] = useState("Employer")
     const [minGpa, setMinGpa] = useState<(number | "")[]>([1.0])
   const [selectedDays, setSelectedDays] = useState<string[]>([])
   const [verifiedOnly, setVerifiedOnly] = useState(false)
@@ -185,7 +189,6 @@ export default function MatchingPage() {
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
 const [mounted, setMounted] = useState(false)
 const [scoredCandidates, setScoredCandidates] = useState<any[]>([])  
-const router = useRouter()
 const [activeStatus, setActiveStatus] = useState<"new" | "contacted" | "hired">("new")
 const [students, setStudents] = useState<any[]>([])
 const [notifications, setNotifications] = useState<any[]>([])
@@ -194,6 +197,20 @@ const [employerId, setEmployerId] = useState<string | null>(null)
 const [loading, setLoading] = useState(true)
 const [statuses, setStatuses] = useState<any[]>([])  
 const [searchQuery, setSearchQuery] = useState("")
+
+useEffect(() => {
+  const checkAuth = async () => {
+    const { data } = await supabase.auth.getUser()
+
+    if (!data.user) {
+      router.replace("/login")
+    }
+  }
+
+  checkAuth()
+}, [router])  
+
+
 useEffect(() => {
     const loadStudents = async () => {
       setLoading(true)
@@ -442,7 +459,7 @@ const activeShifts = useMemo(() => {
         }
       }, [statusParam])
      
-     useEffect(() => {
+      useEffect(() => {
         const loadEmployerName = async () => {
           const {
             data: { user },
@@ -454,18 +471,22 @@ const activeShifts = useMemo(() => {
             .from("job")
             .select("company")
             .eq("user_id", user.id)
-            .single()
+            .maybeSingle()
       
-          if (error) {
-            console.error(error)
-            return
-          }
+            if (!data || error) {
+              setLoading(false)
+            
+              toast.error("Please complete your profile")
+            
+              router.replace("/employer/profile?missing=true")
+                            return
+            }
       
-          setName(data?.company || "Employer")
+          setName(data.company || "Employer")
         }
       
         loadEmployerName()
-      }, [])
+      }, [router])
       const statusPriority: Record<string, number> = {
         new: 0,
         contacted: 1,

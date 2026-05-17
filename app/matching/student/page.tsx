@@ -51,6 +51,43 @@ interface Availability {
 }
 export default function MatchesPage() {
   const router = useRouter()
+
+  useEffect(() => {
+    const checkProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+  
+      const { data, error } = await supabase
+        .from("Students")
+        .select("profile_complete")
+        .eq("user_id", user.id)
+        .single()
+  
+      if (error || !data) {
+        router.replace("/student/profile?missing=true")
+        return
+      }
+  
+      if (!data.profile_complete) {
+        router.replace("/student/profile?missing=true")
+      }
+    }
+  
+    checkProfile()
+  }, [router])
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser()
+  
+      if (!data.user) {
+        router.replace("/login")
+      }
+    }
+  
+    checkAuth()
+  }, [router])
+ 
   const [availability, setAvailability] = useState<Availability[]>([])
   const [matchedJobs, setMatchedJobs] = useState<Job[]>([])
   const [filter, setFilter] =

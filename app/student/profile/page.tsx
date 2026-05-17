@@ -1,7 +1,7 @@
 "use client"
 import { calculateMatch } from "@/lib/matchScore"
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams  } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,8 +11,31 @@ import { createStudent, mapDbStudent } from "@/lib/students"
 import { supabase } from "@/lib/supabase"
 
 export default function ProfilePage() {
-  
   const router = useRouter()
+
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const missing = searchParams.get("missing")
+  
+    if (missing === "true") {
+      toast.error("Please complete your profile before continuing")
+    }
+  }, [searchParams])
+
+useEffect(() => {
+  const checkAuth = async () => {
+    const { data } = await supabase.auth.getUser()
+
+    if (!data.user) {
+      router.replace("/login")
+    }
+  }
+
+  checkAuth()
+}, [router])
+
+
   useEffect(() => {
     const testSession = async () => {
       const sessionResult = await supabase.auth.getSession()
@@ -304,7 +327,7 @@ availability.some((d) => d.available)
     .upsert(
       {
         user_id: user.id,
-  
+        profile_complete: isProfileComplete,
         name,
         age: Number(age),
         location,
@@ -516,7 +539,7 @@ availability.some((d) => d.available)
   .upsert(
     {
       user_id: user.id,
-
+      profile_complete: isProfileComplete,
       name,
       age: Number(age),
       location,

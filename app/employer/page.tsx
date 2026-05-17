@@ -1,4 +1,5 @@
 "use client"
+import { useRouter } from "next/navigation"
 
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
@@ -29,8 +30,22 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
-
 export default function EmployerDashboard() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser()
+
+      if (!data.user) {
+        router.replace("/login")
+      }
+    }
+
+    checkAuth()
+  }, [router])
+  
+  
   const [userId, setUserId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("Your Company")
   const [notifications, setNotifications] = useState<any[]>([])
