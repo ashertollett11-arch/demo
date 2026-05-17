@@ -29,42 +29,32 @@ export default function JobPage() {
   const router = useRouter()
 
 
+
+
   useEffect(() => {
-    const checkProfile = async () => {
-      const { data, error } = await supabase.auth.getUser()
+    const run = async () => {
+      const { data } = await supabase.auth.getUser()
       const user = data?.user
-      
-      if (!user) return
-      const { data, error } = await supabase
-  .from("Students")
-  .select("profile_complete")
-  .eq("user_id", user.id)
-  .maybeSingle()
   
-  if (!data || data.profile_complete === false) {
-    router.replace("/student/profile?missing=true")
-  }
+      if (!user?.id) {
+        router.replace("/login")
+        return
+      }
   
-      if (!data.profile_complete) {
+      const { data: profile } = await supabase
+        .from("Students")
+        .select("profile_complete")
+        .eq("user_id", user.id)
+        .maybeSingle()
+  
+      if (!profile?.profile_complete) {
         router.replace("/student/profile?missing=true")
       }
     }
   
-    checkProfile()
+    run()
   }, [router])
 
-
-useEffect(() => {
-  const checkAuth = async () => {
-    const { data } = await supabase.auth.getUser()
-
-    if (!data.user) {
-      router.replace("/login")
-    }
-  }
-
-  checkAuth()
-}, [router])
   
   const params = useParams()
 
