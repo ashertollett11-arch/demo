@@ -375,66 +375,73 @@ availability.some((d) => d.available)
     <div className="min-h-screen bg-background p-4 sm:p-8">
       {/* Back Button */}
     {/* STICKY SAVE HEADER */}
-<div className="sticky top-0 z-50 bg-background/90 backdrop-blur border-b border-border">
-  <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+{/* STICKY SAVE HEADER */}
+<div className="sticky top-0 z-50 mb-6">
+  <div className="max-w-4xl mx-auto">
+    <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-white px-5 py-4 shadow-lg backdrop-blur">
 
-    <div className="flex items-center gap-2">
-    
-      <p className="text-sm text-muted-foreground hidden sm:block">
-        Complete your profile
-      </p>
+      <div className="flex flex-col">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+          Complete Your Profile
+        </h2>
+
+        <p className="text-sm text-gray-600">
+          Finish your profile so employers can discover you.
+        </p>
+      </div>
+
+      <Button
+        disabled={saving}
+        className={`h-11 px-6 text-sm font-semibold shadow-md transition-all ${
+          !isProfileComplete
+            ? "opacity-60"
+            : "hover:scale-[1.03]"
+        }`}
+        onClick={async () => {
+          if (!isProfileComplete) {
+            const missingFields = []
+
+            if (!name.trim()) missingFields.push("name")
+            if (!age.trim()) missingFields.push("age")
+            if (!gpa.trim()) missingFields.push("GPA")
+            if (!location.trim()) missingFields.push("location")
+            if (!emailRegex.test(email)) missingFields.push("valid email")
+            if (!school.trim()) missingFields.push("school")
+            if (phone.length !== 10) missingFields.push("phone number")
+            if (preferredJobs.length === 0) missingFields.push("preferred jobs")
+            if (interests.length === 0) missingFields.push("interests")
+            if (!availability.some((d) => d.available)) {
+              missingFields.push("availability")
+            }
+
+            toast.error("Profile incomplete", {
+              description: `Please complete: ${missingFields.join(", ")}`,
+            })
+
+            return
+          }
+
+          try {
+            setSaving(true)
+
+            const success = await saveStudentProfile()
+
+            if (!success) return
+
+            toast.success("Saved!", {
+              description: "Your profile has been updated.",
+              duration: 500,
+            })
+
+            router.push("/student")
+          } finally {
+            setSaving(false)
+          }
+        }}
+      >
+        {saving ? "Saving..." : "Save Profile"}
+      </Button>
     </div>
-
-    <Button
-  disabled={saving}
-  className={`text-sm px-4 ${
-    !isProfileComplete ? "opacity-50" : ""
-  }`}
-  onClick={async () => {
-    if (!isProfileComplete) {
-      const missingFields = []
-  
-      if (!name.trim()) missingFields.push("name")
-      if (!age.trim()) missingFields.push("age")
-      if (!gpa.trim()) missingFields.push("GPA")
-      if (!location.trim()) missingFields.push("location")
-      if (!emailRegex.test(email)) missingFields.push("valid email")
-      if (!school.trim()) missingFields.push("school")
-      if (phone.length !== 10) missingFields.push("phone number")
-      if (preferredJobs.length === 0) missingFields.push("preferred jobs")
-      if (interests.length === 0) missingFields.push("interests")
-      if (!availability.some((d) => d.available)) {
-        missingFields.push("availability")
-      }
-  
-      toast.error("Profile incomplete", {
-        description: `Please complete: ${missingFields.join(", ")}`,
-      })
-  
-      return
-    }
-  
-    try {
-      setSaving(true)
-  
-      const success = await saveStudentProfile()
-  
-      if (!success) return
-  
-      toast.success("Saved!", {
-        description: "Your profile has been updated.",
-        duration: 500,
-      })
-  
-      router.push("/student")
-    } finally {
-      setSaving(false)
-    }
-  }}
-    >
-      {saving ? "Saving..." : "Save Profile"}
-    </Button>
-
   </div>
 </div>
       <h1 className="text-2xl font-bold mb-4">My Profile</h1>
@@ -926,20 +933,6 @@ availability.some((d) => d.available)
   })}
 </div>
 
-<Button
-  className="w-full mt-2"
-  onClick={async () => {
-    const success = await saveStudentProfile()
-
-    if (!success) return
-
-    toast.success("Saved!", {
-      description: "Your availability has been updated.",
-    })
-  }}
->
-  Save
-</Button>
 
  {/* Next Button */}
  

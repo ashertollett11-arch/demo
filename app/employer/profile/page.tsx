@@ -362,7 +362,7 @@ const [hasTips, setHasTips] = useState(false)
         <input value={businessType}
           onChange={(e) => setBusinessType(e.target.value)}
           className="w-full border rounded px-2 py-1 text-sm"
-          placeholder="Business Type"
+          placeholder="Business Type (ex. food service)"
         />
   
         <input value={location}
