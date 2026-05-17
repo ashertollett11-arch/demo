@@ -423,7 +423,7 @@ availability.some((d) => d.available)
   
       toast.success("Saved!", {
         description: "Your profile has been updated.",
-        duration: 1000,
+        duration: 500,
       })
   
       router.push("/student")
