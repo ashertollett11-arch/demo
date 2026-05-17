@@ -58,21 +58,21 @@ export default function StudentDashboard() {
   // ALL hooks must be here
   useEffect(() => {
     const checkProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data } = await supabase.auth.getUser()
+      const user = data?.user
   
-      const { data, error } = await supabase
-        .from("Students")
-        .select("profile_complete")
-        .eq("user_id", user.id)
-        .single()
-  
-      if (error || !data) {
-        router.replace("/student/profile?missing=true")
+      if (!user) {
+        router.replace("/login")
         return
       }
   
-      if (!data.profile_complete) {
+      const { data: profile } = await supabase
+        .from("Students")
+        .select("profile_complete")
+        .eq("user_id", user.id)
+        .maybeSingle()
+  
+      if (!profile || !profile.profile_complete) {
         router.replace("/student/profile?missing=true")
       }
     }
@@ -272,32 +272,33 @@ const [matchedJobsWithScore, setMatchedJobsWithScore] =
   
   useEffect(() => {
     const fetchStudent = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: authData, error: authError } = await supabase.auth.getUser()
+      const user = authData?.user
+    
       if (!user) return
-  
-      const { data, error } = await supabase
+    
+      const { data: studentData, error: studentError } = await supabase
         .from("Students")
-        .select("gpa, name, gpa_verification_status")        .eq("user_id", user.id)
+        .select("gpa, name, gpa_verification_status")
+        .eq("user_id", user.id)
         .single()
-  
-      if (error) {
-        console.log("STUDENT FETCH ERROR:", error)
+    
+      if (studentError) {
+        console.log("STUDENT FETCH ERROR:", studentError)
         return
       }
-  
-      console.log("STUDENT DATA:", data)
-  
-      // GPA
-      const rawGpa = data?.gpa
+    
+      console.log("STUDENT DATA:", studentData)
+    
+      const rawGpa = studentData?.gpa
       const parsedGpa =
         rawGpa !== null && rawGpa !== undefined
           ? Number(rawGpa)
           : null
-  
+    
       setGpa(isNaN(parsedGpa) ? null : parsedGpa)
-      setGpaStatus(data?.gpa_verification_status || "none")
-      // NAME 👇
-      setName(data?.name || "")
+      setGpaStatus(studentData?.gpa_verification_status || "none")
+      setName(studentData?.name || "")
     }
   
     fetchStudent()

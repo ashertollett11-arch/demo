@@ -31,19 +31,19 @@ export default function JobPage() {
 
   useEffect(() => {
     const checkProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data, error } = await supabase.auth.getUser()
+      const user = data?.user
+      
       if (!user) return
-  
       const { data, error } = await supabase
-        .from("Students")
-        .select("profile_complete")
-        .eq("user_id", user.id)
-        .single()
+  .from("Students")
+  .select("profile_complete")
+  .eq("user_id", user.id)
+  .maybeSingle()
   
-      if (error || !data) {
-        router.replace("/student/profile?missing=true")
-        return
-      }
+  if (!data || data.profile_complete === false) {
+    router.replace("/student/profile?missing=true")
+  }
   
       if (!data.profile_complete) {
         router.replace("/student/profile?missing=true")
