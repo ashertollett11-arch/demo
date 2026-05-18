@@ -90,8 +90,17 @@ useEffect(() => {
 
   checkAuth()
 }, [router])
-  
-  
+
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search)
+
+  if (params.get("from") === "profile" && params.get("saved") === "true") {
+    setTimeout(() => {
+      toast.success("Profile saved!")
+    }, 0)
+  }
+}, [])
+
   // <--- add this
   const [shiftPreference, setShiftPreference] =
   useState<"morning" | "night" | "flexible">("flexible")
@@ -509,8 +518,8 @@ useEffect(() => {
                 {matchedJobsWithScore.map(job => (
                   <Link
                     key={job.id}
-                    href="/matching/student" // target page
-                    className="block" // ensure Link fills the container
+                    href={`/matching/student/${job.id}`}
+                                        className="block" // ensure Link fills the container
                   >
                     <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-secondary/30 p-4 transition-colors hover:bg-secondary/50 cursor-pointer">
                       <div className="flex-1">

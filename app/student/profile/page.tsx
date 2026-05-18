@@ -428,13 +428,9 @@ availability.some((d) => d.available)
 
             if (!success) return
 
-            toast.success("Saved!", {
-              description: "Your profile has been updated.",
-              duration: 500,
-            })
+         
 
-            router.push("/student")
-          } finally {
+            router.push("/student?from=profile&saved=true")          } finally {
             setSaving(false)
           }
         }}
@@ -650,21 +646,24 @@ availability.some((d) => d.available)
     />
   </label>
 )}
+{/* GPA Upload Tips */}
+<div className="mt-3 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground space-y-2">
+  <p className="font-medium text-foreground text-sm">
+    Tips for a successful upload
+  </p>
 
-<Button
-  className="w-full mt-2"
-  onClick={async () => {
-    const success = await saveStudentProfile()
+  <ul className="list-disc pl-4 space-y-1">
+    <li>Make sure your full name is visible</li>
+    <li>Include your unweighted GPA clearly</li>
+    <li>Do not crop or blur the image</li>
+    <li>A full screenshot of your school portal works best</li>
+  </ul>
 
-    if (!success) return
+  <p className="text-[11px] text-muted-foreground/80">
+    Once submitted, your GPA will be reviewed automatically. Verified students get higher trust and better job matches.
+  </p>
+</div>
 
-    toast.success("Saved!", {
-      description: "Your profile has been updated.",
-    })
-  }}
->
-  Save
-</Button>
         </CardContent>
       </Card>
 

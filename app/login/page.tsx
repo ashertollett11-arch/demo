@@ -83,7 +83,7 @@ export default function LoginPage() {
         message.includes("invalid credentials")
       ) {
         toast.error("Incorrect email or password", {
-          description: "Please try again.",
+          description: "Check your email and password, or create an account if you're new",
         })
       } else if (!email || !password) {
         toast.error("Missing email or password", {

@@ -241,94 +241,106 @@ const [hasTips, setHasTips] = useState(false)
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
-{/* STICKY SAVE HEADER (FULL WIDTH FIXED) */}
-<div className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-md">
-  <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+{/* STICKY SAVE HEADER */}
+<div className="sticky top-0 z-50 mb-6">
+  <div className="mx-auto max-w-6xl">
+    <div className="flex items-center justify-between rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-100 via-white to-blue-50 shadow-xl backdrop-blur px-6 py-5 sm:px-7">
 
-    {/* LEFT SIDE */}
-    <div className="flex flex-col">
-      <h2 className="text-sm font-semibold text-gray-900">
-        Employer Profile
-      </h2>
-      <p className="text-xs text-gray-500">
-        Save changes to continue to your dashboard
-      </p>
-    </div>
+      {/* LEFT SIDE */}
+      <div className="flex flex-col">
+        <div className="flex items-center gap-2">
+          <div className="rounded-full bg-blue-600 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow">
+            Employer
+          </div>
 
-    {/* RIGHT SIDE */}
-    <div className="flex items-center gap-2">
+          {!isProfileComplete && (
+            <div className="rounded-full bg-yellow-100 px-2 py-1 text-[10px] font-semibold text-yellow-800 border border-yellow-200">
+              Incomplete
+            </div>
+          )}
+        </div>
 
-      
+        <h2 className="mt-2 text-xl sm:text-2xl font-bold text-gray-900">
+          Complete Your Hiring Profile
+        </h2>
 
-      <Button
-        className={`text-xs sm:text-sm px-4 ${
-          !isProfileComplete
-            ? "opacity-50 cursor-not-allowed"
-            : ""
-        }`}
-        onClick={async () => {
-          const isValid = validateProfile()
-          if (!isValid) return
+        <p className="text-sm text-gray-600 mt-1 max-w-md">
+          Add your company details and hiring preferences to start matching with students.
+        </p>
+      </div>
 
-          const {
-            data: { user },
-          } = await supabase.auth.getUser()
+      {/* RIGHT SIDE */}
+      <div className="flex items-center gap-3">
+        <Button
+          className={`h-12 px-6 rounded-xl text-sm font-semibold shadow-lg transition-all ${
+            !isProfileComplete
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:scale-[1.02]"
+          }`}
+          onClick={async () => {
+            const isValid = validateProfile()
+            if (!isValid) return
 
-          if (!user) {
-            toast.error("Not logged in")
-            return
-          }
+            const {
+              data: { user },
+            } = await supabase.auth.getUser()
 
-          const { data, error } = await supabase
-            .from("job")
-            .upsert(
-              {
-                id: jobId || undefined,
-                user_id: user.id,
+            if (!user) {
+              toast.error("Not logged in")
+              return
+            }
 
-                title: companyName || "Untitled Job",
-                company: companyName || "Unknown Company",
+            const { data, error } = await supabase
+              .from("job")
+              .upsert(
+                {
+                  id: jobId || undefined,
+                  user_id: user.id,
 
-                owner_name: ownerName || null,
-                business_type: businessType || null,
-                email: email || null,
-                phone: phone || null,
+                  title: companyName || "Untitled Job",
+                  company: companyName || "Unknown Company",
 
-                location: location || "Unknown",
-                details: details || "No description",
+                  owner_name: ownerName || null,
+                  business_type: businessType || null,
+                  email: email || null,
+                  phone: phone || null,
 
-                pay: hourlyPay
-                  ? `$${Number(hourlyPay).toFixed(2)}/hr`
-                  : null,
-                hourly_pay: hourlyPay ? Number(hourlyPay) : null,
-                has_tips: hasTips,
+                  location: location || "Unknown",
+                  details: details || "No description",
 
-                shift_preference: shiftPreference,
-                available_shifts: availableShifts,
-                preferred_jobs: preferredJobs,
+                  pay: hourlyPay
+                    ? `$${Number(hourlyPay).toFixed(2)}/hr`
+                    : null,
+                  hourly_pay: hourlyPay ? Number(hourlyPay) : null,
+                  has_tips: hasTips,
 
-                status: "new",
-                distance: "0",
-              },
-              { onConflict: "user_id" }
-            )
-            .select()
-            .single()
+                  shift_preference: shiftPreference,
+                  available_shifts: availableShifts,
+                  preferred_jobs: preferredJobs,
 
-          if (error) {
-            console.error(error)
-            toast.error(error.message)
-            return
-          }
+                  status: "new",
+                                    distance: "0",
+                },
+                { onConflict: "user_id" }
+              )
+              .select()
+              .single()
 
-          if (data?.id) setJobId(data.id)
+            if (error) {
+              console.error(error)
+              toast.error(error.message)
+              return
+            }
 
-          toast.success("Saved!")
-          router.push("/employer")
-        }}
-      >
-        Save & Continue
-      </Button>
+            if (data?.id) setJobId(data.id)
+
+            toast.success("Saved!")
+            router.push("/employer")
+          }}
+        >
+          Save Profile
+        </Button>
+      </div>
     </div>
   </div>
 </div>
@@ -601,74 +613,7 @@ const [hasTips, setHasTips] = useState(false)
     </div>
 
     {/* SAVE */}
-    <Button
-  className="w-full mt-3"
-  onClick={async () => {
-    const isValid = validateProfile()
-    if (!isValid) return
-  
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-  
-    if (!user) {
-      toast.error("Not logged in")
-      return
-    }
-  
-    const { data, error } = await supabase
-      .from("job")
-      .upsert(
-        {
-          id: jobId || undefined,
-          user_id: user.id,
-  
-          title: companyName || "Untitled Job",
-          company: companyName || "Unknown Company",
-  
-          owner_name: ownerName || null,
-          business_type: businessType || null,
-          email: email || null,
-          phone: phone || null,
-  
-          location: location || "Unknown",
-          details: details || "No description",
-  
-          pay: hourlyPay ? `$${hourlyPay}/hr` : null,
-          hourly_pay: hourlyPay ? Number(hourlyPay) : null,
-          has_tips: hasTips,
-  
-          shift_preference: shiftPreference,
-          available_shifts: availableShifts,
-          preferred_jobs: preferredJobs,
-  
-          status: "new",
-          distance: "0",
-        },
-        {
-          onConflict: "user_id",
-        }
-      )
-      .select()
-      .single()
-  
-    if (error) {
-      console.error(error)
-      toast.error(error.message)
-      return
-    }
-  
-    if (data?.id) {
-      setJobId(data.id)
-    }
-  
-    toast.success("Saved!", {
-      description: "Profile updated successfully.",
-    })
-  }}
->
-  Save Shifts
-</Button>
+ 
   </CardContent>
 </Card>
     </div>
