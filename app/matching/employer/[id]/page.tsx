@@ -32,8 +32,8 @@ export default function StudentPage() {
   
     checkAuth()
   }, [router])
-  const router = useRouter()
-  const { status, loading } = useSubscription()
+ const router = useRouter()
+const { status, loading } = useSubscription()
   const params = useParams()
   const studentId = params.id as string
   const [student, setStudent] = useState<any>(null)
@@ -112,7 +112,6 @@ useEffect(() => {
   
     loadStudent()
   }, [studentId, router])
-      
   
   const matchScore = useMemo(() => {
     if (!student) return 0

@@ -498,13 +498,7 @@ const activeShifts = useMemo(() => {
         contacted: 1,
         hired: 2,
       }
-      useEffect(() => {
-        if (loading) return
       
-        if (status !== "active") {
-          router.replace("/billing")
-        }
-      }, [status, loading, router])
       const filteredCandidates = scoredCandidates.map((candidate) => {
        
         if (searchQuery.trim() !== "") {
