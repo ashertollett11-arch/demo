@@ -1,6 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation"
-
+import { useSubscription } from "@/lib/useSubscription"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -31,6 +31,7 @@ import {
 
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
 export default function EmployerDashboard() {
+  
   const router = useRouter()
 
   useEffect(() => {
@@ -45,7 +46,8 @@ export default function EmployerDashboard() {
     checkAuth()
   }, [router])
   
-  
+  const router = useRouter()
+const { status, loading } = useSubscription()
   const [userId, setUserId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("Your Company")
   const [notifications, setNotifications] = useState<any[]>([])
@@ -88,7 +90,9 @@ export default function EmployerDashboard() {
 
     loadCompany()
   }, [userId])
-
+  useEffect(() => {
+    if (loading) return
+  
   // -------------------------
   // LOAD STUDENTS
   // -------------------------
@@ -207,6 +211,12 @@ export default function EmployerDashboard() {
   
     loadAndSeedStatuses()
   }, [userId, students])
+  
+  
+  if (status !== "active") {
+    router.replace("/billing")
+  }
+}, [status, loading, router])
   const dismissNotification = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
 

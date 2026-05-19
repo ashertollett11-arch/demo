@@ -1,4 +1,5 @@
 "use client"
+import { useSubscription } from "@/lib/useSubscription"
 import { toast } from "sonner"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
@@ -172,6 +173,10 @@ function FilterContent({
   }
 export default function MatchingPage() {
   const router = useRouter()
+const { status, loading } = useSubscription()
+  
+  
+  const router = useRouter()
 
 
   
@@ -251,6 +256,7 @@ useEffect(() => {
     loadStudents()
   }, [])
 
+  
   
   const safeEmployerShifts = employerShifts?.length
   ? employerShifts
@@ -492,7 +498,13 @@ const activeShifts = useMemo(() => {
         contacted: 1,
         hired: 2,
       }
+      useEffect(() => {
+        if (loading) return
       
+        if (status !== "active") {
+          router.replace("/billing")
+        }
+      }, [status, loading, router])
       const filteredCandidates = scoredCandidates.map((candidate) => {
        
         if (searchQuery.trim() !== "") {

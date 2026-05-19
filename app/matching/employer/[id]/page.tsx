@@ -1,4 +1,5 @@
 "use client"
+import { useSubscription } from "@/lib/useSubscription"
 import { toast } from "sonner"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -16,6 +17,8 @@ import {
     SelectValue,
   } from "@/components/ui/select"
 export default function StudentPage() {
+  
+  
   const router = useRouter()
 
   useEffect(() => {
@@ -29,7 +32,8 @@ export default function StudentPage() {
   
     checkAuth()
   }, [router])
- 
+  const router = useRouter()
+  const { status, loading } = useSubscription()
   const params = useParams()
   const studentId = params.id as string
   const [student, setStudent] = useState<any>(null)
@@ -108,6 +112,7 @@ useEffect(() => {
   
     loadStudent()
   }, [studentId, router])
+      
   
   const matchScore = useMemo(() => {
     if (!student) return 0

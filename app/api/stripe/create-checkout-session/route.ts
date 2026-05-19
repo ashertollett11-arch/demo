@@ -57,6 +57,7 @@ if (!userId) {
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/billing?canceled=true`,
       metadata: {
         userId,
+        plan: "pro",
       },
     })
 

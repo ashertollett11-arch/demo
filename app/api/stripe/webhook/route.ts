@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     // 4. Handle checkout completion
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session
-
+      const plan = session.metadata?.plan
       const userId = session.metadata?.userId
       const customerId = session.customer as string
       const subscriptionId = session.subscription as string
@@ -55,6 +55,7 @@ export async function POST(req: Request) {
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
           subscription_status: "active",
+          plan: plan || "unknown",
         })
         .eq("user_id", userId)
 
