@@ -83,24 +83,17 @@ export default function BillingPage() {
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData?.user?.id
   
-    if (!userId) {
-      console.error("No user logged in")
-      return
-    }
-  
     const res = await fetch("/api/stripe/create-checkout-session", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     })
   
     const data = await res.json()
   
-    console.log("RAW RESPONSE:", data)
+    console.log("CHECKOUT RESPONSE:", data)
   
-    if (!data?.url) {
+    if (!data.url) {
       console.error("Stripe error:", data)
       return
     }
