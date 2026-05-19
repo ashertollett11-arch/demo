@@ -1,6 +1,5 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { useSubscription } from "@/lib/useSubscription"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
