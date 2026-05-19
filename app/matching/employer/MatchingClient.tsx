@@ -172,7 +172,6 @@ function FilterContent({
   }
 export default function MatchingPage() {
   const router = useRouter()
-const { status, loading } = useSubscription()
   
   
   const router = useRouter()
