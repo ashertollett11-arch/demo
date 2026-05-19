@@ -1,5 +1,4 @@
 "use client"
-import { useSubscription } from "@/lib/useSubscription"
 import { toast } from "sonner"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
