@@ -21,18 +21,31 @@ export default function StudentPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAccess = async () => {
       const { data } = await supabase.auth.getUser()
   
+      // not logged in
       if (!data.user) {
         router.replace("/login")
+        return
+      }
+  
+      // check subscription
+      const { data: job } = await supabase
+        .from("job")
+        .select("subscription_status")
+        .eq("user_id", data.user.id)
+        .single()
+  
+      // not subscribed
+      if (job?.subscription_status !== "active") {
+        router.replace("/billing")
+        return
       }
     }
   
-    checkAuth()
+    checkAccess()
   }, [router])
- const router = useRouter()
-const { status, loading } = useSubscription()
   const params = useParams()
   const studentId = params.id as string
   const [student, setStudent] = useState<any>(null)

@@ -1,5 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation"
+import { useSubscription } from "@/lib/useSubscription"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -34,19 +35,33 @@ export default function EmployerDashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAccess = async () => {
       const { data } = await supabase.auth.getUser()
-
+  
+      // not logged in
       if (!data.user) {
         router.replace("/login")
+        return
+      }
+  
+      // check subscription
+      const { data: job } = await supabase
+        .from("job")
+        .select("subscription_status")
+        .eq("user_id", data.user.id)
+        .single()
+  
+      // not subscribed
+      if (job?.subscription_status !== "active") {
+        router.replace("/billing")
+        return
       }
     }
-
-    checkAuth()
+  
+    checkAccess()
   }, [router])
   
-  const router = useRouter()
-const { status, loading } = useSubscription()
+  
   const [userId, setUserId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("Your Company")
   const [notifications, setNotifications] = useState<any[]>([])
@@ -89,9 +104,7 @@ const { status, loading } = useSubscription()
 
     loadCompany()
   }, [userId])
-  useEffect(() => {
-    if (loading) return
-  
+
   // -------------------------
   // LOAD STUDENTS
   // -------------------------
@@ -210,12 +223,6 @@ const { status, loading } = useSubscription()
   
     loadAndSeedStatuses()
   }, [userId, students])
-  
-  
-  if (status !== "active") {
-    router.replace("/billing")
-  }
-}, [status, loading, router])
   const dismissNotification = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
 

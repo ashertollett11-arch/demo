@@ -174,7 +174,6 @@ export default function MatchingPage() {
   const router = useRouter()
   
   
-  const router = useRouter()
 
 
   
@@ -202,17 +201,31 @@ const [statuses, setStatuses] = useState<any[]>([])
 const [searchQuery, setSearchQuery] = useState("")
 
 useEffect(() => {
-  const checkAuth = async () => {
+  const checkAccess = async () => {
     const { data } = await supabase.auth.getUser()
 
+    // not logged in
     if (!data.user) {
       router.replace("/login")
+      return
+    }
+
+    // check subscription
+    const { data: job } = await supabase
+      .from("job")
+      .select("subscription_status")
+      .eq("user_id", data.user.id)
+      .single()
+
+    // not subscribed
+    if (job?.subscription_status !== "active") {
+      router.replace("/billing")
+      return
     }
   }
 
-  checkAuth()
-}, [router])  
-
+  checkAccess()
+}, [router])
 
 useEffect(() => {
     const loadStudents = async () => {

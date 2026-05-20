@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-
+import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -52,11 +52,11 @@ export default function BillingPage() {
       .single()
 
     if (profile?.company) setCompanyName(profile.company)
-
-    if (!profile?.stripe_customer_id) {
-      setLoading(false)
-      return
-    }
+      if (!profile?.stripe_customer_id) {
+        toast.error("Please set up billing to continue using employer features.")
+        setLoading(false)
+        return
+      }
 
     const res = await fetch("/api/stripe/get-billing", {
       method: "POST",
@@ -67,7 +67,8 @@ export default function BillingPage() {
     })
 
     const data = await res.json()
-
+    if (profile.subscription_status !== "active") {      toast.error("Please set up billing to continue using employer features.")
+    }
     setSubscription(data.subscription || null)
     setLoading(false)
   }
@@ -186,13 +187,28 @@ export default function BillingPage() {
       </Card>
 
       {/* BACK */}
-      <Link
-        href="/employer"
-        className="text-sm text-muted-foreground hover:text-black"
-      >
-        ← Back to dashboard
-      </Link>
+      <div className="flex items-center gap-4">
+  <Link
+    href="/employer"
+    className="text-sm text-muted-foreground hover:text-black"
+  >
+    ← Back to dashboard
+  </Link>
 
+  <Link
+    href="/employer/profile"
+    className="text-sm text-muted-foreground hover:text-black"
+  >
+    ← Go to profile 
+  </Link>
+
+  <Link
+    href="/"
+    className="text-sm text-muted-foreground hover:text-black"
+  >
+    ← Log out 
+  </Link>
+</div>
     </div>
   )
 }

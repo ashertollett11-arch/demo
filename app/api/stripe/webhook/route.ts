@@ -39,16 +39,17 @@ export async function POST(req: Request) {
     // 4. Handle checkout completion
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session
+    
       const plan = session.metadata?.plan
       const userId = session.metadata?.userId
       const customerId = session.customer as string
       const subscriptionId = session.subscription as string
-
+    
       if (!userId) {
         console.error("Missing userId in metadata")
         return NextResponse.json({ received: true })
       }
-
+    
       const { error } = await supabase
         .from("job")
         .update({
@@ -57,8 +58,8 @@ export async function POST(req: Request) {
           subscription_status: "active",
           plan: plan || "unknown",
         })
-        .eq("user_id", userId)
-
+        .eq("user_id", userId)   // ✅ THIS is the correct key here
+    
       if (error) {
         console.error("❌ Supabase update error:", error)
       }
@@ -75,13 +76,38 @@ export async function POST(req: Request) {
         .update({
           subscription_status: "canceled",
         })
-        .eq("stripe_customer_id", customerId)
-
-      if (error) {
+        .eq("stripe_subscription_id", subscription.id)
+        .or(`stripe_customer_id.eq.${subscription.customer}`)      if (error) {
         console.error("❌ Cancel update error:", error)
       }
     }
-
+    if (event.type === "customer.subscription.updated") {
+      const subscription = event.data.object as Stripe.Subscription
+    
+      console.log("-------- SUB UPDATE --------")
+      console.log("Subscription ID:", subscription.id)
+      console.log("Customer ID:", subscription.customer)
+      console.log("Status:", subscription.status)
+      console.log("Cancel at period end:", subscription.cancel_at_period_end)
+    
+      const isCanceled =
+        subscription.cancel_at_period_end === true ||
+        subscription.status === "canceled"
+    
+      const { data, error } = await supabase
+        .from("job")
+        .update({
+          subscription_status: isCanceled ? "canceled" : "active",
+        })
+        .eq("stripe_subscription_id", subscription.id)
+        .select()
+    
+      console.log("Updated rows:", data)
+    
+      if (error) {
+        console.error("❌ Subscription update error:", error)
+      }
+    }
     return NextResponse.json({ received: true })
   } catch (err: any) {
     console.error("❌ Webhook error:", err.message)
