@@ -94,7 +94,7 @@ export async function POST(req: Request) {
         subscription.cancel_at_period_end === true ||
         subscription.status === "canceled"
     
-      const { data, error } = await supabase
+      const { data: updatedRows, error } = await supabase
         .from("job")
         .update({
           subscription_status: isCanceled ? "canceled" : "active",
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
         .eq("stripe_subscription_id", subscription.id)
         .select()
     
-      console.log("Updated rows:", data)
+      console.log("Updated rows:", updatedRows)
     
       if (error) {
         console.error("❌ Subscription update error:", error)
