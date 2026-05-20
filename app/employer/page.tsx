@@ -36,25 +36,38 @@ export default function EmployerDashboard() {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const { data } = await supabase.auth.getUser()
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
   
-      // not logged in
-      if (!data.user) {
-        router.replace("/login")
-        return
-      }
+        // not logged in
+        if (!user) {
+          router.replace("/login")
+          return
+        }
   
-      // check subscription
-      const { data: job } = await supabase
-        .from("job")
-        .select("subscription_status")
-        .eq("user_id", data.user.id)
-        .single()
+        // get subscription
+        const { data: job, error } = await supabase
+          .from("job")
+          .select("subscription_status")
+          .eq("user_id", user.id)
+          .maybeSingle()
   
-      // not subscribed
-      if (job?.subscription_status !== "active") {
+        console.log("SUB STATUS:", job?.subscription_status)
+  
+        // no job row OR inactive subscription
+        if (
+          error ||
+          !job ||
+          job.subscription_status !== "active"
+        ) {
+          router.replace("/billing")
+          return
+        }
+      } catch (err) {
+        console.error("ACCESS CHECK ERROR:", err)
         router.replace("/billing")
-        return
       }
     }
   
