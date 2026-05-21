@@ -102,13 +102,12 @@ export async function POST(req: Request) {
       const { data: updatedRows, error } = await supabase
         .from("job")
         .update({
-          subscription_status: isCanceled ? "canceled" : "active",
-        })
+          subscription_status: subscription.status,        })
         .eq("stripe_customer_id", subscription.customer as string)
         .select()
     
       console.log("UPDATED ROWS:", updatedRows)
-    
+      console.log("FINAL STATUS:", subscription.status)
       if (error) {
         console.error("❌ UPDATE ERROR:", error)
       }
