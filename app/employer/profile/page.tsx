@@ -29,14 +29,14 @@ export default function EmployerProfilePage() {
           .maybeSingle()
   
         if (error || !profile || profile.subscription_status !== "active") {
-          router.replace("/employer/billing")
+          router.replace("/billing")
           return
         }
   
         setUserId(user.id)
       } catch (err) {
         console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/employer/billing")
+        router.replace("/billing")
       }
     }
   

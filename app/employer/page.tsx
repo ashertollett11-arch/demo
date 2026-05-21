@@ -34,44 +34,7 @@ export default function EmployerDashboard() {
   
   const router = useRouter()
 
-  useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-  
-        if (!user) {
-          router.replace("/login")
-          return
-        }
-  
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("subscription_status, profile_complete")
-          .eq("id", user.id)
-          .maybeSingle()
-  
-        console.log("PROFILE CHECK:", profile)
-  
-        if (error || !profile || profile.subscription_status !== "active") {
-          router.replace("/billing")
-          return
-        }
-  
-        if (!profile.profile_complete) {
-          router.replace("/employer/profile")
-          return
-        }
-  
-        setUserId(user.id)
-      } catch (err) {
-        console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/billing")
-      }
-    }
-  
-    checkAccess()
-  }, [router])
-  
+
   
   
   
@@ -91,6 +54,51 @@ export default function EmployerDashboard() {
   // -------------------------
   // AUTH USER
   // -------------------------
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+  
+        if (!user) {
+          router.replace("/login")
+          return
+        }
+  
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("subscription_status, profile_complete")
+          .eq("id", user.id)
+          .maybeSingle()
+  
+        console.log("PROFILE CHECK:", profile)
+  
+        if (error || !profile) {
+          router.replace("/employer/billing")
+          return
+        }
+  
+        // Profile done but not subscribed → billing
+        if (profile.profile_complete && profile.subscription_status !== "active") {
+          router.replace("/employer/billing")
+          return
+        }
+  
+        // Not subscribed and no profile → profile first
+        if (!profile.profile_complete) {
+          router.replace("/employer/profile")
+          return
+        }
+  
+        setUserId(user.id)
+      } catch (err) {
+        console.error("ACCESS CHECK ERROR:", err)
+        router.replace("/employer/billing")
+      }
+    }
+  
+    checkAccess()
+  }, [router])
+  
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser()

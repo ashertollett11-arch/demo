@@ -38,11 +38,18 @@ export default function StudentPage() {
   
         console.log("PROFILE CHECK:", profile)
   
-        if (error || !profile || profile.subscription_status !== "active") {
-          router.replace("/billing")
+        if (error || !profile) {
+          router.replace("/employer/billing")
           return
         }
   
+        // Profile done but not subscribed → billing
+        if (profile.profile_complete && profile.subscription_status !== "active") {
+          router.replace("/employer/billing")
+          return
+        }
+  
+        // Not subscribed and no profile → profile first
         if (!profile.profile_complete) {
           router.replace("/employer/profile")
           return
@@ -51,7 +58,7 @@ export default function StudentPage() {
         setUserId(user.id)
       } catch (err) {
         console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/billing")
+        router.replace("/employer/billing")
       }
     }
   
