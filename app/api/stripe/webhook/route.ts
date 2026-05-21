@@ -140,7 +140,7 @@ export async function POST(req: Request) {
         .select()
 
       console.log("✅ UPDATED ROWS:", data)
-
+      console.log("SUPABASE URL:", process.env.SUPABASE_URL)
       if (error) {
         console.error("❌ UPDATE ERROR:", error)
       }
