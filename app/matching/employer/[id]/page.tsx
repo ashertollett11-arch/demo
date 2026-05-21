@@ -39,7 +39,7 @@ export default function StudentPage() {
         console.log("PROFILE CHECK:", profile)
   
         if (error || !profile || profile.subscription_status !== "active") {
-          router.replace("/employer/billing")
+          router.replace("/billing")
           return
         }
   
@@ -51,12 +51,15 @@ export default function StudentPage() {
         setUserId(user.id)
       } catch (err) {
         console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/employer/billing")
+        router.replace("/billing")
       }
     }
   
     checkAccess()
   }, [router])
+  
+  
+  
   
   const params = useParams()
   const studentId = params.id as string

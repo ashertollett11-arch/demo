@@ -219,7 +219,7 @@ useEffect(() => {
       console.log("PROFILE CHECK:", profile)
 
       if (error || !profile || profile.subscription_status !== "active") {
-        router.replace("/employer/billing")
+        router.replace("/billing")
         return
       }
 
@@ -231,12 +231,15 @@ useEffect(() => {
       setUserId(user.id)
     } catch (err) {
       console.error("ACCESS CHECK ERROR:", err)
-      router.replace("/employer/billing")
+      router.replace("/billing")
     }
   }
 
   checkAccess()
 }, [router])
+
+
+
 
 useEffect(() => {
     const loadStudents = async () => {
