@@ -15,39 +15,36 @@ export default function EmployerProfilePage() {
   useEffect(() => {
     const checkAccess = async () => {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-
-        // not logged in
+        const { data: { user } } = await supabase.auth.getUser()
+  
         if (!user) {
           router.replace("/login")
           return
         }
-
-        // get subscription from profiles
+  
         const { data: profile, error } = await supabase
           .from("profiles")
           .select("subscription_status")
           .eq("id", user.id)
           .maybeSingle()
-
+  
         console.log("SUB STATUS:", profile?.subscription_status)
-
-        // no profile row OR inactive subscription
+  
         if (error || !profile || profile.subscription_status !== "active") {
           router.replace("/billing")
           return
         }
+  
+        setUserId(user.id)
       } catch (err) {
         console.error("ACCESS CHECK ERROR:", err)
         router.replace("/billing")
       }
     }
-
+  
     checkAccess()
   }, [router])
-
+  
   useEffect(() => {
     const missing = window.location.search.includes("missing=true")
   

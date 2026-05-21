@@ -203,17 +203,13 @@ const [searchQuery, setSearchQuery] = useState("")
 useEffect(() => {
   const checkAccess = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
 
-      // not logged in
       if (!user) {
         router.replace("/login")
         return
       }
 
-      // get subscription from profiles
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("subscription_status")
@@ -222,19 +218,21 @@ useEffect(() => {
 
       console.log("SUB STATUS:", profile?.subscription_status)
 
-      // no profile row OR inactive subscription
       if (error || !profile || profile.subscription_status !== "active") {
-        router.replace("/employer/billing")
+        router.replace("/billing")
         return
       }
+
+      setUserId(user.id)
     } catch (err) {
       console.error("ACCESS CHECK ERROR:", err)
-      router.replace("/employer/billing")
+      router.replace("/billing")
     }
   }
 
   checkAccess()
 }, [router])
+
 useEffect(() => {
     const loadStudents = async () => {
       setLoading(true)
