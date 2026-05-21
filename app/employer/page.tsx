@@ -1,23 +1,13 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { useSubscription } from "@/lib/useSubscription"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
 import {
   Briefcase,
-  Users,
-  TrendingUp,
-  CheckCircle2,
-  Bell,
-  Building2,
-  LogOut,
   ChevronDown,
-  CreditCard,
-  Activity,
   ArrowRight,
   Sparkles,
 } from "lucide-react"
@@ -28,31 +18,22 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
+
 export default function EmployerDashboard() {
-  
   const router = useRouter()
 
-
-  
-  
-  
-  
-  
   const [userId, setUserId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("Your Company")
   const [notifications, setNotifications] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [employerShifts, setEmployerShifts] = useState<any[]>([])
   const [statuses, setStatuses] = useState<any[]>([])
-  const [shiftPreference, setShiftPreference] = useState<
-    "morning" | "night" | "flexible"
-  >("flexible")
+  const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
 
   // -------------------------
-  // AUTH USER
+  // AUTH + ACCESS CHECK
   // -------------------------
   useEffect(() => {
     const checkAccess = async () => {
@@ -66,46 +47,26 @@ export default function EmployerDashboard() {
   
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("subscription_status, profile_complete")
+          .select("subscription_status")
           .eq("id", user.id)
           .maybeSingle()
   
         console.log("PROFILE CHECK:", profile)
   
-        if (error || !profile) {
-          router.replace("/employer/billing")
-          return
-        }
-  
-        // Profile done but not subscribed → billing
-        if (profile.profile_complete && profile.subscription_status !== "active") {
-          router.replace("/employer/billing")
-          return
-        }
-  
-        // Not subscribed and no profile → profile first
-        if (!profile.profile_complete) {
-          router.replace("/employer/profile")
+        if (error || !profile || profile.subscription_status !== "active") {
+          router.replace("/billing")
           return
         }
   
         setUserId(user.id)
       } catch (err) {
         console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/employer/billing")
+        router.replace("/billing")
       }
     }
   
     checkAccess()
   }, [router])
-  
-  useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser()
-      setUserId(data.user?.id ?? null)
-    }
-    getUser()
-  }, [])
 
   // -------------------------
   // LOAD COMPANY
@@ -121,7 +82,6 @@ export default function EmployerDashboard() {
         .single()
 
       if (!data) return
-
       setCompanyName(data.company || "Your Company")
     }
 
@@ -132,13 +92,15 @@ export default function EmployerDashboard() {
   // LOAD STUDENTS
   // -------------------------
   useEffect(() => {
+    if (!userId) return
+
     const loadStudents = async () => {
       const { data } = await supabase.from("Students").select("*")
       setStudents(data || [])
     }
 
     loadStudents()
-  }, [])
+  }, [userId])
 
   // -------------------------
   // LOAD JOB SETTINGS
@@ -154,7 +116,6 @@ export default function EmployerDashboard() {
         .single()
 
       if (!data) return
-
       setEmployerShifts(data.available_shifts || [])
       setShiftPreference(data.shift_preference || "flexible")
       setPreferredJobs(data.preferred_jobs || [])
@@ -183,7 +144,7 @@ export default function EmployerDashboard() {
     loadNotifications()
   }, [userId])
 
-  // realtime
+  // realtime notifications
   useEffect(() => {
     if (!userId) return
 
@@ -207,48 +168,53 @@ export default function EmployerDashboard() {
       supabase.removeChannel(channel)
     }
   }, [userId])
+
+  // -------------------------
+  // SEED + LOAD STATUSES
+  // -------------------------
   useEffect(() => {
     if (!userId || students.length === 0) return
-  
+
     const loadAndSeedStatuses = async () => {
-      // 1. seed missing statuses
       const rows = students.map((student) => ({
         employer_id: userId,
         student_id: student.id,
         status: "new",
       }))
-  
+
       const { error: seedError } = await supabase
         .from("student_statuses")
         .upsert(rows, {
           onConflict: "employer_id,student_id",
           ignoreDuplicates: true,
         })
-  
+
       if (seedError) {
         console.error(seedError)
         return
       }
-  
-      // 2. reload statuses
+
       const { data, error } = await supabase
         .from("student_statuses")
         .select("*")
         .eq("employer_id", userId)
-  
+
       if (error) {
         console.error(error)
         return
       }
-  
+
       setStatuses(data || [])
     }
-  
+
     loadAndSeedStatuses()
   }, [userId, students])
+
+  // -------------------------
+  // DISMISS NOTIFICATION
+  // -------------------------
   const dismissNotification = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
-
     await supabase.from("notifications").update({ read: true }).eq("id", id)
   }
 
@@ -259,46 +225,26 @@ export default function EmployerDashboard() {
     const activeShifts = employerShifts.filter(
       (s) => s.active === true || s.active === "true" || s.active === 1
     )
-
     const jobDays = activeShifts.map((s) => s.day)
 
     return students.map((s) => {
       const score = calculateEmployerMatch(
-        {
-          shifts: jobDays,
-          shiftPreference,
-          preferred_jobs: preferredJobs,
-        },
+        { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
         s.availability,
         s.shiftPreference,
         s.gpa,
         s.preferredJobs
       )
-
-      return {
-        ...s,
-        matchScore: Math.round(score),
-      }
+      return { ...s, matchScore: Math.round(score) }
     })
   }, [students, employerShifts, shiftPreference])
 
   // -------------------------
   // METRICS
   // -------------------------
-  const hiresThisMonth = 0 // placeholder (no hiring tracking yet)
-  const greatCandidates = candidatesWithScores.filter(
-    (c) => c.matchScore >= 75
-  ).length
-
-  const perfectMatches = candidatesWithScores.filter(
-    (c) => c.matchScore === 100
-  ).length
-
-  const topMatch = Math.max(
-    0,
-    ...candidatesWithScores.map((c) => c.matchScore || 0)
-  )
-
+  const greatCandidates = candidatesWithScores.filter((c) => c.matchScore >= 75).length
+  const perfectMatches = candidatesWithScores.filter((c) => c.matchScore === 100).length
+  const topMatch = Math.max(0, ...candidatesWithScores.map((c) => c.matchScore || 0))
   const recentActivity = notifications.slice(0, 4)
 
   // -------------------------
@@ -306,82 +252,60 @@ export default function EmployerDashboard() {
   // -------------------------
   return (
     <div className="min-h-screen bg-background">
-  {/* HEADER (REPLACEMENT) */}
-<header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-  <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
 
-    {/* LEFT SIDE */}
-    <Link href="/" className="flex items-center gap-2">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-        <Briefcase className="h-5 w-5 text-primary-foreground" />
-      </div>
-      <span className="text-xl font-bold text-foreground">SimplyApply</span>
-    </Link>
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
 
-    {/* CENTER NAV */}
-    <div className="hidden items-center gap-6 md:flex">
-      <Link href="/employer" className="text-sm font-medium text-foreground">
-        Dashboard
-      </Link>
-
-      <Link
-        href="/matching/employer"
-        className="text-sm font-medium text-muted-foreground hover:text-foreground"
-      >
-        Find Candidates
-      </Link>
-
-      <Link
-        href="/billing"
-        className="text-sm font-medium text-muted-foreground hover:text-foreground"
-      >
-        Billing
-      </Link>
-    </div>
-
-    {/* RIGHT SIDE */}
-    <div className="flex items-center gap-4">
-
-    
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold">
-              {companyName?.[0] || "?"}
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+              <Briefcase className="h-5 w-5 text-primary-foreground" />
             </div>
-            <ChevronDown className="h-4 w-4" />
-          </button>
-        </DropdownMenuTrigger>
+            <span className="text-xl font-bold text-foreground">SimplyApply</span>
+          </Link>
 
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem asChild>
-            <Link href="/employer/profile">Company Profile</Link>
-          </DropdownMenuItem>
+          <div className="hidden items-center gap-6 md:flex">
+            <Link href="/employer" className="text-sm font-medium text-foreground">
+              Dashboard
+            </Link>
+            <Link href="/matching/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Find Candidates
+            </Link>
+            <Link href="/billing" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+              Billing
+            </Link>
+          </div>
 
-          <DropdownMenuSeparator />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold">
+                  {companyName?.[0] || "?"}
+                </div>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem asChild>
+                <Link href="/employer/profile">Company Profile</Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/">Log out</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <DropdownMenuItem asChild>
-            <Link href="/">Log out</Link>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </div>
+      </header>
 
-    </div>
-  </div>
-</header>
       <main className="mx-auto max-w-7xl px-4 py-8 space-y-8">
 
         {/* WELCOME */}
         <div>
           <h1 className="text-3xl font-bold">Welcome, {companyName}</h1>
-          <p className="text-muted-foreground">
-            Here’s your hiring overview
-          </p>
+          <p className="text-muted-foreground">Here's your hiring overview</p>
         </div>
-
-      
-     
 
         {/* PIPELINE */}
         <Card>
@@ -389,62 +313,52 @@ export default function EmployerDashboard() {
             <CardTitle>Hiring Pipeline</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-3 gap-4">
-  
-  <Link href="/matching/employer?status=new">
-    <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
-      <p className="text-sm text-muted-foreground">New</p>
-      <p className="mt-2 text-3xl font-bold">
-        {statuses.filter((s) => s.status === "new").length}
-      </p>
-    </div>
-  </Link>
-
-  <Link href="/matching/employer?status=contacted">
-    <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
-      <p className="text-sm text-muted-foreground">Contacted</p>
-      <p className="mt-2 text-3xl font-bold">
-        {statuses.filter((s) => s.status === "contacted").length}
-      </p>
-    </div>
-  </Link>
-
-  <Link href="/matching/employer?status=hired">
-    <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
-      <p className="text-sm text-muted-foreground">Hired</p>
-      <p className="mt-2 text-3xl font-bold">
-        {statuses.filter((s) => s.status === "hired").length}
-      </p>
-    </div>
-  </Link>
-
-</CardContent>
+            <Link href="/matching/employer?status=new">
+              <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
+                <p className="text-sm text-muted-foreground">New</p>
+                <p className="mt-2 text-3xl font-bold">
+                  {statuses.filter((s) => s.status === "new").length}
+                </p>
+              </div>
+            </Link>
+            <Link href="/matching/employer?status=contacted">
+              <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
+                <p className="text-sm text-muted-foreground">Contacted</p>
+                <p className="mt-2 text-3xl font-bold">
+                  {statuses.filter((s) => s.status === "contacted").length}
+                </p>
+              </div>
+            </Link>
+            <Link href="/matching/employer?status=hired">
+              <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
+                <p className="text-sm text-muted-foreground">Hired</p>
+                <p className="mt-2 text-3xl font-bold">
+                  {statuses.filter((s) => s.status === "hired").length}
+                </p>
+              </div>
+            </Link>
+          </CardContent>
         </Card>
 
         {/* INSIGHT */}
-        <Card className="cursor-pointer hover:bg-muted/40 transition"
-      onClick={() => window.location.href = "/matching/employer"}>
+        <Card
+          className="cursor-pointer hover:bg-muted/40 transition"
+          onClick={() => (window.location.href = "/matching/employer")}
+        >
           <CardContent className="p-6 flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-primary" />
             <div className="flex flex-col gap-1">
-  <p>
-    You have <b>{greatCandidates}</b> strong candidates (75%+ match) ready to review.
-  </p>
-
-  <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-    <span>
-      Top Match: <b>{topMatch}%</b>
-    </span>
-
-    <span>•</span>
-
-    <Link
-  href="/matching/employer?perfect=true"
-  className="hover:text-foreground transition"
->
-  Perfect Matches: <b>{perfectMatches}</b>
-</Link>
-  </div>
-</div>
+              <p>
+                You have <b>{greatCandidates}</b> strong candidates (75%+ match) ready to review.
+              </p>
+              <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                <span>Top Match: <b>{topMatch}%</b></span>
+                <span>•</span>
+                <Link href="/matching/employer?perfect=true" className="hover:text-foreground transition">
+                  Perfect Matches: <b>{perfectMatches}</b>
+                </Link>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -453,52 +367,44 @@ export default function EmployerDashboard() {
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
-
           <CardContent className="space-y-3">
-  {recentActivity.length === 0 ? (
-    <p className="text-sm text-muted-foreground">
-      No recent activity
-    </p>
-  ) : (
-    recentActivity.map((n) => {
-      const studentName =
-        n.student_name ||
-        n.message?.split(" applied to ")[0]?.trim()
+            {recentActivity.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No recent activity</p>
+            ) : (
+              recentActivity.map((n) => {
+                const studentName =
+                  n.student_name || n.message?.split(" applied to ")[0]?.trim()
 
-      return (
-        <div
-          key={n.id}
-          className="flex justify-between items-center text-sm border-b pb-2"
-        >
-          <span>{n.message}</span>
-
-          <div className="flex items-center gap-2">
-            {studentName && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  window.location.href = `/matching/employer?search=${encodeURIComponent(
-                    studentName
-                  )}`
-                }}
-              >
-                View Profile
-              </Button>
+                return (
+                  <div
+                    key={n.id}
+                    className="flex justify-between items-center text-sm border-b pb-2"
+                  >
+                    <span>{n.message}</span>
+                    <div className="flex items-center gap-2">
+                      {studentName && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            window.location.href = `/matching/employer?search=${encodeURIComponent(studentName)}`
+                          }}
+                        >
+                          View Profile
+                        </Button>
+                      )}
+                      <button
+                        onClick={() => dismissNotification(n.id)}
+                        className="text-muted-foreground"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
             )}
-
-            <button
-              onClick={() => dismissNotification(n.id)}
-              className="text-muted-foreground"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )
-    })
-  )}
-</CardContent>
+          </CardContent>
         </Card>
 
         {/* BILLING SNAPSHOT */}
@@ -506,10 +412,8 @@ export default function EmployerDashboard() {
           <CardHeader>
             <CardTitle>Billing Overview</CardTitle>
           </CardHeader>
-
           <CardContent className="space-y-2">
             <p>Current Plan: Employer Plan</p>
-         
             <Button asChild>
               <Link href="/billing">Manage Billing</Link>
             </Button>
@@ -520,14 +424,9 @@ export default function EmployerDashboard() {
         <Card className="bg-primary text-white">
           <CardContent className="p-6 flex justify-between items-center">
             <div>
-              <p className="font-bold text-lg">
-                Ready to hire your next student?
-              </p>
-              <p className="text-sm opacity-80">
-                View your full candidate pool
-              </p>
+              <p className="font-bold text-lg">Ready to hire your next student?</p>
+              <p className="text-sm opacity-80">View your full candidate pool</p>
             </div>
-
             <Button asChild variant="secondary">
               <Link href="/matching/employer">
                 Go to Candidates <ArrowRight className="ml-2 h-4 w-4" />

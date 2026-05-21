@@ -32,33 +32,21 @@ export default function StudentPage() {
   
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("subscription_status, profile_complete")
+          .select("subscription_status")
           .eq("id", user.id)
           .maybeSingle()
   
         console.log("PROFILE CHECK:", profile)
   
-        if (error || !profile) {
-          router.replace("/employer/billing")
-          return
-        }
-  
-        // Profile done but not subscribed → billing
-        if (profile.profile_complete && profile.subscription_status !== "active") {
-          router.replace("/employer/billing")
-          return
-        }
-  
-        // Not subscribed and no profile → profile first
-        if (!profile.profile_complete) {
-          router.replace("/employer/profile")
+        if (error || !profile || profile.subscription_status !== "active") {
+          router.replace("/billing")
           return
         }
   
         setUserId(user.id)
       } catch (err) {
         console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/employer/billing")
+        router.replace("/billing")
       }
     }
   

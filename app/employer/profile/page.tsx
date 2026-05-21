@@ -11,38 +11,21 @@ import { supabase } from "@/lib/supabase"
 export default function EmployerProfilePage() {
   const router = useRouter()
 
-  
+  const [userId, setUserId] = useState<string | null>(null)
   useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
   
-        if (!user) {
-          router.replace("/login")
-          return
-        }
-  
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("subscription_status")
-          .eq("id", user.id)
-          .maybeSingle()
-  
-        if (error || !profile || profile.subscription_status !== "active") {
-          router.replace("/billing")
-          return
-        }
-  
-        setUserId(user.id)
-      } catch (err) {
-        console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/billing")
+      if (!user) {
+        router.replace("/login")
+        return
       }
+  
+      setUserId(user.id)
     }
   
-    checkAccess()
+    checkAuth()
   }, [router])
-  
   useEffect(() => {
     const missing = window.location.search.includes("missing=true")
   
@@ -356,7 +339,7 @@ const [hasTips, setHasTips] = useState(false)
             }
           
             toast.success("Saved!")
-            router.push("/employer")
+            router.push("/billing")
           }}
         >
           Save Profile
