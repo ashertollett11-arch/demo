@@ -121,28 +121,36 @@ export async function POST(req: Request) {
       const subscription = event.data.object as Stripe.Subscription
     
       console.log("🗑 Deleted subscription:", subscription.id)
+      console.log("Customer:", subscription.customer)
     
-      const { data: existing } = await supabase
+      const { data: matchingRows, error: matchError } = await supabase
         .from("job")
-        .select("*")
-        .eq("stripe_subscription_id", subscription.id)
+        .select(`
+          id,
+          stripe_customer_id,
+          stripe_subscription_id,
+          subscription_status
+        `)
+        .eq("stripe_customer_id", subscription.customer as string)
     
-      console.log("Matching rows:", existing)
+      console.log("MATCHING ROWS:", matchingRows)
+    
+      if (matchError) {
+        console.error("❌ MATCH ERROR:", matchError)
+      }
     
       const { data: updatedRows, error } = await supabase
-      .from("job")
-      .update({
-        subscription_status: "canceled",
-      })
-      .eq("stripe_customer_id", subscription.customer)
-      .select()
-      .eq("stripe_customer_id", subscription.customer)
-      .select()
-      console.log("MATCH RESULT:", updatedRows)
-      console.log("Deleted rows:", deletedRows)
+        .from("job")
+        .update({
+          subscription_status: "canceled",
+        })
+        .eq("stripe_customer_id", subscription.customer as string)
+        .select()
+    
+      console.log("UPDATED ROWS:", updatedRows)
     
       if (error) {
-        console.error("❌ Cancel update error:", error)
+        console.error("❌ CANCEL UPDATE ERROR:", error)
       }
     }
 
