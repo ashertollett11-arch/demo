@@ -11,21 +11,31 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// helper: normalize status safely
+// -------------------------
+// SAFE STATUS NORMALIZER
+// -------------------------
 function getSubscriptionStatus(sub: Stripe.Subscription) {
   const isCanceled =
     sub.status === "canceled" ||
+    sub.status === "unpaid" ||
     sub.cancel_at_period_end === true ||
     sub.ended_at !== null
 
   return isCanceled ? "canceled" : "active"
 }
 
+// -------------------------
+// WEBHOOK ROUTE
+// -------------------------
 export async function POST(req: Request) {
   try {
     const sig = req.headers.get("stripe-signature")
+
     if (!sig) {
-      return NextResponse.json({ error: "Missing signature" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Missing stripe signature" },
+        { status: 400 }
+      )
     }
 
     const body = await req.text()
@@ -36,22 +46,35 @@ export async function POST(req: Request) {
       process.env.STRIPE_WEBHOOK_SECRET!
     )
 
-    console.log("🔥 Stripe event:", event.type)
+    console.log("\n🔥 STRIPE EVENT:", event.type)
 
-    // -----------------------------
-    // CHECKOUT COMPLETE (INITIAL SAVE)
-    // -----------------------------
+    // =====================================================
+    // CHECKOUT COMPLETE
+    // =====================================================
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session
 
       const userId = session.metadata?.userId
       const plan = session.metadata?.plan
 
-      const customerId = session.customer as string
-      const subscriptionId = session.subscription as string
+      const customerId =
+        typeof session.customer === "string"
+          ? session.customer
+          : session.customer?.id
+
+      const subscriptionId =
+        typeof session.subscription === "string"
+          ? session.subscription
+          : session.subscription?.id
+
+      console.log("🧾 CHECKOUT DATA:", {
+        userId,
+        customerId,
+        subscriptionId,
+      })
 
       if (!userId) {
-        console.error("Missing userId in metadata")
+        console.error("❌ Missing userId in metadata")
         return NextResponse.json({ received: true })
       }
 
@@ -66,67 +89,97 @@ export async function POST(req: Request) {
         .eq("user_id", userId)
 
       if (error) {
-        console.error("❌ Checkout DB update error:", error)
+        console.error("❌ Checkout update error:", error)
       }
     }
 
-    // -----------------------------
+    // =====================================================
     // SUBSCRIPTION UPDATED
-    // (ONLY REFLECT CURRENT STATE)
-    // -----------------------------
+    // =====================================================
     if (event.type === "customer.subscription.updated") {
       const sub = event.data.object as Stripe.Subscription
 
+      const customerId =
+        typeof sub.customer === "string"
+          ? sub.customer
+          : sub.customer.id
+
       const status = getSubscriptionStatus(sub)
 
-      console.log("🔄 Subscription updated:", {
+      console.log("🔄 SUB UPDATED:", {
         id: sub.id,
+        customerId,
         status,
         cancel_at_period_end: sub.cancel_at_period_end,
       })
+
+      // DEBUG: show all stored customers
+      const { data: all } = await supabase
+        .from("job")
+        .select("id, stripe_customer_id, subscription_status")
+
+      console.log(
+        "📦 ALL DB CUSTOMERS:",
+        all?.map((r) => r.stripe_customer_id)
+      )
+
+      // DEBUG: check match
+      const { data: match } = await supabase
+        .from("job")
+        .select("*")
+        .eq("stripe_customer_id", customerId)
+
+      console.log("🎯 MATCHING ROWS:", match)
 
       const { data, error } = await supabase
         .from("job")
         .update({
           subscription_status: status,
         })
-        .eq("stripe_customer_id", sub.customer as string)
+        .eq("stripe_customer_id", customerId)
         .select()
 
-      console.log("UPDATED ROWS:", data)
+      console.log("✅ UPDATED ROWS:", data)
 
       if (error) {
-        console.error("❌ Update error:", error)
+        console.error("❌ UPDATE ERROR:", error)
       }
     }
 
-    // -----------------------------
+    // =====================================================
     // SUBSCRIPTION DELETED
-    // (FINAL SOURCE OF TRUTH = ALWAYS CANCEL)
-    // -----------------------------
+    // =====================================================
     if (event.type === "customer.subscription.deleted") {
       const sub = event.data.object as Stripe.Subscription
 
-      console.log("🗑 Subscription deleted:", sub.id)
+      const customerId =
+        typeof sub.customer === "string"
+          ? sub.customer
+          : sub.customer.id
+
+      console.log("🗑 SUB DELETED:", {
+        id: sub.id,
+        customerId,
+      })
 
       const { data, error } = await supabase
         .from("job")
         .update({
           subscription_status: "canceled",
         })
-        .eq("stripe_customer_id", sub.customer as string)
+        .eq("stripe_customer_id", customerId)
         .select()
 
-      console.log("CANCELLED ROWS:", data)
+      console.log("❌ CANCELLED ROWS:", data)
 
       if (error) {
-        console.error("❌ Delete error:", error)
+        console.error("❌ CANCEL ERROR:", error)
       }
     }
 
     return NextResponse.json({ received: true })
   } catch (err: any) {
-    console.error("❌ Webhook crash:", err.message)
+    console.error("❌ WEBHOOK ERROR:", err.message)
 
     return NextResponse.json(
       { error: err.message },
