@@ -327,7 +327,7 @@ const [hasTips, setHasTips] = useState(false)
             if (data?.id) setJobId(data.id)
           
             // Mark profile as complete in profiles table
-     // Mark profile as complete in profiles table
+       // Mark profile as complete in profiles table
 const { data: profileData, error: profileError } = await supabase
 .from("profiles")
 .upsert(
