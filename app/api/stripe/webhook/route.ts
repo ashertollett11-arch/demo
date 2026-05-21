@@ -97,92 +97,27 @@ export async function POST(req: Request) {
     // =====================================================
     // SUBSCRIPTION UPDATED
     // =====================================================
-    if (event.type === "customer.subscription.updated") {
-      const sub = event.data.object as Stripe.Subscription
-
-      const customerId =
-        typeof sub.customer === "string"
-          ? sub.customer
-          : sub.customer.id
-
-      const status = getSubscriptionStatus(sub)
-
-      console.log("🔄 SUB UPDATED:", {
-        id: sub.id,
-        customerId,
-        status,
-        cancel_at_period_end: sub.cancel_at_period_end,
-      })
-
-      // DEBUG: show all stored customers
-      const { data: all } = await supabase
-        .from("job")
-        .select("id, stripe_customer_id, subscription_status")
-
-      console.log(
-        "📦 ALL DB CUSTOMERS:",
-        all?.map((r) => r.stripe_customer_id)
-      )
-
-      // DEBUG: check match
-      const { data: match } = await supabase
-        .from("job")
-        .select("*")
-        .eq("stripe_customer_id", customerId)
-
-      console.log("🎯 MATCHING ROWS:", match)
-
-      const { data, error } = await supabase
-        .from("job")
-        .update({
-          subscription_status: status,
-        })
-        .eq("stripe_customer_id", customerId)
-        .select()
-
-      console.log("✅ UPDATED ROWS:", data)
-      console.log("SUPABASE URL:", process.env.SUPABASE_URL)
-     
-      console.log("EVENT TRACE:", event.type, {
-        status: sub?.status,
-        cancel_at_period_end: sub?.cancel_at_period_end,
-      })
-      if (error) {
-        console.error("❌ UPDATE ERROR:", error)
-      }
-    }
-
+   
     // =====================================================
     // SUBSCRIPTION DELETED
     // =====================================================
-    if (event.type === "customer.subscription.deleted") {
+    if (event.type === "customer.subscription.updated") {
       const sub = event.data.object as Stripe.Subscription
-
-      const customerId =
-        typeof sub.customer === "string"
-          ? sub.customer
-          : sub.customer.id
-
-      console.log("🗑 SUB DELETED:", {
-        id: sub.id,
-        customerId,
-      })
-
+    
+      const isCanceled =
+        sub.status === "canceled" ||
+        sub.cancel_at_period_end === true
+    
       const { data, error } = await supabase
         .from("job")
         .update({
-          subscription_status: "canceled",
+          subscription_status: isCanceled ? "canceled" : "active",
         })
-        .eq("stripe_customer_id", customerId)
+        .eq("stripe_customer_id", sub.customer as string)
         .select()
-
-      console.log("❌ CANCELLED ROWS:", data)
-
-      if (error) {
-        console.error("❌ CANCEL ERROR:", error)
-      }
+    
+      console.log("UPDATED ROWS:", data)
     }
-
     return NextResponse.json({ received: true })
   } catch (err: any) {
     console.error("❌ WEBHOOK ERROR:", err.message)
