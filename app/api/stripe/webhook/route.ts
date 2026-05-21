@@ -90,6 +90,7 @@ export async function POST(req: Request) {
 
       if (error) {
         console.error("❌ Checkout update error:", error)
+      
       }
     }
 
@@ -141,6 +142,11 @@ export async function POST(req: Request) {
 
       console.log("✅ UPDATED ROWS:", data)
       console.log("SUPABASE URL:", process.env.SUPABASE_URL)
+     
+      console.log("EVENT TRACE:", event.type, {
+        status: sub?.status,
+        cancel_at_period_end: sub?.cancel_at_period_end,
+      })
       if (error) {
         console.error("❌ UPDATE ERROR:", error)
       }
@@ -180,7 +186,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true })
   } catch (err: any) {
     console.error("❌ WEBHOOK ERROR:", err.message)
-
+    console.log("EVENT TRACE:", event.type, {
+      status: sub?.status,
+      cancel_at_period_end: sub?.cancel_at_period_end,
+    })
     return NextResponse.json(
       { error: err.message },
       { status: 500 }
