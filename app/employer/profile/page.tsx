@@ -345,11 +345,14 @@ return
 
 toast.success("Saved!")
 
-if (profileData?.subscription_status === "active") {
-router.push("/employer")
-} else {
-router.push("/billing")
-}}
+toast.success("Saved!")
+
+            if (profileData?.subscription_status === "active") {
+              router.push("/employer")
+            } else {
+              router.push("/billing")
+            }
+          }}
         >
           Save Profile
         </Button>
