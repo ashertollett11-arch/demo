@@ -67,57 +67,82 @@ export async function POST(req: Request) {
     // -------------------------
     // SUBSCRIPTION DELETED
     // -------------------------
-    if (event.type === "customer.subscription.deleted") {
+    if (event.type === "customer.subscription.updated") {
       const subscription = event.data.object as Stripe.Subscription
-
-      console.log("🗑 Deleted subscription:", subscription.id)
-
-      const { data: deletedRows, error } = await supabase
+    
+      console.log("-------- SUB UPDATE --------")
+      console.log("Subscription ID:", subscription.id)
+      console.log("Customer ID:", subscription.customer)
+      console.log("Status:", subscription.status)
+    
+      // SEE ALL ROWS
+      const { data: allRows } = await supabase
+        .from("job")
+        .select(`
+          id,
+          stripe_customer_id,
+          stripe_subscription_id,
+          subscription_status
+        `)
+    
+      console.log("ALL JOB ROWS:", allRows)
+    
+      // TEST MATCH
+      const { data: matchingRows } = await supabase
+        .from("job")
+        .select("*")
+        .eq("stripe_customer_id", subscription.customer as string)
+    
+      console.log("MATCHING ROWS:", matchingRows)
+    
+      const isCanceled =
+        subscription.status === "canceled" ||
+        subscription.cancel_at_period_end === true
+    
+      const { data: updatedRows, error } = await supabase
         .from("job")
         .update({
-          subscription_status: "canceled",
+          subscription_status: isCanceled ? "canceled" : "active",
         })
-        .eq("stripe_subscription_id", subscription.id)
+        .eq("stripe_customer_id", subscription.customer as string)
         .select()
-
-      console.log("Deleted rows:", deletedRows)
-
+    
+      console.log("UPDATED ROWS:", updatedRows)
+    
       if (error) {
-        console.error("❌ Cancel update error:", error)
+        console.error("❌ UPDATE ERROR:", error)
       }
     }
 
     // -------------------------
     // SUBSCRIPTION UPDATED
     // -------------------------
-    if (event.type === "customer.subscription.updated") {
+    if (event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription
-
-      console.log("-------- SUB UPDATE --------")
-      console.log("Subscription ID:", subscription.id)
-      console.log("Customer ID:", subscription.customer)
-      console.log("Status:", subscription.status)
-      console.log(
-        "Cancel at period end:",
-        subscription.cancel_at_period_end
-      )
-
-      const isCanceled =
-        subscription.cancel_at_period_end === true ||
-        subscription.status === "canceled"
-
-      const { data: updatedRows, error } = await supabase
+    
+      console.log("🗑 Deleted subscription:", subscription.id)
+    
+      const { data: existing } = await supabase
         .from("job")
-        .update({
-          subscription_status: isCanceled ? "canceled" : "active",
-        })
+        .select("*")
         .eq("stripe_subscription_id", subscription.id)
-        .select()
-
-      console.log("Updated rows:", updatedRows)
-
+    
+      console.log("Matching rows:", existing)
+    
+      const { data: updatedRows, error } = await supabase
+      .from("job")
+      .update({
+        subscription_status: "canceled",
+      })
+      .eq("stripe_customer_id", subscription.customer)
+      .select()
+      .eq("stripe_customer_id", subscription.customer)
+      .select()
+      console.log("MATCH RESULT:", updatedRows)
+      console.log("Deleted rows:", deletedRows)
+    
       if (error) {
-        console.error("❌ Subscription update error:", error)
+        console.error("❌ Cancel update error:", error)
       }
     }
 
