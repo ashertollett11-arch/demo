@@ -327,20 +327,29 @@ const [hasTips, setHasTips] = useState(false)
             if (data?.id) setJobId(data.id)
           
             // Mark profile as complete in profiles table
-            const { error: profileError } = await supabase
-              .from("profiles")
-              .update({ profile_complete: true })
-              .eq("id", user.id)
-          
-            if (profileError) {
-              console.error("PROFILE COMPLETE ERROR:", profileError)
-              toast.error("Saved but failed to mark profile complete.")
-              return
-            }
-          
-            toast.success("Saved!")
-            router.push("/billing")
-          }}
+     // Mark profile as complete in profiles table
+const { data: profileData, error: profileError } = await supabase
+.from("profiles")
+.upsert(
+  { id: user.id, email: user.email, profile_complete: true },
+  { onConflict: "id" }
+)
+.select("subscription_status")
+.single()
+
+if (profileError) {
+console.error("PROFILE COMPLETE ERROR:", profileError)
+toast.error("Saved but failed to mark profile complete.")
+return
+}
+
+toast.success("Saved!")
+
+if (profileData?.subscription_status === "active") {
+router.push("/employer")
+} else {
+router.push("/billing")
+}
         >
           Save Profile
         </Button>
