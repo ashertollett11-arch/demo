@@ -37,24 +37,35 @@ export async function POST(req: Request) {
       const userId = session.metadata?.userId
 
       const customerId =
-        typeof session.customer === "string"
-          ? session.customer
-          : session.customer?.id
-
-      const subscriptionId =
-        typeof session.subscription === "string"
-          ? session.subscription
-          : session.subscription?.id
+      typeof session.customer === "string"
+        ? session.customer
+        : session.customer?.id
+    
+    const subscriptionId =
+      typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription?.id
+    
+    console.log("SAVE CHECKOUT IDS:", {
+      customerId,
+      subscriptionId,
+      userId: session.metadata?.userId,
+    })
 
       if (!userId) return NextResponse.json({ received: true })
 
       const { error } = await supabase
         .from("job")
-        .update({
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          subscription_status: "active",
-        })
+        .upsert(
+          {
+            stripe_subscription_id: sub.id,
+            stripe_customer_id: sub.customer,
+            subscription_status: status,
+          },
+          {
+            onConflict: "stripe_subscription_id",
+          }
+        )
         .eq("user_id", userId)
 
       if (error) console.error("CHECKOUT ERROR:", error)
@@ -85,9 +96,16 @@ export async function POST(req: Request) {
 
       const { data, error } = await supabase
         .from("job")
-        .update({
-          subscription_status: isCanceled ? "canceled" : "active",
-        })
+        .upsert(
+          {
+            stripe_subscription_id: sub.id,
+            stripe_customer_id: sub.customer,
+            subscription_status: status,
+          },
+          {
+            onConflict: "stripe_subscription_id",
+          }
+        )
         .eq("stripe_subscription_id", sub.id)
                 .select()
 
@@ -109,9 +127,16 @@ export async function POST(req: Request) {
 
       const { data, error } = await supabase
         .from("job")
-        .update({
-          subscription_status: "canceled",
-        })
+        .upsert(
+          {
+            stripe_subscription_id: sub.id,
+            stripe_customer_id: sub.customer,
+            subscription_status: status,
+          },
+          {
+            onConflict: "stripe_subscription_id",
+          }
+        )
         .eq("stripe_subscription_id", sub.id)
                 .select()
 
