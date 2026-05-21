@@ -88,8 +88,8 @@ export async function POST(req: Request) {
         .update({
           subscription_status: isCanceled ? "canceled" : "active",
         })
-        .eq("stripe_customer_id", customerId)
-        .select()
+        .eq("stripe_subscription_id", sub.id)
+                .select()
 
       console.log("UPDATED ROWS:", data)
 
@@ -112,8 +112,8 @@ export async function POST(req: Request) {
         .update({
           subscription_status: "canceled",
         })
-        .eq("stripe_customer_id", customerId)
-        .select()
+        .eq("stripe_subscription_id", sub.id)
+                .select()
 
       console.log("DELETED ROWS:", data)
 
