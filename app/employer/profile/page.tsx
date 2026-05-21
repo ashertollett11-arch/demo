@@ -28,17 +28,15 @@ export default function EmployerProfilePage() {
           .eq("id", user.id)
           .maybeSingle()
   
-        console.log("SUB STATUS:", profile?.subscription_status)
-  
         if (error || !profile || profile.subscription_status !== "active") {
-          router.replace("/billing")
+          router.replace("/employer/billing")
           return
         }
   
         setUserId(user.id)
       } catch (err) {
         console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/billing")
+        router.replace("/employer/billing")
       }
     }
   
@@ -301,60 +299,62 @@ const [hasTips, setHasTips] = useState(false)
           onClick={async () => {
             const isValid = validateProfile()
             if (!isValid) return
-
-            const {
-              data: { user },
-            } = await supabase.auth.getUser()
-
+          
+            const { data: { user } } = await supabase.auth.getUser()
+          
             if (!user) {
               toast.error("Not logged in")
               return
             }
-
+          
             const { data, error } = await supabase
               .from("job")
               .upsert(
                 {
                   id: jobId || undefined,
                   user_id: user.id,
-
                   title: companyName || "Untitled Job",
                   company: companyName || "Unknown Company",
-
                   owner_name: ownerName || null,
                   business_type: businessType || null,
                   email: email || null,
                   phone: phone || null,
-
                   location: location || "Unknown",
                   details: details || "No description",
-
-                  pay: hourlyPay
-                    ? `$${Number(hourlyPay).toFixed(2)}/hr`
-                    : null,
+                  pay: hourlyPay ? `$${Number(hourlyPay).toFixed(2)}/hr` : null,
                   hourly_pay: hourlyPay ? Number(hourlyPay) : null,
                   has_tips: hasTips,
-
                   shift_preference: shiftPreference,
                   available_shifts: availableShifts,
                   preferred_jobs: preferredJobs,
-
                   status: "new",
-                                    distance: "0",
+                  distance: "0",
                 },
                 { onConflict: "user_id" }
               )
               .select()
               .single()
-
+          
             if (error) {
               console.error(error)
               toast.error(error.message)
               return
             }
-
+          
             if (data?.id) setJobId(data.id)
-
+          
+            // Mark profile as complete in profiles table
+            const { error: profileError } = await supabase
+              .from("profiles")
+              .update({ profile_complete: true })
+              .eq("id", user.id)
+          
+            if (profileError) {
+              console.error("PROFILE COMPLETE ERROR:", profileError)
+              toast.error("Saved but failed to mark profile complete.")
+              return
+            }
+          
             toast.success("Saved!")
             router.push("/employer")
           }}
