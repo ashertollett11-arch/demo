@@ -40,37 +40,33 @@ export default function EmployerDashboard() {
         const {
           data: { user },
         } = await supabase.auth.getUser()
-  
+
         // not logged in
         if (!user) {
           router.replace("/login")
           return
         }
-  
-        // get subscription
-        const { data: job, error } = await supabase
-          .from("job")
+
+        // get subscription from profiles
+        const { data: profile, error } = await supabase
+          .from("profiles")
           .select("subscription_status")
-          .eq("user_id", user.id)
+          .eq("id", user.id)
           .maybeSingle()
-  
-        console.log("SUB STATUS:", job?.subscription_status)
-  
-        // no job row OR inactive subscription
-        if (
-          error ||
-          !job ||
-          job.subscription_status !== "active"
-        ) {
-          router.replace("/billing")
+
+        console.log("SUB STATUS:", profile?.subscription_status)
+
+        // no profile row OR inactive subscription
+        if (error || !profile || profile.subscription_status !== "active") {
+          router.replace("/employer/billing")
           return
         }
       } catch (err) {
         console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/billing")
+        router.replace("/employer/billing")
       }
     }
-  
+
     checkAccess()
   }, [router])
   
