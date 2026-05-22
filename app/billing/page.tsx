@@ -204,7 +204,7 @@ export default function BillingPage() {
               <p className="text-sm text-muted-foreground">
                 {isCanceled
                   ? `Access until ${periodEndFormatted}`
-                  : `Renews ${periodEndFormatted}`}
+                  : `Next payment is ${periodEndFormatted}`}
               </p>
             )}
             {!isActive && (
