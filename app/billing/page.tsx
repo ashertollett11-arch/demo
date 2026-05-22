@@ -145,6 +145,7 @@ export default function BillingPage() {
   // -------------------------
   const isActive = profile?.subscription_status === "active"
   const isCanceled = profile?.subscription_status === "canceled"
+  const isPastDue = profile?.subscription_status === "past_due"
 
   const periodEndFormatted = profile?.current_period_end
     ? new Date(profile.current_period_end).toLocaleDateString("en-US", {
@@ -171,7 +172,24 @@ export default function BillingPage() {
   return (
     <div className="min-h-screen p-6 max-w-3xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold">Billing</h1>
-
+      {isPastDue && (
+  <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+    <p className="text-sm font-semibold text-red-800">
+      ⚠️ Your payment failed
+    </p>
+    <p className="text-xs text-red-600 mt-1">
+      Your last payment didn't go through. Please update your payment method to keep access.
+    </p>
+    <Button
+      size="sm"
+      variant="destructive"
+      className="mt-3"
+      onClick={openPortal}
+    >
+      Update Payment Method
+    </Button>
+  </div>
+)}
       {/* PLAN CARD */}
       <Card>
         <CardHeader>
@@ -196,12 +214,14 @@ export default function BillingPage() {
             )}
           </div>
           {isActive ? (
-            <Badge className="bg-green-100 text-green-700">Active</Badge>
-          ) : isCanceled ? (
-            <Badge className="bg-yellow-100 text-yellow-700">Canceled</Badge>
-          ) : (
-            <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
-          )}
+  <Badge className="bg-green-100 text-green-700">Active</Badge>
+) : isCanceled ? (
+  <Badge className="bg-yellow-100 text-yellow-700">Canceled</Badge>
+) : isPastDue ? (
+  <Badge className="bg-red-100 text-red-700">Payment Failed</Badge>
+) : (
+  <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
+)}
         </CardContent>
       </Card>
 
@@ -259,8 +279,8 @@ export default function BillingPage() {
                     Are you sure you want to cancel?
                   </p>
                   <p className="text-xs text-red-600">
-                    Your subscription was successfuly canceled.
-                  </p>
+  Your subscription stays active until {periodEndFormatted ?? "the end of your billing period"}, then your account will be downgraded.
+</p>
                   <div className="flex gap-2">
                     <Button
                       size="sm"

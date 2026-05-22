@@ -16,10 +16,13 @@ function getStatus(sub: Stripe.Subscription): string {
   if (sub.status === "canceled" || sub.cancel_at_period_end || sub.ended_at) {
     return "canceled"
   }
+  if (sub.status === "past_due" || sub.status === "unpaid") {
+    return "past_due"
+  }
   if (sub.status === "active" || sub.status === "trialing") {
     return "active"
   }
-  return sub.status // past_due, unpaid, incomplete, etc.
+  return sub.status
 }
 
 // Update profile by subscription ID, fall back to customer ID if no row matched
