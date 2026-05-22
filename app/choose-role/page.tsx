@@ -1,9 +1,11 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { toast } from "sonner"
 import {
   Briefcase,
   GraduationCap,
@@ -15,42 +17,65 @@ import {
 
 export default function ChooseRolePage() {
   const router = useRouter()
+  const [pendingRole, setPendingRole] = useState<"student" | "employer" | null>(null)
+  const [loading, setLoading] = useState(false)
 
+  // -------------------------
+  // AUTH CHECK
+  // -------------------------
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) router.replace("/login")
+    }
+    checkAuth()
+  }, [router])
+
+  // -------------------------
+  // ROLE SELECTION
+  // -------------------------
   const selectRole = async (role: "student" | "employer") => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      alert("Not logged in")
+    // First click — warn and set pending
+    if (pendingRole !== role) {
+      setPendingRole(role)
+      toast.warning(
+        role === "employer"
+          ? "You selected Employer — click again to confirm."
+          : "You selected Student — click again to confirm.",
+        { duration: 4000 }
+      )
       return
     }
 
-    // 1. Save role in users table
+    // Second click — confirm and proceed
+    setLoading(true)
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      toast.error("Not logged in")
+      setLoading(false)
+      return
+    }
+
     const { error } = await supabase.from("users").insert({
       id: user.id,
       role,
     })
 
     if (error) {
-      alert(error.message)
+      toast.error(error.message)
+      setLoading(false)
+      setPendingRole(null)
       return
     }
 
-    // 2. Create profile in correct table
     if (role === "student") {
-      await supabase.from("Students").insert({
-        user_id: user.id,
-      })
-
+      await supabase.from("Students").insert({ user_id: user.id })
       router.push("/student/profile")
     }
 
     if (role === "employer") {
-      await supabase.from("employers").insert({
-        user_id: user.id,
-      })
-
       router.push("/employer/profile")
     }
   }
@@ -61,7 +86,7 @@ export default function ChooseRolePage() {
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
 
       <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-6 py-12">
-        
+
         {/* TOP */}
         <div className="mb-14 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground shadow-sm">
@@ -81,9 +106,11 @@ export default function ChooseRolePage() {
 
         {/* ROLE CARDS */}
         <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-2">
-          
+
           {/* STUDENT */}
-          <Card className="group relative overflow-hidden border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-2xl">
+          <Card className={`group relative overflow-hidden border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+            pendingRole === "student" ? "border-primary ring-2 ring-primary/30" : "hover:border-primary/30"
+          }`}>
             <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
 
             <CardContent className="p-8">
@@ -91,9 +118,7 @@ export default function ChooseRolePage() {
                 <GraduationCap className="h-7 w-7 text-primary" />
               </div>
 
-              <h2 className="text-2xl font-bold text-foreground">
-                I’m a Student
-              </h2>
+              <h2 className="text-2xl font-bold text-foreground">I'm a Student</h2>
 
               <p className="mt-3 text-muted-foreground">
                 Find flexible jobs near you, apply quickly, and build your
@@ -104,52 +129,43 @@ export default function ChooseRolePage() {
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
-                    <p className="font-medium text-foreground">
-                      Personalized matches
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Get matched to jobs based on your availability and goals.
-                    </p>
+                    <p className="font-medium text-foreground">Personalized matches</p>
+                    <p className="text-sm text-muted-foreground">Get matched to jobs based on your availability and goals.</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
-                    <p className="font-medium text-foreground">
-                      Fast applications
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Apply to jobs in just a few clicks.
-                    </p>
+                    <p className="font-medium text-foreground">Fast applications</p>
+                    <p className="text-sm text-muted-foreground">Apply to jobs in just a few clicks.</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
-                    <p className="font-medium text-foreground">
-                      Build experience
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Start building your resume while still in school.
-                    </p>
+                    <p className="font-medium text-foreground">Build experience</p>
+                    <p className="text-sm text-muted-foreground">Start building your resume while still in school.</p>
                   </div>
                 </div>
               </div>
 
               <Button
                 onClick={() => selectRole("student")}
-                className="mt-10 h-11 w-full text-base font-medium"
+                disabled={loading}
+                className={`mt-10 h-11 w-full text-base font-medium ${
+                  pendingRole === "student" ? "bg-primary text-white" : ""
+                }`}
               >
-                Continue as Student
+                {pendingRole === "student" ? "Confirm — I'm a Student" : "Continue as Student"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </CardContent>
           </Card>
 
           {/* EMPLOYER */}
-          <Card className="group relative overflow-hidden border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-2xl">
+          <Card className={`group relative overflow-hidden border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+            pendingRole === "employer" ? "border-primary ring-2 ring-primary/30" : "hover:border-primary/30"
+          }`}>
             <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
 
             <CardContent className="p-8">
@@ -157,9 +173,7 @@ export default function ChooseRolePage() {
                 <Briefcase className="h-7 w-7 text-primary" />
               </div>
 
-              <h2 className="text-2xl font-bold text-foreground">
-                I’m an Employer
-              </h2>
+              <h2 className="text-2xl font-bold text-foreground">I'm an Employer</h2>
 
               <p className="mt-3 text-muted-foreground">
                 Connect with motivated students, manage applicants, and hire
@@ -170,50 +184,38 @@ export default function ChooseRolePage() {
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
-                    <p className="font-medium text-foreground">
-                      Smart candidate matching
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Discover students who fit your schedule and needs.
-                    </p>
+                    <p className="font-medium text-foreground">Smart candidate matching</p>
+                    <p className="text-sm text-muted-foreground">Discover students who fit your schedule and needs.</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
-                    <p className="font-medium text-foreground">
-                      Simple hiring workflow
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Track applicants and manage interviews easily.
-                    </p>
+                    <p className="font-medium text-foreground">Simple hiring workflow</p>
+                    <p className="text-sm text-muted-foreground">Track applicants and manage interviews easily.</p>
                   </div>
                 </div>
-
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
-                    <p className="font-medium text-foreground">
-                      Reach local students
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Hire students looking for flexible work opportunities.
-                    </p>
+                    <p className="font-medium text-foreground">Reach local students</p>
+                    <p className="text-sm text-muted-foreground">Hire students looking for flexible work opportunities.</p>
                   </div>
                 </div>
               </div>
 
               <Button
                 onClick={() => selectRole("employer")}
-                variant="outline"
+                disabled={loading}
+                variant={pendingRole === "employer" ? "default" : "outline"}
                 className="mt-10 h-11 w-full text-base font-medium"
               >
-                Continue as Employer
+                {pendingRole === "employer" ? "Confirm — I'm an Employer" : "Continue as Employer"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </CardContent>
           </Card>
+
         </div>
 
         {/* BOTTOM */}
@@ -221,6 +223,7 @@ export default function ChooseRolePage() {
           <Users className="h-4 w-4" />
           Trusted by students and employers looking for better local hiring
         </div>
+
       </div>
     </div>
   )

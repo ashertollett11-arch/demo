@@ -22,6 +22,8 @@ export default function BillingPage() {
 
   const [loading, setLoading] = useState(true)
   const [canceling, setCanceling] = useState(false)
+  const [checkingOut, setCheckingOut] = useState(false)
+  const [openingPortal, setOpeningPortal] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
@@ -66,10 +68,28 @@ export default function BillingPage() {
   }, [])
 
   // -------------------------
+  // SUCCESS/CANCEL URL HANDLING
+  // -------------------------
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+
+    if (params.get("success") === "true") {
+      toast.success("You're subscribed! Welcome to SimplyApply.")
+      window.history.replaceState({}, "", "/billing")
+    }
+
+    if (params.get("canceled") === "true") {
+      toast.error("Checkout canceled. No charges were made.")
+      window.history.replaceState({}, "", "/billing")
+    }
+  }, [])
+
+  // -------------------------
   // START CHECKOUT
   // -------------------------
   const startCheckout = async () => {
-    if (!userId) return
+    if (!userId || checkingOut) return
+    setCheckingOut(true)
 
     const res = await fetch("/api/stripe/create-checkout-session", {
       method: "POST",
@@ -81,6 +101,7 @@ export default function BillingPage() {
 
     if (!res.ok || !data.url) {
       toast.error(data.error || "Failed to start checkout.")
+      setCheckingOut(false)
       return
     }
 
@@ -91,7 +112,8 @@ export default function BillingPage() {
   // OPEN CUSTOMER PORTAL
   // -------------------------
   const openPortal = async () => {
-    if (!userId) return
+    if (!userId || openingPortal) return
+    setOpeningPortal(true)
 
     const res = await fetch("/api/stripe/create-portal-session", {
       method: "POST",
@@ -103,6 +125,7 @@ export default function BillingPage() {
 
     if (!res.ok || !data.url) {
       toast.error(data.error || "Failed to open billing portal.")
+      setOpeningPortal(false)
       return
     }
 
@@ -172,24 +195,28 @@ export default function BillingPage() {
   return (
     <div className="min-h-screen p-6 max-w-3xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold">Billing</h1>
+
+      {/* PAST DUE BANNER */}
       {isPastDue && (
-  <div className="bg-red-50 border border-red-300 rounded-lg p-4">
-    <p className="text-sm font-semibold text-red-800">
-      ⚠️ Your payment failed
-    </p>
-    <p className="text-xs text-red-600 mt-1">
-      Your last payment didn't go through. Please update your payment method to keep access.
-    </p>
-    <Button
-      size="sm"
-      variant="destructive"
-      className="mt-3"
-      onClick={openPortal}
-    >
-      Update Payment Method
-    </Button>
-  </div>
-)}
+        <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+          <p className="text-sm font-semibold text-red-800">
+            ⚠️ Your payment failed
+          </p>
+          <p className="text-xs text-red-600 mt-1">
+            Your last payment didn't go through. Please update your payment method to keep access.
+          </p>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="mt-3"
+            onClick={openPortal}
+            disabled={openingPortal}
+          >
+            {openingPortal ? "Opening..." : "Update Payment Method"}
+          </Button>
+        </div>
+      )}
+
       {/* PLAN CARD */}
       <Card>
         <CardHeader>
@@ -201,39 +228,43 @@ export default function BillingPage() {
               {isActive ? "Pro Plan" : "No Active Plan"}
             </p>
             {isActive && periodEndFormatted && (
-              <p className="text-sm text-muted-foreground">
-                {isCanceled
-                  ? `Access until ${periodEndFormatted}`
-                  : `Next payment is ${periodEndFormatted}`}
-              </p>
-            )}
-            {!isActive && (
+  <p className="text-sm text-muted-foreground">
+    Renews {periodEndFormatted}
+  </p>
+)}
+
+{isCanceled && periodEndFormatted && (
+  <p className="text-sm text-muted-foreground">
+    Access until {periodEndFormatted}
+  </p>
+)}
+            {!isActive && !isPastDue && (
               <p className="text-sm text-muted-foreground">
                 Subscribe to access employer features.
               </p>
             )}
           </div>
           {isActive ? (
-  <Badge className="bg-green-100 text-green-700">Active</Badge>
-) : isCanceled ? (
-  <Badge className="bg-yellow-100 text-yellow-700">Canceled</Badge>
-) : isPastDue ? (
-  <Badge className="bg-red-100 text-red-700">Payment Failed</Badge>
-) : (
-  <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
-)}
+            <Badge className="bg-green-100 text-green-700">Active</Badge>
+          ) : isCanceled ? (
+            <Badge className="bg-yellow-100 text-yellow-700">Canceled</Badge>
+          ) : isPastDue ? (
+            <Badge className="bg-red-100 text-red-700">Payment Failed</Badge>
+          ) : (
+            <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
+          )}
         </CardContent>
       </Card>
 
       {/* SUBSCRIBE — only show if no active subscription */}
-      {!isActive && !isCanceled && (
+      {!isActive && !isCanceled && !isPastDue && (
         <Card>
           <CardHeader>
             <CardTitle>Get Started</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button onClick={startCheckout}>
-              Subscribe — $9.99/month
+            <Button onClick={startCheckout} disabled={checkingOut}>
+              {checkingOut ? "Redirecting..." : "Subscribe — $9.99/month"}
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
               Billed monthly. Cancel anytime.
@@ -250,8 +281,8 @@ export default function BillingPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Button variant="outline" onClick={openPortal}>
-                Open Billing Portal
+              <Button variant="outline" onClick={openPortal} disabled={openingPortal}>
+                {openingPortal ? "Opening..." : "Open Billing Portal"}
               </Button>
               <p className="text-xs text-muted-foreground mt-2">
                 Update payment method or download invoices.
@@ -270,7 +301,7 @@ export default function BillingPage() {
                     Cancel Subscription
                   </Button>
                   <p className="text-xs text-muted-foreground mt-1">
-                  Your subscription was successfuly canceled.
+                    You'll keep access until the end of your billing period.
                   </p>
                 </div>
               ) : (
@@ -279,8 +310,8 @@ export default function BillingPage() {
                     Are you sure you want to cancel?
                   </p>
                   <p className="text-xs text-red-600">
-  Your subscription stays active until {periodEndFormatted ?? "the end of your billing period"}, then your account will be downgraded.
-</p>
+                    Your subscription stays active until {periodEndFormatted ?? "the end of your billing period"}, then your account will be downgraded.
+                  </p>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
@@ -313,8 +344,8 @@ export default function BillingPage() {
             <CardTitle>Resubscribe</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button onClick={startCheckout}>
-              Resubscribe
+            <Button onClick={startCheckout} disabled={checkingOut}>
+              {checkingOut ? "Redirecting..." : "Resubscribe"}
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
               Your account will be reactivated immediately.
