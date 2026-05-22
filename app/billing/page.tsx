@@ -250,7 +250,7 @@ export default function BillingPage() {
                     Cancel Subscription
                   </Button>
                   <p className="text-xs text-muted-foreground mt-1">
-                    You'll keep access until the end of your billing period.
+                  Your subscription was successfuly canceled.
                   </p>
                 </div>
               ) : (
@@ -259,7 +259,7 @@ export default function BillingPage() {
                     Are you sure you want to cancel?
                   </p>
                   <p className="text-xs text-red-600">
-                    Your subscription was successfuly cancled.
+                    Your subscription was successfuly canceled.
                   </p>
                   <div className="flex gap-2">
                     <Button
