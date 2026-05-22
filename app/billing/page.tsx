@@ -16,6 +16,7 @@ type Profile = {
   current_period_end: string | null
   price_id: string | null
 }
+
 export default function BillingPage() {
   const router = useRouter()
 
@@ -116,15 +117,29 @@ export default function BillingPage() {
       toast.error("No active subscription found.")
       return
     }
-  
+
     setCanceling(true)
     setShowConfirm(false)
-  
+
     const res = await fetch("/api/stripe/cancel-subscription", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     })
+
+    const data = await res.json()
+
+    if (!res.ok || data.error) {
+      toast.error(data.error || "Failed to cancel subscription.")
+      setCanceling(false)
+      return
+    }
+
+    toast.success("Subscription canceled. You'll keep access until the end of your billing period.")
+    await loadBilling()
+    setCanceling(false)
+  }
+
   // -------------------------
   // HELPERS
   // -------------------------
@@ -162,13 +177,11 @@ export default function BillingPage() {
         <CardHeader>
           <CardTitle>Current Plan</CardTitle>
         </CardHeader>
-
         <CardContent className="flex items-center justify-between">
           <div className="space-y-1">
             <p className="text-lg font-semibold">
               {isActive ? "Pro Plan" : "No Active Plan"}
             </p>
-
             {isActive && periodEndFormatted && (
               <p className="text-sm text-muted-foreground">
                 {isCanceled
@@ -176,14 +189,12 @@ export default function BillingPage() {
                   : `Renews ${periodEndFormatted}`}
               </p>
             )}
-
             {!isActive && (
               <p className="text-sm text-muted-foreground">
                 Subscribe to access employer features.
               </p>
             )}
           </div>
-
           {isActive ? (
             <Badge className="bg-green-100 text-green-700">Active</Badge>
           ) : isCanceled ? (
@@ -217,7 +228,6 @@ export default function BillingPage() {
           <CardHeader>
             <CardTitle>Manage Subscription</CardTitle>
           </CardHeader>
-
           <CardContent className="space-y-4">
             <div>
               <Button variant="outline" onClick={openPortal}>
