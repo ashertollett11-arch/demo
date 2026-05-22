@@ -16,7 +16,6 @@ type Profile = {
   current_period_end: string | null
   price_id: string | null
 }
-
 export default function BillingPage() {
   const router = useRouter()
 
@@ -113,33 +112,19 @@ export default function BillingPage() {
   // CANCEL SUBSCRIPTION
   // -------------------------
   const cancelSubscription = async () => {
-    if (!profile?.stripe_subscription_id) {
+    if (!userId) {
       toast.error("No active subscription found.")
       return
     }
-
+  
     setCanceling(true)
     setShowConfirm(false)
-
+  
     const res = await fetch("/api/stripe/cancel-subscription", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscriptionId: profile.stripe_subscription_id }),
+      body: JSON.stringify({ userId }),
     })
-
-    const data = await res.json()
-
-    if (!res.ok || data.error) {
-      toast.error(data.error || "Failed to cancel subscription.")
-      setCanceling(false)
-      return
-    }
-
-    toast.success("Subscription canceled. You'll keep access until the end of your billing period.")
-    await loadBilling()
-    setCanceling(false)
-  }
-
   // -------------------------
   // HELPERS
   // -------------------------
