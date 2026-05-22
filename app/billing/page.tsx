@@ -259,7 +259,7 @@ export default function BillingPage() {
                     Are you sure you want to cancel?
                   </p>
                   <p className="text-xs text-red-600">
-                    Your subscription stays active until {periodEndFormatted ?? "the end of your billing period"}, then your account will be downgraded.
+                    Your subscription was successfuly cancled.
                   </p>
                   <div className="flex gap-2">
                     <Button
