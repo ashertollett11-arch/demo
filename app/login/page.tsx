@@ -24,44 +24,34 @@ export default function LoginPage() {
   // CREATE ACCOUNT
   const signUp = async () => {
     setLoading(true)
-
+  
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
     })
-
+  
     setLoading(false)
-
+  
     if (error) {
       const message = error.message.toLowerCase()
-    
-      if (
-        message.includes("user already registered") ||
-        message.includes("already registered")
-      ) {
-        toast.error("Account already exists", {
-          description: "Try logging in instead.",
-        })
-      } else if (
-        message.includes("anonymous") ||
-        !email ||
-        !password
-      ) {
-        toast.error("Missing email or password", {
-          description: "Please fill out both fields.",
-        })
+      if (message.includes("user already registered") || message.includes("already registered")) {
+        toast.error("Account already exists", { description: "Try logging in instead." })
+      } else if (message.includes("anonymous") || !email || !password) {
+        toast.error("Missing email or password", { description: "Please fill out both fields." })
       } else {
-        toast.error("Signup failed", {
-          description: error.message,
-        })
+        toast.error("Signup failed", { description: error.message })
       }
-    
       return
     }
-    const user = data.user
-
-   
-    router.push("/choose-role")
+  
+    // Don't redirect — tell them to check email
+    toast.success("Account created!", {
+      description: "Check your email and click the confirmation link to continue.",
+      duration: 8000,
+    })
   }
 
   // LOGIN

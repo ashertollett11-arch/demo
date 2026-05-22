@@ -29,5 +29,5 @@ export async function GET(request: Request) {
     await supabase.auth.exchangeCodeForSession(code)
   }
 
-  return NextResponse.redirect(new URL("/student/profile", url.origin))
+  return NextResponse.redirect(new URL("/choose-role", url.origin))  
 }
