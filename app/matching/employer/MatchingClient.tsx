@@ -413,7 +413,9 @@ const activeShifts = useMemo(() => {
     if (!employerId || students.length === 0) return
   
     const seedStatuses = async () => {
-      const rows = students.map((student) => ({
+      const rows = students
+      .filter((student) => student.profile_complete === true)
+      .map((student) => ({
         employer_id: employerId,
         student_id: student.id,
         status: "new",
@@ -513,7 +515,9 @@ const activeShifts = useMemo(() => {
       }
       
       const filteredCandidates = scoredCandidates.map((candidate) => {
-       
+        const filteredCandidates = scoredCandidates
+        .filter((candidate) => candidate.profile_complete === true)
+        .map((candidate) => {
         if (searchQuery.trim() !== "") {
             const q = searchQuery.toLowerCase()
           
