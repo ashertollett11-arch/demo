@@ -176,7 +176,9 @@ export default function EmployerDashboard() {
     if (!userId || students.length === 0) return
 
     const loadAndSeedStatuses = async () => {
-      const rows = students.map((student) => ({
+      const rows = students
+      .filter((student) => student.profile_complete === true)
+      .map((student) => ({
         employer_id: userId,
         student_id: student.id,
         status: "new",
