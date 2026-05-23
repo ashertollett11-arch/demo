@@ -65,7 +65,7 @@ export default function LandingPage() {
               Create an account
             </Link>
             <Link href="/pricing" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-            pricing
+            Pricing
             </Link>
           
           </div>
@@ -343,71 +343,15 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="px-4 py-20 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              What People Are Saying
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Hear from students and employers who found success with SimplyApply.
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {[
-              {
-                quote: "I was so nervous about getting my first job. SimplyApply made it easy - I got hired at Target within a week!",
-                name: "Emma Chen",
-                role: "High School Junior, 16",
-                rating: 5,
-              },
-              {
-                quote: "Finding reliable teen workers used to take weeks. Now I can hire verified students in days. Game changer for our restaurant.",
-                name: "Marcus Rivera",
-                role: "Owner, Taco Loco",
-                rating: 5,
-              },
-              {
-                quote: "No resume? No problem! I just filled out my profile and got matched with a summer camp job that fits my schedule perfectly.",
-                name: "Jordan Williams",
-                role: "High School Senior, 17",
-                rating: 5,
-              },
-            ].map((testimonial, index) => (
-              <Card key={index} className="border-border bg-card">
-                <CardContent className="p-6">
-                  <div className="flex gap-1">
-                    {Array.from({ length: testimonial.rating }).map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-chart-4 text-chart-4" />
-                    ))}
-                  </div>
-                  <p className="mt-4 text-foreground">&quot;{testimonial.quote}&quot;</p>
-                  <div className="mt-6 flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                      {testimonial.name.split(" ").map(n => n[0]).join("")}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{testimonial.name}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
+   
       {/* Stats Section */}
       <section className="border-t border-border bg-primary px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 text-center sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { stat: "10,000+", label: "Students Placed" },
-              { stat: "500+", label: "Partner Employers" },
-              { stat: "3 Days", label: "Avg. Time to Hire" },
-              { stat: "4.9/5", label: "Satisfaction Rating" },
+              { stat: "Local", label: "Students Placed" },
+              { stat: "Local", label: "Partner Employers" },
+          
             ].map((item) => (
               <div key={item.label}>
                 <p className="text-4xl font-bold text-primary-foreground">{item.stat}</p>
@@ -471,7 +415,7 @@ export default function LandingPage() {
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/employer" className="hover:text-foreground">Dashboard</Link></li>
                 <li><Link href="/pricing" className="hover:text-foreground">Pricing</Link></li>
-                <li><Link href="/billing" className="hover:text-foreground">Billing</Link></li>
+                <li><Link href="/pricing" className="hover:text-foreground">Billing</Link></li>
               </ul>
             </div>
 
