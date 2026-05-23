@@ -95,8 +95,8 @@ export default function PricingPage() {
             <Link href="/pricing" className="text-sm font-medium text-foreground">
               Pricing
             </Link>
-            <Link href="/matching" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              Find Candidates
+            <Link href="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+Get Started
             </Link>
           </div>
 
