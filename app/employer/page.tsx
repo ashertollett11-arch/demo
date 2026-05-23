@@ -93,9 +93,11 @@ export default function EmployerDashboard() {
   // -------------------------
   useEffect(() => {
     if (!userId) return
-
     const loadStudents = async () => {
-      const { data } = await supabase.from("Students").select("*")
+      const { data } = await supabase
+        .from("Students")
+        .select("*")
+        .eq("profile_complete", true)
       setStudents(data || [])
     }
 
