@@ -20,39 +20,7 @@ export default function StudentPage() {
   
   const router = useRouter()
 
-  useEffect(() => {
-    const checkAccess = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-  
-        if (!user) {
-          router.replace("/login")
-          return
-        }
-  
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("subscription_status")
-          .eq("id", user.id)
-          .maybeSingle()
-  
-        console.log("PROFILE CHECK:", profile)
-  
-        if (error || !profile || profile.subscription_status !== "active") {
-          router.replace("/billing")
-          return
-        }
-  
-        setUserId(user.id)
-      } catch (err) {
-        console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/billing")
-      }
-    }
-  
-    checkAccess()
-  }, [router])
-  
+
   
   
   
