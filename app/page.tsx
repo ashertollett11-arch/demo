@@ -369,7 +369,7 @@ export default function LandingPage() {
             Ready to get started?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Join thousands of students and employers already using SimplyApply.
+            Join many of students and employers already using SimplyApply.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button size="lg" className="w-full gap-2 px-8 sm:w-auto" asChild>
@@ -406,7 +406,6 @@ export default function LandingPage() {
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/student" className="hover:text-foreground">Dashboard</Link></li>
                 <li><Link href="/login" className="hover:text-foreground">Browse Jobs</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Success Stories</Link></li>
               </ul>
             </div>
 

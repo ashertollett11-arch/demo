@@ -59,7 +59,7 @@ const faqs = [
   },
   {
     question: "How does the verification process work?",
-    answer: "Students submit their school information and GPA, which we verify directly with their educational institution. This ensures you're seeing accurate, trustworthy information about each candidate.",
+    answer: "Students submit their school information and GPA, which is submitted through a screenshot thatsd verified by a human. This ensures you're seeing accurate, trustworthy information about each candidate.",
   },
   {
     question: "Can I cancel my subscription?",
@@ -204,9 +204,8 @@ export default function PricingPage() {
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-8 text-center sm:grid-cols-3">
               {[
-                { stat: "500+", label: "Partner Employers" },
+                { stat: "Mant Local", label: "Partner Employers" },
                 { stat: "2.5 Days", label: "Avg. Time to Hire" },
-                { stat: "94%", label: "Employer Satisfaction" },
               ].map((item) => (
                 <div key={item.label}>
                   <p className="text-3xl font-bold text-primary-foreground sm:text-4xl">{item.stat}</p>
@@ -264,9 +263,7 @@ export default function PricingPage() {
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="w-full px-8 sm:w-auto" asChild>
-                <Link href="/matching">View Candidates First</Link>
-              </Button>
+            
             </div>
           </div>
         </section>
