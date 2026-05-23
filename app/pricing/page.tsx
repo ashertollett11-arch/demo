@@ -204,8 +204,10 @@ export default function PricingPage() {
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-8 text-center sm:grid-cols-3">
               {[
-                { stat: "Mant Local", label: "Partner Employers" },
+                { stat: "Various Local", label: "Partner Employers" },
                 { stat: "2.5 Days", label: "Avg. Time to Hire" },
+                { stat: "Various Local", label: "Students" },
+
               ].map((item) => (
                 <div key={item.label}>
                   <p className="text-3xl font-bold text-primary-foreground sm:text-4xl">{item.stat}</p>

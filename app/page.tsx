@@ -349,8 +349,8 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 text-center sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { stat: "Local", label: "Students Placed" },
-              { stat: "Local", label: "Partner Employers" },
+              { stat: "Local Students", label: "Looking to work for you" },
+              { stat: "Local Employers", label: "Looking to hire you" },
           
             ].map((item) => (
               <div key={item.label}>
