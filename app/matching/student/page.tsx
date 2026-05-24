@@ -54,21 +54,21 @@ export default function MatchesPage() {
 
   useEffect(() => {
     const checkProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const { data } = await supabase.auth.getUser()
+      const user = data?.user
   
-      const { data, error } = await supabase
-        .from("Students")
-        .select("profile_complete")
-        .eq("user_id", user.id)
-        .single()
-  
-      if (error || !data) {
-        router.replace("/student/profile?missing=true")
+      if (!user) {
+        router.replace("/login")
         return
       }
   
-      if (!data.profile_complete) {
+      const { data: profile } = await supabase
+        .from("Students")
+        .select("profile_complete")
+        .eq("user_id", user.id)
+        .maybeSingle()
+  
+      if (!profile || !profile.profile_complete) {
         router.replace("/student/profile?missing=true")
       }
     }
@@ -479,7 +479,7 @@ useEffect(() => {
     }
 
     // 5. Optional: update job status locally
-    alert(`Applied to ${job.title}`)
+    toast.success(`Applied to ${job.title}!`)
   }}
 >
   Apply
