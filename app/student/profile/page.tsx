@@ -294,7 +294,7 @@ export default function ProfilePage() {
             ref={schoolRef} value={school}
             onChange={(e) => setSchool(e.target.value)}
             className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="School"
+            placeholder="School(Put Most Recent School Atented)"
           />
           <input
             type="number" step="0.01" min="0" max="4"
@@ -306,7 +306,7 @@ export default function ProfilePage() {
               if (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 4) setGpa(value)
             }}
             className={`w-full border rounded px-3 py-2 text-sm ${isGpaLocked ? "bg-gray-100 opacity-70 cursor-not-allowed" : ""}`}
-            placeholder="GPA"
+            placeholder="GPA(Unweighted)"
           />
 
           {gpa.trim() === "" && !isGpaLocked && (
