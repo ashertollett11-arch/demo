@@ -419,15 +419,29 @@ export default function LandingPage() {
             </div>
 
             <div>
-              <h4 className="font-semibold text-foreground">Company</h4>
-              <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#" className="hover:text-foreground">About</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Contact</Link></li>
-                <li><Link href="#" className="hover:text-foreground">Privacy Policy</Link></li>
-              </ul>
-            </div>
-          </div>
+  <h4 className="font-semibold text-foreground">Company</h4>
 
+  <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+    <li>
+      <Link href="about" className="hover:text-foreground">
+        About
+      </Link>
+    </li>
+
+    <li>
+      <Link href="/#" className="hover:text-foreground">
+        Contact
+      </Link>
+    </li>
+
+    <li>
+      <Link href="/privacy" className="hover:text-foreground">
+        Privacy Policy
+      </Link>
+    </li>
+  </ul>
+</div>
+</div>
           <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
             <p className="text-sm text-muted-foreground">
               &copy; 2026 SimplyApply. All rights reserved.

@@ -216,7 +216,6 @@ export default function JobPage() {
         <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
           <div>
             <CardTitle className="text-2xl">{job.title}</CardTitle>
-            <p className="text-muted-foreground">{job.company}</p>
           </div>
 
           <Badge
