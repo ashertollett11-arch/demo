@@ -326,8 +326,7 @@ export default function LandingPage() {
                   <div className="mt-4 flex items-center justify-between">
                     <span className="font-semibold text-primary">{job.pay}</span>
                     <Button size="sm" variant="ghost" className="text-xs">
-                      View Details
-                    </Button>
+                    <Link href="/login">View Details</Link>                    </Button>
                   </div>
                 </CardContent>
               </Card>
