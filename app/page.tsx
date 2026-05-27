@@ -428,7 +428,7 @@ export default function LandingPage() {
     </li>
 
     <li>
-      <Link href="/#" className="hover:text-foreground">
+      <Link href="/contact" className="hover:text-foreground">
         Contact
       </Link>
     </li>
