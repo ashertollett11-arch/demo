@@ -28,7 +28,7 @@ export default function ProfilePage() {
     }
     checkAuth()
   }, [router])
-
+  const [zipCode, setZipCode] = useState("")
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [saving, setSaving] = useState(false)
   const MAX_INTERESTS = 3
@@ -89,6 +89,8 @@ export default function ProfilePage() {
     age.trim().length > 0 &&
     gpa.trim().length > 0 &&
     location.trim().length > 0 &&
+    zipCode.trim().length === 5 &&
+
     emailRegex.test(email) &&
     school.trim().length > 0 &&
     isAgeValid &&
@@ -97,7 +99,6 @@ export default function ProfilePage() {
     preferredJobs.length > 0 &&
     interests.length > 0 &&
     availability.some((d) => d.available)
-
   const timeOptions = Array.from({ length: 24 }, (_, i) => {
     const hour = i % 12 === 0 ? 12 : i % 12
     const ampm = i < 12 ? "AM" : "PM"
@@ -127,6 +128,7 @@ export default function ProfilePage() {
       if (error) { console.log(error); setLoading(false); return }
 
       if (profileData) {
+        setZipCode(profileData.zip_code || "")
         setGpaProofUrl(profileData.gpa_proof_url || null)
         setName(profileData.name || "")
         setAge(String(profileData.age || ""))
@@ -160,20 +162,7 @@ export default function ProfilePage() {
 
     const { error } = await supabase
       .from("Students")
-      .upsert(
-        {
-          user_id: user.id,
-          profile_complete: isProfileComplete,
-          name, age: Number(age), location, email, school, phone,
-          interests, preferred_jobs: preferredJobs, availability,
-          shift_preference: shiftPreference,
-          ...(gpaStatus !== "pending" && gpaStatus !== "approved" ? { gpa: Number(gpa) } : {}),
-          ...(gpaStatus === "rejected" || gpaStatus === "none"
-            ? { gpa_proof_url: gpaProofUrl, gpa_verification_status: gpaStatus }
-            : {}),
-        },
-        { onConflict: "user_id" }
-      )
+      http://localhost:3000
 
     if (error) { console.log(error); toast.error(error.message); return false }
     return true
@@ -203,6 +192,7 @@ export default function ProfilePage() {
               onClick={async () => {
                 if (!isProfileComplete) {
                   const missingFields = []
+                  if (!zipCode.trim()) missingFields.push("zip code")
                   if (!name.trim()) missingFields.push("name")
                   if (!age.trim()) missingFields.push("age")
                   if (!gpa.trim()) missingFields.push("GPA")
@@ -274,6 +264,17 @@ export default function ProfilePage() {
             className="w-full border rounded px-3 py-2 text-sm"
             placeholder="Address"
           />
+          
+          <input
+  value={zipCode}
+  onChange={(e) => {
+    const value = e.target.value
+    if (/^\d{0,5}$/.test(value)) setZipCode(value)
+  }}
+  className="w-full border rounded px-3 py-2 text-sm"
+  placeholder="Zip Code"
+/>
+
           <input
             ref={emailRef} type="email" value={email}
             onChange={(e) => setEmail(e.target.value)}
