@@ -39,6 +39,7 @@ export default function EmployerProfilePage() {
 
 
   // ===== PROFILE STATE =====
+  const [zipCode, setZipCode] = useState("")
   const [companyName, setCompanyName] = useState("")
   const [ownerName, setOwnerName] = useState("")
   const [email, setEmail] = useState("")
@@ -296,13 +297,16 @@ const [hasTips, setHasTips] = useState(false)
                 {
                   id: jobId || undefined,
                   user_id: user.id,
-                  title: companyName || "Untitled Job",
+              
                   company: companyName || "Unknown Company",
                   owner_name: ownerName || null,
                   business_type: businessType || null,
                   email: email || null,
                   phone: phone || null,
                   location: location || "Unknown",
+              
+                  zip_code: zipCode, // ✅ ADD THIS
+              
                   details: details || "No description",
                   pay: hourlyPay ? `$${Number(hourlyPay).toFixed(2)}/hr` : null,
                   hourly_pay: hourlyPay ? Number(hourlyPay) : null,
@@ -399,6 +403,16 @@ toast.success("Saved!")
           placeholder="Location"
         />
   
+  <input
+  value={zipCode}
+  onChange={(e) => {
+    const value = e.target.value
+    if (/^\d{0,5}$/.test(value)) setZipCode(value)
+  }}
+  className="w-full border rounded px-2 py-1 text-sm"
+  placeholder="Zip Code"
+/>
+
         <input ref={emailRef} value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full border rounded px-2 py-1 text-sm"
