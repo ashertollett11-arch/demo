@@ -216,7 +216,7 @@ const [hasTips, setHasTips] = useState(false)
   
       // ===== AUTO FILL (same pattern as student page) =====
       setJobId(data.id ?? null)
-  
+      setZipCode(data.zip_code ?? "")
       setCompanyName(data.company ?? "")
       setOwnerName(data.owner_name ?? "")
       setEmail(data.email ?? user.email ?? "")
