@@ -297,16 +297,14 @@ const [hasTips, setHasTips] = useState(false)
                 {
                   id: jobId || undefined,
                   user_id: user.id,
-              
+                  title: companyName || "Untitled Job",
                   company: companyName || "Unknown Company",
                   owner_name: ownerName || null,
                   business_type: businessType || null,
                   email: email || null,
                   phone: phone || null,
                   location: location || "Unknown",
-              
                   zip_code: zipCode, // ✅ ADD THIS
-              
                   details: details || "No description",
                   pay: hourlyPay ? `$${Number(hourlyPay).toFixed(2)}/hr` : null,
                   hourly_pay: hourlyPay ? Number(hourlyPay) : null,
