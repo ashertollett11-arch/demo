@@ -121,8 +121,13 @@ export default function ProfilePage() {
 
       const { data: profileData, error } = await supabase
         .from("Students")
-        .select(`user_id, name, age, gpa, location, email, school, phone, interests, preferred_jobs, availability, shift_preference, gpa_proof_path, gpa_proof_url, gpa_verification_status`)
-        .eq("user_id", authUser.id)
+        .select(`
+          user_id, name, age, gpa, location, zip_code,
+          email, school, phone,
+          interests, preferred_jobs, availability,
+          shift_preference,
+          gpa_proof_path, gpa_proof_url, gpa_verification_status
+        `)        .eq("user_id", authUser.id)
         .single()
 
       if (error) { console.log(error); setLoading(false); return }
@@ -157,14 +162,42 @@ export default function ProfilePage() {
   const saveStudentProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
-
-    if (!user) { toast.error("Not logged in"); return false }
-
+  
+    if (!user) {
+      toast.error("Not logged in")
+      return false
+    }
+  
     const { error } = await supabase
       .from("Students")
-      http://localhost:3000
-
-    if (error) { console.log(error); toast.error(error.message); return false }
+      .upsert(
+        {
+          user_id: user.id,
+          profile_complete: isProfileComplete,
+          name,
+          age: Number(age),
+          location,
+          zip_code: zipCode,   // ✅ REQUIRED
+          email,
+          school,
+          phone,
+          interests,
+          preferred_jobs: preferredJobs,
+          availability,
+          shift_preference: shiftPreference,
+          ...(gpaStatus !== "pending" && gpaStatus !== "approved"
+            ? { gpa: Number(gpa) }
+            : {}),
+        },
+        { onConflict: "user_id" }
+      )
+  
+    if (error) {
+      console.log(error)
+      toast.error(error.message)
+      return false
+    }
+  
     return true
   }
 
