@@ -22,7 +22,7 @@ import { calculateEmployerMatch } from "@/lib/employerMatchScore"
 
 export default function EmployerDashboard() {
   const router = useRouter()
-
+  const [zipMatchPrecision, setZipMatchPrecision] = useState(5)
   const [userId, setUserId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("Your Company")
   const [notifications, setNotifications] = useState<any[]>([])

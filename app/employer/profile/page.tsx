@@ -39,6 +39,7 @@ export default function EmployerProfilePage() {
 
 
   // ===== PROFILE STATE =====
+  const [zipMatchPrecision, setZipMatchPrecision] = useState(5)
   const [zipCode, setZipCode] = useState("")
   const [companyName, setCompanyName] = useState("")
   const [ownerName, setOwnerName] = useState("")
@@ -224,7 +225,7 @@ const [hasTips, setHasTips] = useState(false)
       setBusinessType(data.business_type ?? "")
       setPhone(data.phone ?? "")
       setDetails(data.details ?? "")
-  
+      setZipMatchPrecision(data.zip_match_precision ?? 5)
       setPreferredJobs(data.preferred_jobs ?? [])
     setAvailableShifts(data.available_shifts ?? availableShifts)
   
@@ -305,6 +306,7 @@ const [hasTips, setHasTips] = useState(false)
                   phone: phone || null,
                   location: location || "Unknown",
                   zip_code: zipCode, // ✅ ADD THIS
+                  zip_match_precision: zipMatchPrecision,
                   details: details || "No description",
                   pay: hourlyPay ? `$${Number(hourlyPay).toFixed(2)}/hr` : null,
                   hourly_pay: hourlyPay ? Number(hourlyPay) : null,
@@ -410,7 +412,37 @@ toast.success("Saved!")
   className="w-full border rounded px-2 py-1 text-sm"
   placeholder="Zip Code"
 />
+<div className="space-y-2">
+  <label className="text-sm font-medium">
+    Match Radius
+  </label>
 
+  <div className="flex gap-2">
+    <button
+      type="button"
+      onClick={() => setZipMatchPrecision(5)}
+      className={`px-3 py-1 text-xs rounded-full border ${
+        zipMatchPrecision === 5
+          ? "bg-blue-100 text-blue-700 border-blue-200"
+          : "bg-gray-100 text-gray-600 border-gray-200"
+      }`}
+    >
+      Local
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setZipMatchPrecision(3)}
+      className={`px-3 py-1 text-xs rounded-full border ${
+        zipMatchPrecision === 3
+          ? "bg-blue-100 text-blue-700 border-blue-200"
+          : "bg-gray-100 text-gray-600 border-gray-200"
+      }`}
+    >
+      Regional
+    </button>
+  </div>
+</div>
         <input ref={emailRef} value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full border rounded px-2 py-1 text-sm"
