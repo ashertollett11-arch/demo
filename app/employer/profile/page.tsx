@@ -58,7 +58,7 @@ const ownerRef = useRef<HTMLInputElement>(null)
 const emailRef = useRef<HTMLInputElement>(null)
 const phoneRef = useRef<HTMLInputElement>(null)
 const detailsRef = useRef<HTMLTextAreaElement>(null)
-  
+const zipRef = useRef<HTMLInputElement>(null)
   // ===== JOB PAY INFO =====
 const [hourlyPay, setHourlyPay] = useState("")
 const [hasTips, setHasTips] = useState(false)
@@ -152,7 +152,11 @@ const [hasTips, setHasTips] = useState(false)
       toast.error("Missing location")
       return false
     }
-  
+    if (!zipCode.trim()) {
+      toast.error("Missing zip code")
+      scrollToField(zipRef)
+      return false
+    }
     if (!details.trim()) {
       toast.error("Missing description")
       scrollToField(detailsRef)
@@ -404,6 +408,7 @@ toast.success("Saved!")
         />
   
   <input
+  ref={zipRef}
   value={zipCode}
   onChange={(e) => {
     const value = e.target.value
@@ -413,10 +418,9 @@ toast.success("Saved!")
   placeholder="Zip Code"
 />
 <div className="space-y-2">
-  <label className="text-sm font-medium">
-    Match Radius
-  </label>
-
+<label className="text-sm text-gray-600">
+  Student Search Distance. Local matches students in your exact ZIP code for more targeted results. Regional expands your search to nearby ZIP codes to show a larger pool of students. You can always change later by returning to the profile page to match your needs.
+</label>
   <div className="flex gap-2">
     <button
       type="button"
