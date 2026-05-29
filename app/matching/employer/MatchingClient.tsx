@@ -113,7 +113,8 @@ function FilterContent({ minGpa, setMinGpa, selectedDays, setSelectedDays, verif
 
 export default function MatchingPage() {
   const router = useRouter()
-
+  const [employerZip, setEmployerZip] = useState("")
+  const [zipPrecision, setZipPrecision] = useState(5)
   const [name, setName] = useState("Employer")
   const [minGpa, setMinGpa] = useState<(number | "")[]>([1.0])
   const [selectedDays, setSelectedDays] = useState<string[]>([])
@@ -166,16 +167,36 @@ export default function MatchingPage() {
   // LOAD STUDENTS (complete profiles only)
   // -------------------------
   useEffect(() => {
+    if (!employerZip) return
+  
     const loadStudents = async () => {
       setLoading(true)
+  
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from("Students")
           .select("*")
           .eq("profile_complete", true)
-
-        if (error) { setStudents([]); return }
-
+  
+        // LOCAL (exact zip)
+        if (zipPrecision === 5) {
+          query = query.eq("zip_code", employerZip)
+        }
+  
+        // REGIONAL (first 3 digits)
+        else {
+          const prefix = employerZip.slice(0, 3)
+          query = query.like("zip_code", `${prefix}%`)
+        }
+  
+        const { data, error } = await query
+  
+        if (error) {
+          console.error(error)
+          setStudents([])
+          return
+        }
+  
         setStudents(
           (data ?? []).map((s) => ({
             ...s,
@@ -184,13 +205,15 @@ export default function MatchingPage() {
           }))
         )
       } catch (err) {
+        console.error(err)
         setStudents([])
       } finally {
         setLoading(false)
       }
     }
+  
     loadStudents()
-  }, [])
+  }, [employerZip, zipPrecision])
 
   // -------------------------
   // LOAD JOB SETTINGS
@@ -202,13 +225,15 @@ export default function MatchingPage() {
 
       const { data } = await supabase
         .from("job")
-        .select("available_shifts, shift_preference")
-        .eq("user_id", user.user.id)
+        .select("available_shifts, shift_preference, zip_code, zip_match_precision")
+                .eq("user_id", user.user.id)
         .single()
 
       if (!data) return
       setEmployerShifts(data.available_shifts ?? [])
       setShiftPreference(data.shift_preference ?? "flexible")
+      setEmployerZip(data.zip_code ?? "")
+      setZipPrecision(data.zip_match_precision ?? 5)
     }
     loadJob()
   }, [])
