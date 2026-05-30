@@ -343,7 +343,7 @@ export default function JobPage() {
     student_user_id: studentId,
     type: "application",
     title: "New Applicant",
-    message: `${studentName} applied to ${jobData.title}`,
+    message: `${studentName}thinks they are a great fit for your company!`,
     read: false,
   })
 
@@ -352,7 +352,7 @@ export default function JobPage() {
     }
 
     // 5. Feedback
-    toast.success(`Applied to ${job.title}!`)  }}
+    toast.success(`Application sent successfully!`)  }}
 >
   Apply Now
 </Button>

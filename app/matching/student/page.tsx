@@ -471,7 +471,7 @@ useEffect(() => {
      student_user_id: studentId,
      type: "application",
      title: "New Applicant",
-     message: `${studentName} applied to ${jobData.title}`,
+     message: `${studentName} thinks they are a great fit for ${jobData.title}`,
      read: false,
    })
 
@@ -480,7 +480,7 @@ useEffect(() => {
     }
 
     // 5. Optional: update job status locally
-    toast.success(`Applied to ${job.title}!`)
+    toast.success(`Application sent successfully!`)
   }}
 >
   Apply
