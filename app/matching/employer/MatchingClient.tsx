@@ -542,7 +542,8 @@ useEffect(() => {
     selectedDays.length > 0,
     verifiedOnly,
   ].filter(Boolean).length
-
+  const noResults =
+  !loading && students.length > 0 && filteredCandidates.length === 0
   // -------------------------
   // UI
   // -------------------------
@@ -857,18 +858,27 @@ useEffect(() => {
             </div>
 
             {loading ? (
-              <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Loading students...</p></CardContent></Card>
-            ) : students.length === 0 ? (
-              <Card className="border-dashed"><CardContent className="py-12 text-center"><p className="font-medium">No students in database</p></CardContent></Card>
-            ) : filteredCandidates.length === 0 ? (
-              <Card className="border-dashed">
-                <CardContent className="py-12 text-center">
-                  <p className="font-medium">No matches found</p>
-                  <p className="text-sm text-muted-foreground">Try adjusting filters</p>
-                  <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear filters</Button>
-                </CardContent>
-              </Card>
-            ) : null}
+  <Card>
+    <CardContent className="py-12 text-center">
+      <p className="text-muted-foreground">Loading students...</p>
+    </CardContent>
+  </Card>
+
+) : students.length === 0 || noResults ? (
+  <Card className="border-dashed">
+    <CardContent className="py-12 text-center">
+      <div className="mb-2 text-lg">📍</div>
+      <p className="font-medium">No students found in your area</p>
+      <p className="text-sm text-muted-foreground">
+        Try expanding your zip range or adjusting filters
+      </p>
+      <Button variant="outline" className="mt-4" onClick={clearFilters}>
+        Clear filters
+      </Button>
+    </CardContent>
+  </Card>
+
+) : null}
 
           </div>
         </div>
