@@ -36,7 +36,6 @@ export default function ProfilePage() {
   const [newInterest, setNewInterest] = useState("")
   const [gpaProofUrl, setGpaProofUrl] = useState<string | null>(null)
   const [name, setName] = useState("")
- 
   const [age, setAge] = useState("")
   const [dob, setDob] = useState("") // YYYY-MM-DD
   const [gpa, setGpa] = useState("")
@@ -55,8 +54,10 @@ export default function ProfilePage() {
   ]
 
   const showUpload = gpaStatus === "none" || gpaStatus === "rejected" || !gpaProofUrl
-  const isGpaLocked = gpaStatus === "pending" || gpaStatus === "approved" || !!gpaProofUrl
-
+  const isGpaLocked =
+  gpaStatus === "pending" ||
+  gpaStatus === "approved" ||
+  !!gpaProofUrl
   const DEFAULT_AVAILABILITY = [
     { day: "Monday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
     { day: "Tuesday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
@@ -443,33 +444,47 @@ isDobValid &&
                     gpa_proof_url: data.publicUrl,
                     gpa_proof_path: filePath,
                     gpa_verification_status: "pending",
-                    is_gpa_verified: false,
+                   
                   }).eq("user_id", user.id)
                   const { data: updatedProfile } = await supabase
                     .from("Students")
-                    .select("gpa_proof_url, gpa_verification_status")
+                    .select("gpa_proof_url, is_gpa_verified")
                     .eq("user_id", user.id)
                     .maybeSingle()
-                  setGpaProofUrl(updatedProfile?.gpa_proof_url || null)
-                  setGpaStatus(updatedProfile?.gpa_verification_status || "none")
+                    setGpaProofUrl(updatedProfile?.gpa_proof_url || null)
+                    setIsGpaVerified(updatedProfile?.is_gpa_verified || false)
                   toast.success("Submitted for review")
                 }}
               />
             </label>
           )}
 
-          <div className="mt-3 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground space-y-2">
-            <p className="font-medium text-foreground text-sm">Tips for a successful upload</p>
-            <ul className="list-disc pl-4 space-y-1">
-              <li>Make sure your full name is visible</li>
-              <li>Include your unweighted GPA clearly</li>
-              <li>Do not crop or blur the image</li>
-              <li>A full screenshot of your school portal works best</li>
-            </ul>
-            <p className="text-[11px] text-muted-foreground/80">
-              Once submitted, your GPA will be reviewed automatically. Verified students get higher trust and better job matches.
-            </p>
-          </div>
+<div className="mt-3 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground space-y-2">
+  
+  {gpaStatus === "approved" ? (
+    <div className="rounded-md bg-green-50 border border-green-200 p-2 text-green-700">
+      <p className="font-medium text-sm">
+        🎉 Congrats — your GPA is now verified!
+      </p>
+      <p className="text-[11px] mt-1 text-green-600">
+        Employers trust verified students more and you may get better matches.
+      </p>
+    </div>
+  ) : (
+    <>
+      <p className="font-medium text-foreground text-sm">Tips for a successful upload</p>
+      <ul className="list-disc pl-4 space-y-1">
+        <li>Make sure your full name is visible</li>
+        <li>Include your unweighted GPA clearly</li>
+        <li>Do not crop or blur the image</li>
+        <li>A full screenshot of your school portal works best</li>
+      </ul>
+      <p className="text-[11px] text-muted-foreground/80">
+        Once submitted, your GPA will be reviewed automatically. Verified students get higher trust and better job matches.
+      </p>
+    </>
+  )}
+</div>
         </CardContent>
       </Card>
 
