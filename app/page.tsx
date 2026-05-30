@@ -302,9 +302,8 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredJobs.map((job, index) => (
-              <Card key={index} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg">
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
+          {featuredJobs.slice(0, 2).map((job, index) => (              <Card key={index} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div>

@@ -232,7 +232,7 @@ export default function ProfilePage() {
                   if (!emailRegex.test(email)) missingFields.push("valid email")
                   if (!school.trim()) missingFields.push("school")
                   if (phone.length !== 10) missingFields.push("phone number")
-                  if (preferredJobs.length === 0) missingFields.push("preferred jobs")
+                  if (preferredJobs.length === 0) missingFields.push("preferred positions")
                   if (interests.length === 0) missingFields.push("interests")
                   if (!availability.some((d) => d.available)) missingFields.push("availability")
                   toast.error("Profile incomplete", {
