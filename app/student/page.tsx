@@ -107,50 +107,60 @@ export default function StudentDashboard() {
     const fetchJobs = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
+  
       const { data: studentData, error: studentError } = await supabase
         .from("Students")
-        .select("availability, shift_preference")
+        .select("availability, shift_preference, zip_code")
         .eq("user_id", user.id)
         .single()
-
+  
       if (studentError || !studentData) return
-
+  
+      const studentZip = studentData?.zip_code ?? ""
+  
       const { data: jobs, error: jobsError } = await supabase
         .from("job")
-        .select(`id, title, company, location, hours, pay, status, shift_preference, available_shifts, has_tips`)
-
+        .select(`id, title, company, location, hours, pay, status, shift_preference, available_shifts, has_tips, zip_code, zip_match_precision`)
+  
       if (jobsError) return
-
-      const scoredJobs = (jobs || []).map((job: any) => {
-        let shifts = job.available_shifts ?? []
-        if (!Array.isArray(shifts)) shifts = Object.values(shifts || {})
-        const activeShifts = shifts.filter((s: any) => s.active === true || s.active === "true" || s.active === 1)
-        const jobDays = activeShifts.map((s: any) => s.day)
-
-        const matchScore = calculateMatch(
-          { availability: studentData.availability || [], shiftPreference: studentData.shift_preference || "flexible" },
-          { shifts: jobDays, shiftPreference: job.shift_preference || "flexible" }
-        )
-
-        return {
-          id: job.id,
-          title: job.title || "Untitled Job",
-          company: job.company || "Unknown Company",
-          distance: job.location || "N/A",
-          hours: job.hours || "N/A",
-          pay: job.pay || "N/A",
-          status: job.status || "new",
-          shiftPreference: job.shift_preference || "flexible",
-          tips: Boolean(job.has_tips),
-          matchScore: Math.round(matchScore),
-        }
-      })
-
+  
+      const scoredJobs = (jobs || [])
+        .filter((job: any) => {
+          const jobZip = job.zip_code ?? ""
+          const precision = job.zip_match_precision ?? 5
+          if (!jobZip || !studentZip) return false
+          if (precision === 5) return jobZip === studentZip
+          return jobZip.slice(0, 3) === studentZip.slice(0, 3)
+        })
+        .map((job: any) => {
+          let shifts = job.available_shifts ?? []
+          if (!Array.isArray(shifts)) shifts = Object.values(shifts || {})
+          const activeShifts = shifts.filter((s: any) => s.active === true || s.active === "true" || s.active === 1)
+          const jobDays = activeShifts.map((s: any) => s.day)
+  
+          const matchScore = calculateMatch(
+            { availability: studentData.availability || [], shiftPreference: studentData.shift_preference || "flexible" },
+            { shifts: jobDays, shiftPreference: job.shift_preference || "flexible" }
+          )
+  
+          return {
+            id: job.id,
+            title: job.title || "Untitled Job",
+            company: job.company || "Unknown Company",
+            distance: job.location || "N/A",
+            hours: job.hours || "N/A",
+            pay: job.pay || "N/A",
+            status: job.status || "new",
+            shiftPreference: job.shift_preference || "flexible",
+            tips: Boolean(job.has_tips),
+            matchScore: Math.round(matchScore),
+          }
+        })
+  
       scoredJobs.sort((a, b) => b.matchScore - a.matchScore)
       setMatchedJobsWithScore(scoredJobs)
     }
-
+  
     fetchJobs()
   }, [])
 

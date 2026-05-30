@@ -132,96 +132,67 @@ const [gpa, setGpa] = useState<number | null>(null)
 
 
  // Recalculate scores
-useEffect(() => {
+ useEffect(() => {
   const fetchJobs = async () => {
-    // GET CURRENT USER
     const { data: authData } = await supabase.auth.getUser()
-
     const userId = authData?.user?.id
+    if (!userId) return
 
-    if (!userId) {
-      console.log("No student user found")
-      return
-    }
-
-    // GET STUDENT DATA FROM DB
+    // GET STUDENT DATA including zip code
     const { data: studentData, error: studentError } = await supabase
       .from("Students")
-      .select("availability, shift_preference")
+      .select("availability, shift_preference, zip_code")
       .eq("user_id", userId)
       .single()
 
-    if (studentError) {
-      console.log("STUDENT FETCH ERROR:", studentError)
-      return
-    }
+    if (studentError) { console.log("STUDENT FETCH ERROR:", studentError); return }
 
     const studentAvailability = studentData?.availability ?? []
+    const studentShiftPreference = studentData?.shift_preference || "flexible"
+    const studentZip = studentData?.zip_code ?? ""
 
-    const studentShiftPreference =
-      studentData?.shift_preference || "flexible"
-
-    // GET JOBS
+    // GET JOBS with zip info
     const { data, error } = await supabase
       .from("job")
-      .select(`
-        id,
-        title,
-        company,
-        location,
-        pay,
-        details,
-        available_shifts,
-        shift_preference,
-        status,
-        hours,
-        has_tips
-      `)
+      .select(`id, title, company, location, pay, details, available_shifts, shift_preference, status, hours, has_tips, zip_code, zip_match_precision`)
 
-    if (error) {
-      console.log("JOB FETCH ERROR:", error)
-      return
-    }
+    if (error) { console.log("JOB FETCH ERROR:", error); return }
 
-    const updated = (data || []).map((job: any) => {
-      let shifts = job.available_shifts ?? []
+    const updated = (data || [])
+      .filter((job: any) => {
+        // Only show jobs where the employer can see this student
+        const jobZip = job.zip_code ?? ""
+        const precision = job.zip_match_precision ?? 5
 
-      // 🔥 IMPORTANT FIX
-      if (!Array.isArray(shifts)) {
-        shifts = Object.values(shifts || {})
-      }
-      
-      const activeShifts = shifts.filter(
-        (s: any) =>
-          s.active === true ||
-          s.active === "true" ||
-          s.active === 1
-      )
-      
-      const base = calculateMatch(
-        {
-          availability: studentAvailability,
-          shiftPreference: studentShiftPreference,
-        },
-        {
-          shifts: activeShifts.map((s: any) => s.day || s),
-          shiftPreference: job.shift_preference || "flexible",
+        if (!jobZip || !studentZip) return false
+
+        if (precision === 5) return jobZip === studentZip
+        return jobZip.slice(0, 3) === studentZip.slice(0, 3)
+      })
+      .map((job: any) => {
+        let shifts = job.available_shifts ?? []
+        if (!Array.isArray(shifts)) shifts = Object.values(shifts || {})
+
+        const activeShifts = shifts.filter(
+          (s: any) => s.active === true || s.active === "true" || s.active === 1
+        )
+
+        const base = calculateMatch(
+          { availability: studentAvailability, shiftPreference: studentShiftPreference },
+          { shifts: activeShifts.map((s: any) => s.day || s), shiftPreference: job.shift_preference || "flexible" }
+        )
+
+        return {
+          id: job.id,
+          title: job.title || "Untitled Job",
+          company: job.company || "Unknown",
+          pay: job.pay || "$0",
+          status: job.status || "new",
+          tips: Boolean(job.has_tips),
+          shift_Preference: job.shift_preference || "flexible",
+          matchScore: Math.round(base),
         }
-      )
-
-      return {
-        id: job.id,
-        title: job.title || "Untitled Job",
-        company: job.company || "Unknown",
-        pay: job.pay || "$0",
-        status: job.status || "new",
-        tips: Boolean(job.has_tips),
-        shift_Preference:
-          job.shift_preference || "flexible",
-
-        matchScore: Math.round(base),
-      }
-    })
+      })
 
     setMatchedJobs(updated)
   }

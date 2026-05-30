@@ -357,7 +357,7 @@ export default function EmployerDashboard() {
             ) : (
               recentActivity.map((n) => {
                 const studentName =
-                  n.student_name || n.message?.split(" thinks they are a great fit for ")[0]?.trim()
+                  n.student_name || n.message?.split(" applied to ")[0]?.trim()
 
                 return (
                   <div
