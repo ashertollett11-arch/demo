@@ -8,7 +8,7 @@ import { MapPin, ChevronLeft } from "lucide-react"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { calculateMatch } from "@/lib/matchScore"
-
+import { toast } from "sonner"
 // --------------------
 // Helpers
 // --------------------
@@ -352,8 +352,7 @@ export default function JobPage() {
     }
 
     // 5. Feedback
-    alert(`Applied to ${job.title} at ${job.company}`)
-  }}
+    toast.success(`Applied to ${job.title}!`)  }}
 >
   Apply Now
 </Button>
