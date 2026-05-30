@@ -356,7 +356,7 @@ toast.success("Saved!")
 toast.success("Saved!")
 
             if (profileData?.subscription_status === "active") {
-              router.push("/employer")
+              router.push("/matching/employer")
             } else {
               router.push("/billing")
             }

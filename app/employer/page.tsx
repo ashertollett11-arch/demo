@@ -175,44 +175,24 @@ export default function EmployerDashboard() {
   // SEED + LOAD STATUSES
   // -------------------------
   useEffect(() => {
-    if (!userId || students.length === 0) return
-
-    const loadAndSeedStatuses = async () => {
-      const rows = students
-      .filter((student) => student.profile_complete === true)
-      .map((student) => ({
-        employer_id: userId,
-        student_id: student.id,
-        status: "new",
-      }))
-
-      const { error: seedError } = await supabase
-        .from("student_statuses")
-        .upsert(rows, {
-          onConflict: "employer_id,student_id",
-          ignoreDuplicates: true,
-        })
-
-      if (seedError) {
-        console.error(seedError)
-        return
-      }
-
+    if (!userId) return
+  
+    const loadStatuses = async () => {
       const { data, error } = await supabase
         .from("student_statuses")
         .select("*")
         .eq("employer_id", userId)
-
+  
       if (error) {
         console.error(error)
         return
       }
-
+  
       setStatuses(data || [])
     }
-
-    loadAndSeedStatuses()
-  }, [userId, students])
+  
+    loadStatuses()
+  }, [userId])
 
   // -------------------------
   // DISMISS NOTIFICATION

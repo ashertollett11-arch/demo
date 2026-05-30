@@ -305,7 +305,7 @@ export default function ProfilePage() {
     if (/^\d{0,5}$/.test(value)) setZipCode(value)
   }}
   className="w-full border rounded px-3 py-2 text-sm"
-  placeholder="Zip Code"
+  placeholder="ZIP Code"
 />
 
           <input

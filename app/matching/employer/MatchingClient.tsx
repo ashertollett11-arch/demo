@@ -279,34 +279,102 @@ export default function MatchingPage() {
   // -------------------------
   // SEED STATUSES (complete profiles only)
   // -------------------------
-  useEffect(() => {
-    if (!employerId || students.length === 0) return
+  const isInZipRange = (studentZip: string) => {
+    if (!employerZip) return false
+  
+    if (zipPrecision === 5) {
+      return studentZip === employerZip
+    }
+  
+    return studentZip?.slice(0, 3) === employerZip.slice(0, 3)
+  }
+  
+  
+// -------------------------
+// RECONCILE STATUSES (keeps DB in sync with eligibility)
+// -------------------------
+useEffect(() => {
+  if (!employerId || students.length === 0 || !employerZip) return
 
-    const seedStatuses = async () => {
-      const rows = students
-        .filter((student) => student.profile_complete === true)
-        .map((student) => ({
-          employer_id: employerId,
-          student_id: student.id,
-          status: "new",
-        }))
+  const reconcileStatuses = async () => {
+    try {
+      // 1. Determine which students are CURRENTLY eligible
+      const eligibleStudents = students.filter((student) => {
+        if (!student.profile_complete) return false
+        return isInZipRange(student.zip_code)
+      })
 
-      const { error } = await supabase
-        .from("student_statuses")
-        .upsert(rows, { onConflict: "employer_id,student_id", ignoreDuplicates: true })
+      const eligibleIds = new Set(eligibleStudents.map((s) => s.id))
 
-      if (error) { console.error("Error seeding statuses:", error.message); return }
-
-      const { data } = await supabase
+      // 2. Fetch existing statuses
+      const { data: existing, error } = await supabase
         .from("student_statuses")
         .select("*")
         .eq("employer_id", employerId)
 
-      setStatuses(data || [])
-    }
-    seedStatuses()
-  }, [employerId, students])
+      if (error) {
+        console.error("Status fetch error:", error.message)
+        return
+      }
 
+      const existingMap = new Map(
+        (existing || []).map((s) => [s.student_id, s])
+      )
+
+      // 3. Build UPSERT list (ONLY eligible students get "new")
+      const upserts = eligibleStudents.map((student) => {
+        const existingRow = existingMap.get(student.id)
+
+        return {
+          employer_id: employerId,
+          student_id: student.id,
+          status: existingRow?.status || "new",
+        }
+      })
+
+      // 4. DELETE stale statuses (students no longer eligible)
+      const staleIds = (existing || [])
+        .filter((s) => !eligibleIds.has(s.student_id))
+        .map((s) => s.student_id)
+
+      if (staleIds.length > 0) {
+        const { error: deleteError } = await supabase
+          .from("student_statuses")
+          .delete()
+          .eq("employer_id", employerId)
+          .in("student_id", staleIds)
+
+        if (deleteError) {
+          console.error("Delete stale statuses error:", deleteError.message)
+        }
+      }
+
+      // 5. UPSERT refreshed eligible set
+      const { error: upsertError } = await supabase
+        .from("student_statuses")
+        .upsert(upserts, {
+          onConflict: "employer_id,student_id",
+        })
+
+      if (upsertError) {
+        console.error("Upsert statuses error:", upsertError.message)
+        return
+      }
+
+      // 6. Refresh local state
+      const { data: refreshed } = await supabase
+        .from("student_statuses")
+        .select("*")
+        .eq("employer_id", employerId)
+
+      setStatuses(refreshed || [])
+    } catch (err) {
+      console.error("Reconcile error:", err)
+    }
+  }
+
+  reconcileStatuses()
+}, [employerId, students, employerZip, zipPrecision])
   // -------------------------
   // LOAD NOTIFICATIONS
   // -------------------------
