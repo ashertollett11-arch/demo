@@ -36,7 +36,9 @@ export default function ProfilePage() {
   const [newInterest, setNewInterest] = useState("")
   const [gpaProofUrl, setGpaProofUrl] = useState<string | null>(null)
   const [name, setName] = useState("")
+ 
   const [age, setAge] = useState("")
+  const [dob, setDob] = useState("") // YYYY-MM-DD
   const [gpa, setGpa] = useState("")
   const [location, setLocation] = useState("")
   const [isEditingProfile, setIsEditingProfile] = useState(true)
@@ -125,7 +127,7 @@ export default function ProfilePage() {
           user_id, name, age, gpa, location, zip_code,
           email, school, phone,
           interests, preferred_jobs, availability,
-          shift_preference,
+          shift_preference, dob,
           gpa_proof_path, gpa_proof_url, gpa_verification_status
         `)        .eq("user_id", authUser.id)
         .single()
@@ -136,6 +138,7 @@ export default function ProfilePage() {
         setZipCode(profileData.zip_code || "")
         setGpaProofUrl(profileData.gpa_proof_url || null)
         setName(profileData.name || "")
+        setDob(profileData.dob || "")
         setAge(String(profileData.age || ""))
         setGpa(String(profileData.gpa || ""))
         setLocation(profileData.location || "")
@@ -176,6 +179,8 @@ export default function ProfilePage() {
           profile_complete: isProfileComplete,
           name,
           age: Number(age),
+          dob,
+age: age ? Number(age) : null,
           location,
           zip_code: zipCode,   // ✅ REQUIRED
           email,
@@ -271,25 +276,29 @@ export default function ProfilePage() {
             className="w-full border rounded px-3 py-2 text-sm"
             placeholder="Full Name"
           />
-          <input
-            type="text" ref={ageRef} value={age}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === "") { setAge(""); return }
-              if (!/^\d+$/.test(value)) return
-              if (value.length > 2) return
-              if (parseInt(value) > 21) return
-              setAge(value)
-            }}
-            onBlur={() => {
-              const num = parseInt(age)
-              if (isNaN(num)) { setAge(""); return }
-              if (num < 14) setAge("14")
-              if (num > 21) setAge("21")
-            }}
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="Age"
-          />
+       <input
+  type="date"
+  value={dob}
+  onChange={(e) => {
+    const value = e.target.value
+    setDob(value)
+
+    // calculate age immediately for UI + DB
+    const birthDate = new Date(value)
+    const today = new Date()
+
+    let calculatedAge = today.getFullYear() - birthDate.getFullYear()
+    const m = today.getMonth() - birthDate.getMonth()
+
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      calculatedAge--
+    }
+
+    setAge(String(calculatedAge))
+  }}
+  className="w-full border rounded px-3 py-2 text-sm"
+  placeholder="Date of Birth"
+/>
           <input
             ref={locationRef} value={location}
             onChange={(e) => setLocation(e.target.value)}
@@ -350,7 +359,7 @@ export default function ProfilePage() {
 
           {showUpload && !isGpaLocked && gpa.trim() !== "" && (
             <label className="flex w-full items-center justify-center rounded border px-3 py-2 text-sm hover:bg-muted cursor-pointer">
-              Upload GPA Image
+              Upload GPA Image(optional)
               <input
                 type="file" accept="image/*" className="hidden"
                 onChange={async (e) => {
@@ -491,7 +500,7 @@ export default function ProfilePage() {
       <Card className="border-border bg-card mb-4">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="h-5 w-5 text-primary" /> Availability
+            <Calendar className="h-5 w-5 text-primary" /> Availability (You can change this anytime in the profile section)
           </CardTitle>
         </CardHeader>
         <CardContent>
