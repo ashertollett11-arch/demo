@@ -68,8 +68,20 @@ export default function ProfilePage() {
   ]
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|us|gov|io|co)$/i
-  const numAge = parseInt(age)
-  const isAgeValid = !isNaN(numAge) && numAge >= 14 && numAge <= 21
+  const isDobValid = (() => {
+    if (!dob) return false
+    const birthDate = new Date(dob)
+    const today = new Date()
+  
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const m = today.getMonth() - birthDate.getMonth()
+  
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+  
+    return age >= 14 && age <= 21
+  })()
   const isEmailValid = emailRegex.test(email)
 
   const nameRef = useRef<HTMLInputElement>(null)
@@ -88,14 +100,15 @@ export default function ProfilePage() {
 
   const isProfileComplete =
     name.trim().length > 0 &&
-    age.trim().length > 0 &&
+    dob.trim().length > 0 &&
+isDobValid &&
     gpa.trim().length > 0 &&
     location.trim().length > 0 &&
     zipCode.trim().length === 5 &&
 
     emailRegex.test(email) &&
     school.trim().length > 0 &&
-    isAgeValid &&
+    isDobValid&&
     isEmailValid &&
     phone.length === 10 &&
     preferredJobs.length > 0 &&
@@ -171,18 +184,37 @@ export default function ProfilePage() {
       return false
     }
   
+    const calculatedAge =
+      dob
+        ? (() => {
+            const birthDate = new Date(dob)
+            const today = new Date()
+  
+            let age = today.getFullYear() - birthDate.getFullYear()
+            const m = today.getMonth() - birthDate.getMonth()
+  
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+              age--
+            }
+  
+            return age
+          })()
+        : null
+  
     const { error } = await supabase
       .from("Students")
       .upsert(
         {
           user_id: user.id,
           profile_complete: isProfileComplete,
+  
           name,
-          age: Number(age),
-          dob,
-age: age ? Number(age) : null,
+  
+          dob,                      // ✅ stored
+          age: calculatedAge,      // ✅ derived + stored
+  
           location,
-          zip_code: zipCode,   // ✅ REQUIRED
+          zip_code: zipCode,
           email,
           school,
           phone,
@@ -190,6 +222,7 @@ age: age ? Number(age) : null,
           preferred_jobs: preferredJobs,
           availability,
           shift_preference: shiftPreference,
+  
           ...(gpaStatus !== "pending" && gpaStatus !== "approved"
             ? { gpa: Number(gpa) }
             : {}),
@@ -229,17 +262,17 @@ age: age ? Number(age) : null,
               onClick={async () => {
                 if (!isProfileComplete) {
                   const missingFields = []
-                  if (!zipCode.trim()) missingFields.push("zip code")
-                  if (!name.trim()) missingFields.push("name")
-                  if (!age.trim()) missingFields.push("age")
+                  if (!zipCode.trim()) missingFields.push("Zip code")
+                  if (!name.trim()) missingFields.push("Name")
+                  if (!dob.trim()) missingFields.push("Date of birth")
                   if (!gpa.trim()) missingFields.push("GPA")
                   if (!location.trim()) missingFields.push("location")
-                  if (!emailRegex.test(email)) missingFields.push("valid email")
-                  if (!school.trim()) missingFields.push("school")
-                  if (phone.length !== 10) missingFields.push("phone number")
-                  if (preferredJobs.length === 0) missingFields.push("preferred positions")
-                  if (interests.length === 0) missingFields.push("interests")
-                  if (!availability.some((d) => d.available)) missingFields.push("availability")
+                  if (!emailRegex.test(email)) missingFields.push("Valid email")
+                  if (!school.trim()) missingFields.push("School")
+                  if (phone.length !== 10) missingFields.push("Phone number")
+                  if (preferredJobs.length === 0) missingFields.push("Preferred positions")
+                  if (interests.length === 0) missingFields.push("Interests")
+                  if (!availability.some((d) => d.available)) missingFields.push("Availability")
                   toast.error("Profile incomplete", {
                     description: `Please complete: ${missingFields.join(", ")}`,
                   })
@@ -270,86 +303,120 @@ age: age ? Number(age) : null,
           <CardTitle>Profile Info</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <input
-            ref={nameRef} value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="Full Name"
-          />
-       <input
-  type="date"
-  value={dob}
-  onChange={(e) => {
-    const value = e.target.value
-    setDob(value)
+        <div className="space-y-1">
+  <label className="text-sm font-medium">Full Name</label>
+  <input
+    ref={nameRef}
+    value={name}
+    onChange={(e) => setName(e.target.value)}
+    className="w-full border rounded px-3 py-2 text-sm"
+    placeholder="John Doe"
+  />
+</div>
+<div className="space-y-1">
+  <label className="text-sm font-medium">Date of Birth</label>
 
-    // calculate age immediately for UI + DB
-    const birthDate = new Date(value)
-    const today = new Date()
+  <input
+    type="date"
+    value={dob}
+    onChange={(e) => {
+      const value = e.target.value
+      setDob(value)
 
-    let calculatedAge = today.getFullYear() - birthDate.getFullYear()
-    const m = today.getMonth() - birthDate.getMonth()
+      const birthDate = new Date(value)
+      const today = new Date()
 
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      calculatedAge--
-    }
+      let calculatedAge = today.getFullYear() - birthDate.getFullYear()
+      const m = today.getMonth() - birthDate.getMonth()
 
-    setAge(String(calculatedAge))
-  }}
-  className="w-full border rounded px-3 py-2 text-sm"
-  placeholder="Date of Birth"
-/>
-          <input
-            ref={locationRef} value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="Address"
-          />
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        calculatedAge--
+      }
+
+      setAge(String(calculatedAge))
+    }}
+    className="w-full border rounded px-3 py-2 text-sm"
+  />
+
+  <p className="text-xs text-muted-foreground">
+    Must be between 14–21 years old
+  </p>
+</div>
+<div className="space-y-1">
+  <label className="text-sm font-medium">Address</label>
+  <input
+    value={location}
+    onChange={(e) => setLocation(e.target.value)}
+    className="w-full border rounded px-3 py-2 text-sm"
+    placeholder="123 Main St"
+  />
+</div>
           
-          <input
-  value={zipCode}
-  onChange={(e) => {
-    const value = e.target.value
-    if (/^\d{0,5}$/.test(value)) setZipCode(value)
-  }}
-  className="w-full border rounded px-3 py-2 text-sm"
-  placeholder="ZIP Code"
-/>
+<div className="space-y-1">
+  <label className="text-sm font-medium">ZIP Code</label>
+  <input
+    value={zipCode}
+    onChange={(e) => {
+      const value = e.target.value
+      if (/^\d{0,5}$/.test(value)) setZipCode(value)
+    }}
+    className="w-full border rounded px-3 py-2 text-sm"
+    placeholder="32459"
+  />
+</div>
 
-          <input
-            ref={emailRef} type="email" value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="Email"
-          />
-          <input
-            type="tel" ref={phoneRef} value={phone}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === "") { setPhone(""); return }
-              if (/^\d{0,10}$/.test(value)) setPhone(value)
-            }}
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="Phone Number"
-          />
-          <input
-            ref={schoolRef} value={school}
-            onChange={(e) => setSchool(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="School(Put Most Recent School Atented)"
-          />
-          <input
-            type="number" step="0.01" min="0" max="4"
-            ref={gpaRef} value={gpa}
-            disabled={isGpaLocked}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === "") { setGpa(""); return }
-              if (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 4) setGpa(value)
-            }}
-            className={`w-full border rounded px-3 py-2 text-sm ${isGpaLocked ? "bg-gray-100 opacity-70 cursor-not-allowed" : ""}`}
-            placeholder="GPA(Unweighted)"
-          />
+<div className="space-y-1">
+  <label className="text-sm font-medium">Email</label>
+  <input
+    type="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    className="w-full border rounded px-3 py-2 text-sm"
+    placeholder="you@example.com"
+  />
+</div>
+<div className="space-y-1">
+  <label className="text-sm font-medium">Phone Number</label>
+  <input
+    type="tel"
+    value={phone}
+    onChange={(e) => {
+      const value = e.target.value
+      if (/^\d{0,10}$/.test(value)) setPhone(value)
+    }}
+    className="w-full border rounded px-3 py-2 text-sm"
+    placeholder="8501234567"
+  />
+</div>
+<div className="space-y-1">
+  <label className="text-sm font-medium">School</label>
+  <input
+    value={school}
+    onChange={(e) => setSchool(e.target.value)}
+    className="w-full border rounded px-3 py-2 text-sm"
+    placeholder="Your High School"
+  />
+</div>
+<div className="space-y-1">
+  <label className="text-sm font-medium">GPA</label>
+  <input
+    type="number"
+    step="0.01"
+    min="0"
+    max="4"
+    value={gpa}
+    disabled={isGpaLocked}
+    onChange={(e) => {
+      const value = e.target.value
+      if (value === "") { setGpa(""); return }
+      if (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 4) setGpa(value)
+    }}
+    className={`w-full border rounded px-3 py-2 text-sm ${
+      isGpaLocked ? "bg-gray-100 opacity-70 cursor-not-allowed" : ""
+    }`}
+    placeholder="3.5"
+  />
+</div>
 
           {gpa.trim() === "" && !isGpaLocked && (
             <p className="text-xs text-muted-foreground mt-1">
