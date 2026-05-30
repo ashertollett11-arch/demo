@@ -108,7 +108,7 @@ export default function LoginPage() {
     }
 
     if (roleData.role === "employer") {
-      router.push("/employer")
+      router.push("/matching/employer")
     }
   }
 
