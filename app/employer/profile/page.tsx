@@ -513,8 +513,8 @@ toast.success("Saved!")
   </CardHeader>
 
   <CardContent>
-    <div className="flex gap-2 mt-2">
-    {[
+  <div className="flex flex-wrap gap-2 mt-2">
+        {[
   "Cashier",
   "Server",
   "Busser",
