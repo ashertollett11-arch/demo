@@ -202,8 +202,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 overflow-x-hidden">
-
+<div className="min-h-screen bg-background p-4">
       {/* STICKY SAVE HEADER */}
       <div className="sticky top-0 z-50 mb-6">
         <div className="max-w-4xl mx-auto">
