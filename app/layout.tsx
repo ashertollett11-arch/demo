@@ -12,6 +12,12 @@ export const metadata: Metadata = {
   title: 'SimplyApply - The easiest way to land your first job',
   description: 'No resumes. No stress. Just opportunity. The employment platform designed for first-time workers ages 14-18 and entry-level employers.',
   generator: 'v0.app',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'SimplyApply',
+  },
   icons: {
     icon: [
       {
@@ -40,6 +46,11 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <link rel="apple-touch-icon" href="/icon-192x192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="SimplyApply" />
+        <meta name="theme-color" content="#ffffff" />
       </head>
       <body className="font-sans antialiased">
         <Providers>
