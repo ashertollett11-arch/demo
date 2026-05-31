@@ -1,44 +1,26 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"
 
-export default function IOSInstallBanner() {
-  const [show, setShow] = useState(false);
+export default function IosInstallBanner() {
+  const [isIos, setIsIos] = useState(false)
 
   useEffect(() => {
-    const isIOS =
-      /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const ua = window.navigator.userAgent.toLowerCase()
 
-    const isInStandaloneMode =
-      // @ts-ignore
-      window.navigator.standalone;
+    const ios = /iphone|ipad|ipod/.test(ua)
+    const standalone = (window.navigator as any).standalone
 
-    if (isIOS && !isInStandaloneMode) {
-      setShow(true);
+    if (ios && !standalone) {
+      setIsIos(true)
     }
-  }, []);
+  }, [])
 
-  if (!show) return null;
+  if (!isIos) return null
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 rounded-xl bg-blue-600 text-white p-4 shadow-lg">
-      <div className="flex items-start justify-between gap-3">
-        <div className="text-sm">
-          <p className="font-semibold">
-            Install SimplyApply on your iPhone
-          </p>
-          <p className="text-xs mt-1 opacity-90">
-            Tap <b>Share</b> → <b>Add to Home Screen</b> for the best experience.
-          </p>
-        </div>
-
-        <button
-          onClick={() => setShow(false)}
-          className="text-white text-lg leading-none"
-        >
-          ×
-        </button>
-      </div>
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-black text-white text-sm p-3 text-center">
+      📲 Install SimplyApply on your iPhone: Tap the three dots (•••), then tap Share, scroll down if needed, then tap “Add to Home Screen”.
     </div>
-  );
+  )
 }
