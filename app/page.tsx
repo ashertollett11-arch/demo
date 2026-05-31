@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
 import {
   CheckCircle2,
   Users,
@@ -50,9 +51,15 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-              <Briefcase className="h-5 w-5 text-primary-foreground" />
-            </div>
+          <div className="flex h-9 w-9 items-center justify-center">
+          <Image
+  src="/icon-192x192.png"
+  alt="SimplyApply logo"
+  width={28}
+  height={28}
+  className="object-contain"
+/>
+</div>
             <span className="text-xl font-bold text-foreground">SimplyApply</span>
           </Link>
 

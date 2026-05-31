@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import Image from "next/image"
+
 import {
   Briefcase,
   CheckCircle2,
@@ -208,9 +210,15 @@ export default function BillingPage() {
       <header className="border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-              <Briefcase className="h-5 w-5 text-primary-foreground" />
-            </div>
+          <div className="flex h-9 w-9 items-center justify-center">
+          <Image
+  src="/icon-192x192.png"
+  alt="SimplyApply logo"
+  width={28}
+  height={28}
+  className="object-contain"
+/>
+</div>
             <span className="text-xl font-bold text-foreground">SimplyApply</span>
           </Link>
           {isActive && (

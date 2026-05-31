@@ -1,4 +1,5 @@
 "use client"
+import Image from "next/image"
 import { toast } from "sonner"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -141,10 +142,7 @@ export default function LoginPage() {
 
               {/* MOBILE HEADER */}
               <div className="mb-8 text-center lg:hidden">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm text-muted-foreground">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  SimplyApply
-                </div>
+          
 
                 <h1 className="text-3xl font-bold text-foreground">
                   Welcome back
