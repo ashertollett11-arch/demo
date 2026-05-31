@@ -20,7 +20,7 @@ export default function IosInstallBanner() {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-black text-white text-sm p-3 text-center">
-      📲 Install SimplyApply on your iPhone: Tap the three dots (•••), then tap Share, scroll down if needed, then tap “Add to Home Screen”.
+      📲 Install SimplyApply on your iPhone: Tap the share icon in the top right or the three dots then share, then scroll down if needed and tap “Add to Home Screen”.
     </div>
   )
 }
