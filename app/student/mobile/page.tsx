@@ -92,37 +92,37 @@ export default function MobileStudentPage() {
           No jobs found
         </p>
       ) : (
-        <div className="h-full overflow-y-auto space-y-3 pb-10">
+        <div className="h-full overflow-y-auto space-y-6 pb-10">
   
           {jobs.map((job) => (
             <Link key={job.id} href={`/matching/student/${job.id}`}>
-              <div className="h-[22vh] rounded-2xl border bg-card p-3 flex flex-col justify-between active:scale-[0.98] transition">
+              <div className="h-[22vh] rounded-2xl border bg-card p-4 flex flex-col justify-between active:scale-[0.98] transition">
   
                 {/* TOP */}
                 <div>
-                  <div className="flex justify-between items-start gap-2">
-                    <h2 className="font-semibold text-sm leading-tight line-clamp-2">
+                  <div className="flex justify-between items-start gap-3">
+                    <h2 className="font-semibold text-lg leading-tight line-clamp-2">
                       {job.title}
                     </h2>
   
-                    <span className="text-xs font-bold text-primary shrink-0">
+                    <span className="text-base font-bold text-primary shrink-0">
                       {job.matchScore}%
                     </span>
                   </div>
   
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                  <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
                     {job.company}
                   </p>
                 </div>
   
                 {/* MIDDLE */}
-                <div className="flex items-center text-xs text-muted-foreground gap-1">
-                  <MapPin className="h-3 w-3" />
+                <div className="flex items-center text-sm text-muted-foreground gap-2">
+                  <MapPin className="h-4 w-4" />
                   <span className="truncate">{job.location}</span>
                 </div>
   
                 {/* BOTTOM */}
-                <div className="text-xs font-medium text-foreground">
+                <div className="text-base font-medium text-foreground">
                   {job.pay}
                 </div>
   
