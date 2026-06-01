@@ -43,7 +43,8 @@ export default function LoginPage() {
       if (window.location.pathname !== "/login") return
   
       if (roleData.role === "student") {
-        router.replace("/student")
+        const dest = isMobileDevice() ? "/student/mobile" : "/student"
+        router.replace(dest)
       }
   
       if (roleData.role === "employer") {
