@@ -324,31 +324,31 @@ export default function StudentDashboard() {
 
             {/* MAIN */}
             <div className="lg:col-span-2 space-y-6">
-              <Card className="border-border bg-card">
-                <CardHeader>
+            <Card className="border-border bg-card sm:rounded-xl sm:border">
+                              <CardHeader>
                 <CardTitle className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-lg">
-  
-  {/* Title (hidden on mobile optional OR centered) */}
-  <span className="text-center sm:text-left w-full sm:w-auto">
-    Matches Near You
-  </span>
 
-  {/* View All button centered on mobile */}
-  <Button
-    variant="ghost"
-    size="sm"
-    asChild
-    className="mx-auto sm:mx-0"
-  >
-    <Link href="/matching/student" className="gap-1 text-primary text-sm">
-      View All <ChevronRight className="h-4 w-4" />
-    </Link>
-  </Button>
+{/* Hide title on mobile */}
+<span className="hidden sm:block">
+  Matches Near You
+</span>
+
+{/* Centered View All on mobile */}
+<Button
+  variant="ghost"
+  size="sm"
+  asChild
+  className="mx-auto sm:mx-0"
+>
+  <Link href="/matching/student" className="gap-1 text-primary text-sm">
+    View All <ChevronRight className="h-4 w-4" />
+  </Link>
+</Button>
 
 </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-  {matchedJobsWithScore.length === 0 ? (
+                <CardContent className="space-y-0 p-0 sm:p-6 sm:space-y-3">
+                    {matchedJobsWithScore.length === 0 ? (
     <div className="text-center py-10 text-muted-foreground">
       <MapPin className="mx-auto h-6 w-6 mb-2 opacity-60" />
       <p className="text-sm font-medium">
@@ -361,8 +361,7 @@ export default function StudentDashboard() {
   ) : (
     matchedJobsWithScore.map(job => (
       <Link key={job.id} href={`/matching/student/${job.id}`} className="block">
-<div className="rounded-xl border border-border bg-secondary/30 p-4 sm:p-3 transition-colors hover:bg-secondary/50">          
-          {/* TOP ROW */}
+<div className="w-full rounded-none sm:rounded-xl border-y sm:border border-border bg-secondary/30 px-4 py-4 sm:p-3 transition-colors hover:bg-secondary/50">          {/* TOP ROW */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1">
