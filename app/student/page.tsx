@@ -346,8 +346,8 @@ export default function StudentDashboard() {
 
 </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 sm:space-y-3 p-0 sm:p-6">
-                                      {matchedJobsWithScore.length === 0 ? (
+                <CardContent className="p-0 sm:p-6 sm:space-y-3 max-h-[85vh] overflow-y-auto space-y-4 sm:overflow-visible">
+                                                        {matchedJobsWithScore.length === 0 ? (
     <div className="text-center py-10 text-muted-foreground">
       <MapPin className="mx-auto h-6 w-6 mb-2 opacity-60" />
       <p className="text-sm font-medium">
@@ -363,8 +363,8 @@ export default function StudentDashboard() {
   key={job.id}
   href={`/matching/student/${job.id}`}
   className="block mb-3 sm:mb-0"
-><div className="w-full rounded-2xl sm:rounded-xl border border-border bg-secondary/30 px-4 py-4 sm:p-3 transition-colors hover:bg-secondary/50">
-         {/* TOP ROW */}
+  ><div className="w-full rounded-2xl sm:rounded-xl border border-border bg-secondary/30 px-4 py-6 sm:p-3 transition-colors hover:bg-secondary/50 min-h-[28vh] sm:min-h-0">
+             {/* TOP ROW */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1">
@@ -380,8 +380,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* BOTTOM ROW */}
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="mt-4 flex flex-wrap items-center gap-2">            <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" />{job.distance}
             </span>
             <span className="font-semibold text-primary text-xs">{job.pay}</span>
