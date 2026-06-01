@@ -362,17 +362,17 @@ export default function StudentDashboard() {
   key={job.id}
   href={`/matching/student/${job.id}`}
   className="block mb-3 sm:mb-0"
-  ><div className="w-full rounded-3xl border border-border/60 bg-secondary/30 px-5 py-8 sm:p-6 transition-colors hover:bg-secondary/50 min-h-[32vh]">
+  ><div className="w-full rounded-3xl border border-border/60 bg-secondary/30 px-5 py-8 sm:px-6 sm:py-5 transition-colors hover:bg-secondary/50 min-h-[32vh] sm:min-h-0">         
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1">
-              <h3 className="font-semibold text-foreground text-lg sm:text-xl">
-  {job.title}
+              <h3 className="font-semibold text-foreground text-xl sm:text-lg">
+                  {job.title}
 </h3>                {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
                 {job.status === "applied" && <Badge variant="secondary" className="text-xs">Applied</Badge>}
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-  {job.company}
+              <p className="text-base sm:text-sm text-muted-foreground mt-1">
+                  {job.company}
 </p>
             </div>
             <Badge className="bg-primary/10 text-primary shrink-0 text-sm px-3 py-1">
@@ -382,8 +382,7 @@ export default function StudentDashboard() {
 
           {/* BOTTOM ROW */}
          {/* BOTTOM ROW */}
-<div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm">
-  
+         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm sm:text-xs">  
   <div className="flex items-center gap-4 text-muted-foreground">
     
     <span className="flex items-center gap-1">
