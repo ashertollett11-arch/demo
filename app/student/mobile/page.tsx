@@ -31,10 +31,10 @@ type Job = {
 }
 
 function getColor(score: number) {
-  if (score >= 80) return "#22c55e"
-  if (score >= 50) return "#eab308"
-  return "#ef4444"
-}
+    if (score >= 80) return "#a855f7" // bright purple
+    if (score >= 50) return "#c084fc" // medium purple
+    return "#fb7185" // soft pink-red (still readable but not harsh)
+  }
 
 function getCompanyIcon(job: any) {
   const text = `${job.company} ${job.title}`.toLowerCase()
@@ -101,7 +101,7 @@ function MatchCircle({ score }: { score: number }) {
 export default function MobileStudentPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<any[]>([])
-
+  const isHighMatch = job.matchScore >= 80
   useEffect(() => {
     const fetchJobs = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -198,18 +198,20 @@ export default function MobileStudentPage() {
           return (
             <Link key={job.id} href={`/matching/student/${job.id}`}>
 <div
-  className="
+  className={`
     mb-10 rounded-2xl p-5 flex flex-col
-    border border-purple-900/40
+    border transition-all duration-300
     bg-[#140a25]
-    transition-all duration-300
 
-    shadow-[0_0_0px_rgba(168,85,247,0.0)]
+    ${
+      isHighMatch
+        ? "border-purple-400/40 shadow-[0_0_35px_rgba(168,85,247,0.25)]"
+        : "border-purple-900/40 shadow-[0_0_0px_rgba(0,0,0,0)]"
+    }
 
     hover:bg-[#1b1033]
-    hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]
-    hover:border-purple-500/40
-  "
+    hover:shadow-[0_0_25px_rgba(168,85,247,0.20)]
+  `}
 >
                 {/* TOP */}
                 <div className="flex justify-between gap-4">
