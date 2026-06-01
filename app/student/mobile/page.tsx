@@ -92,7 +92,7 @@ export default function MobileStudentPage() {
           No jobs found
         </p>
       ) : (
-        <div className="h-full overflow-y-auto space-y-8 px-1 pb-12">
+        <div className="h-full overflow-y-auto space-y-12 px-1 pb-12">
   
           {jobs.map((job) => (
             <Link key={job.id} href={`/matching/student/${job.id}`}>
