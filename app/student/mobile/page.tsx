@@ -29,51 +29,58 @@ function getColor(score: number) {
 }
 
 function MatchCircle({ score }: { score: number }) {
-  const radius = 18
-  const stroke = 4
-  const normalizedRadius = radius - stroke * 0.5
-  const circumference = normalizedRadius * 2 * Math.PI
-  const strokeDashoffset =
-    circumference - (score / 100) * circumference
-
-  const color = getColor(score)
-
-  return (
-    <svg height="44" width="44" className="shrink-0">
-      <circle
-        stroke="#e5e7eb"
-        fill="transparent"
-        strokeWidth={stroke}
-        r={normalizedRadius}
-        cx="22"
-        cy="22"
-      />
-      <circle
-        stroke={color}
-        fill="transparent"
-        strokeWidth={stroke}
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={strokeDashoffset}
-        r={normalizedRadius}
-        cx="22"
-        cy="22"
-        style={{ transition: "stroke-dashoffset 0.4s ease" }}
-      />
-      <text
-        x="50%"
-        y="50%"
-        textAnchor="middle"
-        dy=".3em"
-        fontSize="10"
-        fontWeight="bold"
-        fill={color}
-      >
-        {score}
-      </text>
-    </svg>
-  )
-}
+    const size = 64 // 👈 bigger overall size
+    const stroke = 6
+    const radius = 26
+    const normalizedRadius = radius
+    const circumference = 2 * Math.PI * normalizedRadius
+  
+    const strokeDashoffset =
+      circumference - (score / 100) * circumference
+  
+    const color = getColor(score)
+  
+    return (
+      <svg height={size} width={size} className="shrink-0">
+        {/* background ring */}
+        <circle
+          stroke="#e5e7eb"
+          fill="transparent"
+          strokeWidth={stroke}
+          r={normalizedRadius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+  
+        {/* progress ring */}
+        <circle
+          stroke={color}
+          fill="transparent"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          r={normalizedRadius}
+          cx={size / 2}
+          cy={size / 2}
+          style={{ transition: "stroke-dashoffset 0.4s ease" }}
+        />
+  
+        {/* centered text */}
+        <text
+          x="50%"
+          y="50%"
+          textAnchor="middle"
+          dy=".3em"
+          fontSize="14"
+          fontWeight="bold"
+          fill={color}
+        >
+          {score}%
+        </text>
+      </svg>
+    )
+  }
 
 export default function MobileStudentPage() {
   const router = useRouter()
