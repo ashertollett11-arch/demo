@@ -270,8 +270,7 @@ export default function StudentDashboard() {
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-
+        <main className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           {/* WELCOME */}
           <div className="mb-6 hidden sm:block">
                         <h1 className="text-xl font-bold text-foreground sm:text-3xl">Ready to land your first job?</h1>
@@ -347,8 +346,8 @@ export default function StudentDashboard() {
 
 </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-0 p-0 sm:p-6 sm:space-y-3">
-                    {matchedJobsWithScore.length === 0 ? (
+                <CardContent className="space-y-3 sm:space-y-3 p-0 sm:p-6">
+                                      {matchedJobsWithScore.length === 0 ? (
     <div className="text-center py-10 text-muted-foreground">
       <MapPin className="mx-auto h-6 w-6 mb-2 opacity-60" />
       <p className="text-sm font-medium">
@@ -360,8 +359,12 @@ export default function StudentDashboard() {
     </div>
   ) : (
     matchedJobsWithScore.map(job => (
-      <Link key={job.id} href={`/matching/student/${job.id}`} className="block">
-<div className="w-full rounded-none sm:rounded-xl border-y sm:border border-border bg-secondary/30 px-4 py-4 sm:p-3 transition-colors hover:bg-secondary/50">          {/* TOP ROW */}
+<Link
+  key={job.id}
+  href={`/matching/student/${job.id}`}
+  className="block mb-3 sm:mb-0"
+><div className="w-full rounded-2xl sm:rounded-xl border border-border bg-secondary/30 px-4 py-4 sm:p-3 transition-colors hover:bg-secondary/50">
+         {/* TOP ROW */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1">
