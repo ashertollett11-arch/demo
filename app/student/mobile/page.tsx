@@ -86,7 +86,43 @@ export default function MobileStudentPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 pb-28">
-      
+      {/* HEADER */}
+<div className="mb-6 flex items-start gap-3">
+
+{/* LOGO */}
+<img
+  src="/icon-512x512.png"
+  alt="Simply Apply logo"
+  className="h-12 w-12 rounded-xl object-contain"
+/>
+
+{/* TEXT BLOCK */}
+<div className="flex flex-col">
+
+  {/* BRAND NAME */}
+  <h1 className="text-2xl font-bold text-foreground leading-tight">
+    Simply Apply
+  </h1>
+
+  {/* TAGLINE */}
+  <p className="text-sm text-muted-foreground">
+    Simple. Smart. Speedy.
+  </p>
+
+  {/* SUB TEXT */}
+  <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+    <span className="font-medium text-primary">Best matches</span>
+    <span>•</span>
+    <button
+      onClick={() => router.push("/matching/student")}
+      className="hover:text-foreground underline underline-offset-2"
+    >
+      See all
+    </button>
+  </div>
+
+</div>
+</div>
       {/* JOB LIST */}
       {jobs.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center mt-10">
