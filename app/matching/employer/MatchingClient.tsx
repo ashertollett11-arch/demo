@@ -1,4 +1,11 @@
 "use client"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
@@ -112,6 +119,11 @@ function FilterContent({ minGpa, setMinGpa, selectedDays, setSelectedDays, verif
 }
 
 export default function MatchingPage() {
+  const [selectedContact, setSelectedContact] = useState<{
+    name: string
+    email: string
+    phone: string
+  } | null>(null)
   const router = useRouter()
   const [employerZip, setEmployerZip] = useState("")
   const [zipPrecision, setZipPrecision] = useState(5)
@@ -618,7 +630,14 @@ useEffect(() => {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem asChild><Link href="/employer/profile">Company Profile</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link href="/">Log out</Link></DropdownMenuItem>
+                <DropdownMenuItem
+  onClick={async () => {
+    await supabase.auth.signOut()
+    window.location.href = "/"
+  }}
+>
+  Log out
+</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -813,45 +832,94 @@ useEffect(() => {
                     </div>
 
                     <div className="mt-5 flex gap-2">
-                      <Button variant="outline" className="flex-1" size="sm"
-                        onClick={(e) => { e.stopPropagation(); router.push(`/matching/employer/${candidate.id}`) }}
-                      >
-                        View Profile
-                      </Button>
+  <Button
+    variant="outline"
+    className="flex-1"
+    size="sm"
+    onClick={(e) => {
+      e.stopPropagation()
+      router.push(`/matching/employer/${candidate.id}`)
+    }}
+  >
+    View Profile
+  </Button>
 
-                      <Select
-                        value={statuses.find((s) => s.student_id === candidate.id && s.employer_id === employerId)?.status || "new"}
-                        onValueChange={async (value) => {
-                          if (!employerId) return
-                          const newStatus = value as "new" | "contacted" | "hired"
+  <Select
+    value={
+      statuses.find(
+        (s) =>
+          s.student_id === candidate.id &&
+          s.employer_id === employerId
+      )?.status || "new"
+    }
+    onValueChange={async (value) => {
+      if (!employerId) return
+      const newStatus = value as "new" | "contacted" | "hired"
 
-                          setStatuses((prev) => {
-                            const exists = prev.find((s) => s.student_id === candidate.id && s.employer_id === employerId)
-                            if (exists) {
-                              return prev.map((s) =>
-                                s.student_id === candidate.id && s.employer_id === employerId
-                                  ? { ...s, status: newStatus } : s
-                              )
-                            }
-                            return [...prev, { student_id: candidate.id, employer_id: employerId, status: newStatus }]
-                          })
+      setStatuses((prev) => {
+        const exists = prev.find(
+          (s) =>
+            s.student_id === candidate.id &&
+            s.employer_id === employerId
+        )
 
-                          await supabase.from("student_statuses").upsert(
-                            { student_id: candidate.id, employer_id: employerId, status: newStatus },
-                            { onConflict: "student_id,employer_id" }
-                          )
+        if (exists) {
+          return prev.map((s) =>
+            s.student_id === candidate.id &&
+            s.employer_id === employerId
+              ? { ...s, status: newStatus }
+              : s
+          )
+        }
 
-                          setActiveStatus(newStatus)
-                        }}
-                      >
-                        <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">New</SelectItem>
-                          <SelectItem value="contacted">Contacted</SelectItem>
-                          <SelectItem value="hired">Hired</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+        return [
+          ...prev,
+          {
+            student_id: candidate.id,
+            employer_id: employerId,
+            status: newStatus,
+          },
+        ]
+      })
+
+      await supabase.from("student_statuses").upsert(
+        {
+          student_id: candidate.id,
+          employer_id: employerId,
+          status: newStatus,
+        },
+        { onConflict: "student_id,employer_id" }
+      )
+
+      setActiveStatus(newStatus)
+    }}
+  >
+    <SelectTrigger className="flex-1">
+      <SelectValue />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="new">New</SelectItem>
+      <SelectItem value="contacted">Contacted</SelectItem>
+      <SelectItem value="hired">Hired</SelectItem>
+    </SelectContent>
+  </Select>
+</div>
+
+<Button
+  variant="secondary"
+  className="mt-2 w-full"
+  size="sm"
+  onClick={(e) => {
+    e.stopPropagation()
+    setSelectedContact({
+      name: candidate.name,
+      email: candidate.email || "No email provided",
+      phone: candidate.phone || "No phone provided",
+    })
+  }}
+>
+  Contact
+</Button>
                   </CardContent>
                 </Card>
               ))}
@@ -883,6 +951,34 @@ useEffect(() => {
           </div>
         </div>
       </main>
+      <Dialog
+  open={!!selectedContact}
+  onOpenChange={() => setSelectedContact(null)}
+>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>
+        Contact {selectedContact?.name}
+      </DialogTitle>
+
+      <DialogDescription>
+        View contact details for this student
+      </DialogDescription>
+    </DialogHeader>
+
+    <div className="space-y-4">
+      <div>
+        <p className="text-sm text-muted-foreground">Email</p>
+        <p>{selectedContact?.email}</p>
+      </div>
+
+      <div>
+        <p className="text-sm text-muted-foreground">Phone</p>
+        <p>{selectedContact?.phone}</p>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
     </div>
   )
 }

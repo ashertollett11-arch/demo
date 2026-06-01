@@ -319,11 +319,14 @@ useEffect(() => {
 
     <DropdownMenuSeparator />
 
-    <DropdownMenuItem asChild>
-      <Link href="/">
-        Log out
-      </Link>
-    </DropdownMenuItem>
+    <DropdownMenuItem
+  onClick={async () => {
+    await supabase.auth.signOut()
+    window.location.href = "/"
+  }}
+>
+  Log out
+</DropdownMenuItem>
 
   </DropdownMenuContent>
 </DropdownMenu>

@@ -1,7 +1,7 @@
 "use client"
 import Image from "next/image"
 import { toast } from "sonner"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,39 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+  
+      if (!session?.user) return
+  
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", session.user.id)
+        .single()
+  
+      if (!roleData?.role) {
+        router.replace("/choose-role")
+        return
+      }
+  
+      if (roleData.role === "student") {
+        router.replace("/student")
+        return
+      }
+  
+      if (roleData.role === "employer") {
+        router.replace("/matching/employer")
+        return
+      }
+    }
+  
+    checkExistingSession()
+  }, [router])
 
   // CREATE ACCOUNT
   const signUp = async () => {
