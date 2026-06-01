@@ -87,41 +87,45 @@ export default function MobileStudentPage() {
   return (
     <div className="min-h-screen bg-background p-6 pb-28">
       {/* HEADER */}
-<div className="mb-6 flex items-start gap-3">
+{/* HEADER (FULL HERO STYLE) */}
+<div className="mb-6 w-full">
 
-{/* LOGO */}
-<img
-  src="/icon-512x512.png"
-  alt="Simply Apply logo"
-  className="h-12 w-12 rounded-xl object-contain"
-/>
+  {/* TOP BRAND AREA (BIG) */}
+  <div className="flex flex-col items-center text-center py-6">
 
-{/* TEXT BLOCK */}
-<div className="flex flex-col">
+    {/* LOGO (BIG) */}
+    <img
+      src="/icon-512x512.png"
+      alt="Simply Apply logo"
+      className="h-20 w-20 sm:h-24 sm:w-24 object-contain mb-3"
+    />
 
-  {/* BRAND NAME */}
-  <h1 className="text-2xl font-bold text-foreground leading-tight">
-    Simply Apply
-  </h1>
+    {/* BRAND NAME (BIG) */}
+    <h1 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight">
+      Simply Apply
+    </h1>
 
-  {/* TAGLINE */}
-  <p className="text-sm text-muted-foreground">
-    Simple. Smart. Speedy.
-  </p>
+    {/* TAGLINE */}
+    <p className="text-sm sm:text-base text-muted-foreground mt-2">
+      Simple. Smart. Speedy.
+    </p>
+  </div>
 
-  {/* SUB TEXT */}
-  <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-    <span className="font-medium text-primary">Best matches</span>
-    <span>•</span>
+  {/* BOTTOM ROW */}
+  <div className="flex items-center justify-between px-1 mt-4">
+
+    <span className="text-sm font-semibold text-foreground">
+      Best matches
+    </span>
+
     <button
       onClick={() => router.push("/matching/student")}
-      className="hover:text-foreground underline underline-offset-2"
+      className="text-sm text-primary font-medium hover:underline"
     >
       See all
     </button>
-  </div>
 
-</div>
+  </div>
 </div>
       {/* JOB LIST */}
       {jobs.length === 0 ? (
