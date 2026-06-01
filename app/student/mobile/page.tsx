@@ -197,8 +197,20 @@ export default function MobileStudentPage() {
 
           return (
             <Link key={job.id} href={`/matching/student/${job.id}`}>
-              <div className="mb-10 rounded-2xl border border-purple-900/40 bg-[#140a25] p-5 flex flex-col hover:bg-[#1b1033] transition">
+<div
+  className="
+    mb-10 rounded-2xl p-5 flex flex-col
+    border border-purple-900/40
+    bg-[#140a25]
+    transition-all duration-300
 
+    shadow-[0_0_0px_rgba(168,85,247,0.0)]
+
+    hover:bg-[#1b1033]
+    hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]
+    hover:border-purple-500/40
+  "
+>
                 {/* TOP */}
                 <div className="flex justify-between gap-4">
 
