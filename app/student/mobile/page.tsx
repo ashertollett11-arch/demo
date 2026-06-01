@@ -23,64 +23,62 @@ type Job = {
 }
 
 function getColor(score: number) {
-  if (score >= 80) return "#22c55e" // green
-  if (score >= 50) return "#eab308" // yellow
-  return "#ef4444" // red
+  if (score >= 80) return "#22c55e"
+  if (score >= 50) return "#eab308"
+  return "#ef4444"
 }
 
 function MatchCircle({ score }: { score: number }) {
-    const size = 64 // 👈 bigger overall size
-    const stroke = 6
-    const radius = 26
-    const normalizedRadius = radius
-    const circumference = 2 * Math.PI * normalizedRadius
-  
-    const strokeDashoffset =
-      circumference - (score / 100) * circumference
-  
-    const color = getColor(score)
-  
-    return (
-      <svg height={size} width={size} className="shrink-0">
-        {/* background ring */}
-        <circle
-          stroke="#e5e7eb"
-          fill="transparent"
-          strokeWidth={stroke}
-          r={normalizedRadius}
-          cx={size / 2}
-          cy={size / 2}
-        />
-  
-        {/* progress ring */}
-        <circle
-          stroke={color}
-          fill="transparent"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={strokeDashoffset}
-          r={normalizedRadius}
-          cx={size / 2}
-          cy={size / 2}
-          style={{ transition: "stroke-dashoffset 0.4s ease" }}
-        />
-  
-        {/* centered text */}
-        <text
-          x="50%"
-          y="50%"
-          textAnchor="middle"
-          dy=".3em"
-          fontSize="14"
-          fontWeight="bold"
-          fill={color}
-        >
-          {score}%
-        </text>
-      </svg>
-    )
-  }
+  const size = 84 // 🔥 BIGGER
+  const stroke = 7
+  const radius = 34
+
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference - (score / 100) * circumference
+
+  const color = getColor(score)
+
+  return (
+    <svg height={size} width={size} className="shrink-0">
+      {/* background */}
+      <circle
+        stroke="#e5e7eb"
+        fill="transparent"
+        strokeWidth={stroke}
+        r={radius}
+        cx={size / 2}
+        cy={size / 2}
+      />
+
+      {/* progress */}
+      <circle
+        stroke={color}
+        fill="transparent"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        r={radius}
+        cx={size / 2}
+        cy={size / 2}
+        style={{ transition: "stroke-dashoffset 0.4s ease" }}
+      />
+
+      {/* text */}
+      <text
+        x="50%"
+        y="50%"
+        textAnchor="middle"
+        dy=".3em"
+        fontSize="16"
+        fontWeight="bold"
+        fill={color}
+      >
+        {score}%
+      </text>
+    </svg>
+  )
+}
 
 export default function MobileStudentPage() {
   const router = useRouter()
@@ -106,8 +104,8 @@ export default function MobileStudentPage() {
         .select("*")
 
       const scored = (jobsData || [])
-        .filter((job: Job) => job.zip_code && studentZip)
-        .map((job: Job) => {
+        .filter((job: any) => job.zip_code && studentZip)
+        .map((job: any) => {
           let shifts = job.available_shifts ?? []
           if (!Array.isArray(shifts)) shifts = Object.values(shifts || {})
 
@@ -149,16 +147,14 @@ export default function MobileStudentPage() {
 
       {/* HEADER */}
       <div className="mb-6 w-full">
-
         <div className="flex flex-col items-center text-center py-6">
-
           <img
             src="/icon-512x512.png"
             alt="Simply Apply logo"
             className="h-20 w-20 sm:h-24 sm:w-24 object-contain mb-3"
           />
 
-          <h1 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight">
+          <h1 className="text-4xl sm:text-5xl font-bold text-foreground">
             Simply Apply
           </h1>
 
@@ -190,42 +186,40 @@ export default function MobileStudentPage() {
         <div className="overflow-y-auto px-1">
           {jobs.map((job) => (
             <Link key={job.id} href={`/matching/student/${job.id}`}>
-              <div className="min-h-[180px] mb-10 rounded-2xl border bg-card p-5 flex flex-col justify-between active:scale-[0.98] transition">
+              <div className="min-h-[180px] mb-10 rounded-2xl border bg-card p-5 flex flex-col justify-between">
 
                 {/* TOP */}
-                <div>
-                  <div className="flex justify-between items-start gap-3">
-                    <h2 className="font-semibold text-lg leading-tight line-clamp-2">
+                <div className="flex justify-between gap-4">
+                  <div className="flex-1">
+                    <h2 className="font-semibold text-lg line-clamp-2">
                       {job.title}
                     </h2>
 
-                    {/* NEW CIRCLE SCORE */}
-                    <MatchCircle score={job.matchScore} />
-                  </div>
-
-                  {/* COMPANY + STATUS */}
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <p className="text-sm text-muted-foreground line-clamp-1">
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
                       {job.company}
                     </p>
-
-                    {job.status && (
-                      <span className="text-[11px] px-2 py-0.5 rounded-full border bg-secondary text-muted-foreground capitalize shrink-0">
-                        {job.status}
-                      </span>
-                    )}
                   </div>
+
+                  <MatchCircle score={job.matchScore} />
                 </div>
 
                 {/* LOCATION */}
-                <div className="flex items-center text-sm text-muted-foreground gap-2">
+                <div className="flex items-center text-sm text-muted-foreground gap-2 mt-3">
                   <MapPin className="h-4 w-4" />
                   <span className="truncate">{job.location}</span>
                 </div>
 
-                {/* PAY */}
-                <div className="text-base font-medium text-foreground">
-                  {job.pay}
+                {/* PAY + STATUS (UPDATED) */}
+                <div className="flex items-center justify-between mt-2">
+                  <div className="text-base font-medium text-foreground">
+                    {job.pay}
+                  </div>
+
+                  {job.status && (
+                    <span className="text-xs px-2 py-1 rounded-full border bg-secondary text-muted-foreground capitalize">
+                      {job.status}
+                    </span>
+                  )}
                 </div>
 
               </div>
@@ -234,7 +228,7 @@ export default function MobileStudentPage() {
         </div>
       )}
 
-      {/* BOTTOM NAV BAR */}
+      {/* BOTTOM NAV */}
       <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-50">
         <div className="flex items-center justify-between px-8 py-6">
 
@@ -250,12 +244,10 @@ export default function MobileStudentPage() {
             onClick={() => router.push("/student/mobile")}
             className="flex flex-col items-center -mt-6"
           >
-            <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition">
+            <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md">
               <MapPin className="h-5 w-5" />
             </div>
-            <span className="text-xs mt-2 text-foreground font-medium">
-              Home
-            </span>
+            <span className="text-xs mt-2 font-medium">Home</span>
           </button>
 
           <button
@@ -268,6 +260,7 @@ export default function MobileStudentPage() {
 
         </div>
       </div>
+
     </div>
   )
 }
