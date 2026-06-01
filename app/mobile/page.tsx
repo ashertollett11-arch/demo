@@ -58,24 +58,24 @@ export default function MobileLandingPage() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
-            <Link href="#how-it-works" className="text-sm text-purple-300 hover:text-white">
+            <Link href="/" className="text-sm text-purple-300 hover:text-white">
               How it Works
             </Link>
-            <Link href="/login" className="text-sm text-purple-300 hover:text-white">
+            <Link href="/" className="text-sm text-purple-300 hover:text-white">
               Pricing
             </Link>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
             <Link
-              href="/login"
+              href="/login/mobile"
               className="text-sm text-purple-300 hover:text-white"
             >
               Log in
             </Link>
 
             <Link
-              href="/login"
+              href="/login/mobile"
               className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-lg shadow-[0_0_25px_rgba(168,85,247,0.25)]"
             >
               Get Started
@@ -98,9 +98,9 @@ export default function MobileLandingPage() {
           <div className="border-t border-purple-900/40 bg-[#140a25] px-4 py-4 md:hidden">
             <div className="flex flex-col gap-4 text-purple-300">
               <Link href="#how-it-works">How it Works</Link>
-              <Link href="/login">Pricing</Link>
-              <Link href="/login">Log in</Link>
-              <Link href="/login">Get Started</Link>
+              <Link href="/">Pricing</Link>
+              <Link href="/login/mobile">Log in</Link>
+              <Link href="/login/mobile">Get Started</Link>
             </div>
           </div>
         )}
@@ -129,14 +129,14 @@ export default function MobileLandingPage() {
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/login"
+              href="/login/mobile"
               className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-lg shadow-[0_0_25px_rgba(168,85,247,0.25)]"
             >
               Get Started as Student
             </Link>
 
             <Link
-              href="/login"
+              href="/login/mobile"
               className="border border-purple-800 text-purple-300 px-6 py-3 rounded-lg hover:bg-[#1b1033]"
             >
               Hire Students
@@ -218,14 +218,14 @@ export default function MobileLandingPage() {
 
         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
           <Link
-            href="/login"
+            href="/login/mobile"
             className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-3 rounded-lg shadow-[0_0_25px_rgba(168,85,247,0.25)]"
           >
             Get Started
           </Link>
 
           <Link
-            href="/login"
+            href="/login/mobile"
             className="border border-purple-800 text-purple-300 px-6 py-3 rounded-lg hover:bg-[#1b1033]"
           >
             Hire Students
