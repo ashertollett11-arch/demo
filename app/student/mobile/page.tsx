@@ -5,7 +5,17 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { calculateMatch } from "@/lib/matchScore"
-import { MapPin, Search, User } from "lucide-react"
+import {
+  MapPin,
+  Search,
+  User,
+  Coffee,
+  Utensils,
+  Hotel,
+  Dumbbell,
+  ShoppingBag,
+  Building2,
+} from "lucide-react"
 
 type Job = {
   id: string
@@ -17,9 +27,7 @@ type Job = {
   status?: string
   shift_preference?: string
   available_shifts?: any
-  has_tips?: boolean
   zip_code?: string
-  zip_match_precision?: number
 }
 
 function getColor(score: number) {
@@ -28,19 +36,29 @@ function getColor(score: number) {
   return "#ef4444"
 }
 
+function getCompanyIcon(job: any) {
+  const text = `${job.company} ${job.title}`.toLowerCase()
+
+  if (text.includes("coffee") || text.includes("cafe")) return Coffee
+  if (text.includes("restaurant") || text.includes("bar")) return Utensils
+  if (text.includes("hotel")) return Hotel
+  if (text.includes("gym")) return Dumbbell
+  if (text.includes("store") || text.includes("retail")) return ShoppingBag
+
+  return Building2
+}
+
 function MatchCircle({ score }: { score: number }) {
-  const size = 84 // 🔥 BIGGER
-  const stroke = 7
+  const size = 92
+  const stroke = 8
   const radius = 34
 
   const circumference = 2 * Math.PI * radius
   const offset = circumference - (score / 100) * circumference
-
   const color = getColor(score)
 
   return (
     <svg height={size} width={size} className="shrink-0">
-      {/* background */}
       <circle
         stroke="#e5e7eb"
         fill="transparent"
@@ -50,7 +68,6 @@ function MatchCircle({ score }: { score: number }) {
         cy={size / 2}
       />
 
-      {/* progress */}
       <circle
         stroke={color}
         fill="transparent"
@@ -64,7 +81,6 @@ function MatchCircle({ score }: { score: number }) {
         style={{ transition: "stroke-dashoffset 0.4s ease" }}
       />
 
-      {/* text */}
       <text
         x="50%"
         y="50%"
@@ -146,58 +162,53 @@ export default function MobileStudentPage() {
     <div className="min-h-screen bg-background p-6 pb-28">
 
       {/* HEADER */}
-      <div className="mb-6 w-full">
-        <div className="flex flex-col items-center text-center py-6">
-          <img
-            src="/icon-512x512.png"
-            alt="Simply Apply logo"
-            className="h-20 w-20 sm:h-24 sm:w-24 object-contain mb-3"
-          />
+      <div className="mb-6 w-full text-center">
+        <img
+          src="/icon-512x512.png"
+          className="h-20 w-20 mx-auto mb-3"
+        />
 
-          <h1 className="text-4xl sm:text-5xl font-bold text-foreground">
-            Simply Apply
-          </h1>
+        <h1 className="text-4xl font-bold">Simply Apply</h1>
+        <p className="text-muted-foreground mt-2">
+          Simple. Smart. Speedy.
+        </p>
 
-          <p className="text-sm sm:text-base text-muted-foreground mt-2">
-            Simple. Smart. Speedy.
-          </p>
-        </div>
-
-        <div className="flex items-center justify-between px-1 mt-4">
-          <span className="text-sm font-semibold text-foreground">
-            Best matches
-          </span>
+        <div className="flex justify-between mt-4 px-1">
+          <span className="font-semibold">Best matches</span>
 
           <button
             onClick={() => router.push("/matching/student")}
-            className="text-sm text-primary font-medium hover:underline"
+            className="text-primary text-sm"
           >
             See all
           </button>
         </div>
       </div>
 
-      {/* JOB LIST */}
-      {jobs.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center mt-10">
-          No jobs found
-        </p>
-      ) : (
-        <div className="overflow-y-auto px-1">
-          {jobs.map((job) => (
+      {/* JOBS */}
+      <div className="overflow-y-auto px-1">
+        {jobs.map((job) => {
+          const Icon = getCompanyIcon(job)
+
+          return (
             <Link key={job.id} href={`/matching/student/${job.id}`}>
-              <div className="min-h-[180px] mb-10 rounded-2xl border bg-card p-5 flex flex-col justify-between">
+              <div className="mb-10 rounded-2xl border bg-card p-5 flex flex-col">
 
                 {/* TOP */}
                 <div className="flex justify-between gap-4">
-                  <div className="flex-1">
-                    <h2 className="font-semibold text-lg line-clamp-2">
-                      {job.title}
-                    </h2>
 
-                    <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
-                      {job.company}
-                    </p>
+                  <div className="flex gap-3 flex-1">
+                    <Icon className="h-6 w-6 text-muted-foreground mt-1" />
+
+                    <div>
+                      <h2 className="font-semibold text-lg line-clamp-2">
+                        {job.title}
+                      </h2>
+
+                      <p className="text-sm text-muted-foreground">
+                        {job.company}
+                      </p>
+                    </div>
                   </div>
 
                   <MatchCircle score={job.matchScore} />
@@ -209,11 +220,9 @@ export default function MobileStudentPage() {
                   <span className="truncate">{job.location}</span>
                 </div>
 
-                {/* PAY + STATUS (UPDATED) */}
-                <div className="flex items-center justify-between mt-2">
-                  <div className="text-base font-medium text-foreground">
-                    {job.pay}
-                  </div>
+                {/* PAY + STATUS */}
+                <div className="flex justify-between mt-2">
+                  <div className="font-medium">{job.pay}</div>
 
                   {job.status && (
                     <span className="text-xs px-2 py-1 rounded-full border bg-secondary text-muted-foreground capitalize">
@@ -224,38 +233,29 @@ export default function MobileStudentPage() {
 
               </div>
             </Link>
-          ))}
-        </div>
-      )}
+          )
+        })}
+      </div>
 
       {/* BOTTOM NAV */}
       <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-50">
-        <div className="flex items-center justify-between px-8 py-6">
+        <div className="flex justify-between px-8 py-6">
 
-          <button
-            onClick={() => router.push("/matching/student")}
-            className="flex flex-col items-center text-muted-foreground hover:text-foreground"
-          >
+          <button onClick={() => router.push("/matching/student")}>
             <Search className="h-5 w-5" />
-            <span className="text-xs mt-2">Matches</span>
+            <div className="text-xs mt-2">Matches</div>
           </button>
 
-          <button
-            onClick={() => router.push("/student/mobile")}
-            className="flex flex-col items-center -mt-6"
-          >
-            <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md">
-              <MapPin className="h-5 w-5" />
+          <button onClick={() => router.push("/student/mobile")} className="-mt-6">
+            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
+              <MapPin className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xs mt-2 font-medium">Home</span>
+            <div className="text-xs mt-2 font-medium">Home</div>
           </button>
 
-          <button
-            onClick={() => router.push("/student/profile")}
-            className="flex flex-col items-center text-muted-foreground hover:text-foreground"
-          >
+          <button onClick={() => router.push("/student/profile")}>
             <User className="h-5 w-5" />
-            <span className="text-xs mt-2">Profile</span>
+            <div className="text-xs mt-2">Profile</div>
           </button>
 
         </div>
