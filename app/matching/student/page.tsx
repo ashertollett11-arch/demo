@@ -52,7 +52,17 @@ interface Availability {
 }
 export default function MatchesPage() {
   const router = useRouter()
-
+  useEffect(() => {
+    const isMobile =
+      window.matchMedia("(max-width: 768px)").matches ||
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  
+    if (isMobile) {
+      router.replace("/student/mobile")
+    } else {
+      router.replace("/student")
+    }
+  }, [router])
   useEffect(() => {
     const checkProfile = async () => {
       const { data } = await supabase.auth.getUser()
