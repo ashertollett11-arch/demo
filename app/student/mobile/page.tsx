@@ -22,6 +22,59 @@ type Job = {
   zip_match_precision?: number
 }
 
+function getColor(score: number) {
+  if (score >= 80) return "#22c55e" // green
+  if (score >= 50) return "#eab308" // yellow
+  return "#ef4444" // red
+}
+
+function MatchCircle({ score }: { score: number }) {
+  const radius = 18
+  const stroke = 4
+  const normalizedRadius = radius - stroke * 0.5
+  const circumference = normalizedRadius * 2 * Math.PI
+  const strokeDashoffset =
+    circumference - (score / 100) * circumference
+
+  const color = getColor(score)
+
+  return (
+    <svg height="44" width="44" className="shrink-0">
+      <circle
+        stroke="#e5e7eb"
+        fill="transparent"
+        strokeWidth={stroke}
+        r={normalizedRadius}
+        cx="22"
+        cy="22"
+      />
+      <circle
+        stroke={color}
+        fill="transparent"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={strokeDashoffset}
+        r={normalizedRadius}
+        cx="22"
+        cy="22"
+        style={{ transition: "stroke-dashoffset 0.4s ease" }}
+      />
+      <text
+        x="50%"
+        y="50%"
+        textAnchor="middle"
+        dy=".3em"
+        fontSize="10"
+        fontWeight="bold"
+        fill={color}
+      >
+        {score}
+      </text>
+    </svg>
+  )
+}
+
 export default function MobileStudentPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<any[]>([])
@@ -139,9 +192,8 @@ export default function MobileStudentPage() {
                       {job.title}
                     </h2>
 
-                    <span className="text-base font-bold text-primary shrink-0">
-                      {job.matchScore}%
-                    </span>
+                    {/* NEW CIRCLE SCORE */}
+                    <MatchCircle score={job.matchScore} />
                   </div>
 
                   {/* COMPANY + STATUS */}
@@ -177,7 +229,6 @@ export default function MobileStudentPage() {
 
       {/* BOTTOM NAV BAR */}
       <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-50">
-
         <div className="flex items-center justify-between px-8 py-6">
 
           <button
