@@ -27,9 +27,7 @@ export default function LoginPage() {
   }
   useEffect(() => {
     const checkExistingSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession()
   
       if (!session?.user) return
   
@@ -39,25 +37,22 @@ export default function LoginPage() {
         .eq("id", session.user.id)
         .single()
   
-      if (!roleData?.role) {
-        router.replace("/choose-role")
-        return
-      }
+      if (!roleData?.role) return
+  
+      // ONLY redirect if user is ACTUALLY on login page
+      if (window.location.pathname !== "/login") return
   
       if (roleData.role === "student") {
-        const dest = isMobileDevice() ? "/student/mobile" : "/student"
-        router.replace(dest)
-        return
+        router.replace("/student")
       }
   
       if (roleData.role === "employer") {
         router.replace("/matching/employer")
-        return
       }
     }
   
     checkExistingSession()
-  }, [router])
+  }, [])
 
   // CREATE ACCOUNT
   const signUp = async () => {

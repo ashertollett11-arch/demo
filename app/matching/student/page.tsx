@@ -52,17 +52,7 @@ interface Availability {
 }
 export default function MatchesPage() {
   const router = useRouter()
-  useEffect(() => {
-    const isMobile =
-      window.matchMedia("(max-width: 768px)").matches ||
-      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-  
-    if (isMobile) {
-      router.replace("/student/mobile")
-    } else {
-      router.replace("/student")
-    }
-  }, [router])
+
   useEffect(() => {
     const checkProfile = async () => {
       const { data } = await supabase.auth.getUser()
@@ -236,8 +226,9 @@ useEffect(() => {
   // Sorting
   const parseDistance = (d: string) => parseFloat(d.split(" ")[0]) || 0
   const parsePay = (p: string) => parseFloat(p.replace(/[^0-9.]/g, "")) || 0
-  
+
   const sortedJobs = [...matchedJobs].sort((a, b) => {
+    
     switch (filter) {
       case "pay":
         return parsePay(b.pay) - parsePay(a.pay)
@@ -249,8 +240,6 @@ useEffect(() => {
         return b.matchScore - a.matchScore
     }
   })
-  const noJobs = sortedJobs.length === 0
-
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
@@ -329,14 +318,11 @@ useEffect(() => {
 
     <DropdownMenuSeparator />
 
-    <DropdownMenuItem
-  onClick={async () => {
-    await supabase.auth.signOut()
-    window.location.href = "/"
-  }}
->
-  Log out
-</DropdownMenuItem>
+    <DropdownMenuItem asChild>
+      <Link href="/">
+        Log out
+      </Link>
+    </DropdownMenuItem>
 
   </DropdownMenuContent>
 </DropdownMenu>
@@ -373,73 +359,108 @@ useEffect(() => {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {noJobs ? (
-  <div className="col-span-full">
-    <Card className="border-dashed">
-      <CardContent className="py-12 text-center">
-        <div className="text-lg mb-2">📍</div>
-        <p className="font-medium">No jobs found in your area</p>
-        <p className="text-sm text-muted-foreground">
-          Try adjusting filters or check back later
-        </p>
-      </CardContent>
-    </Card>
-  </div>
-) : (
-  sortedJobs.map(job => (
-    <Link key={job.id} href={`/matching/student/${job.id}`}>
-      <Card className="border-border bg-card hover:shadow-md transition-shadow cursor-pointer">
-        
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            {job.title}
-            {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
-            {job.status === "applied" && <Badge variant="secondary" className="text-xs">Applied</Badge>}
-            {job.status === "interviewing" && <Badge className="bg-accent text-accent-foreground text-xs">Interview</Badge>}
-          </CardTitle>
-        </CardHeader>
+        {sortedJobs.map(job => (
+          <Link key={job.id} href={`/matching/student/${job.id}`}>
+            <Card className="border-border bg-card hover:shadow-md transition-shadow cursor-pointer">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  {job.title}
+                  {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
+                  {job.status === "applied" && <Badge variant="secondary" className="text-xs">Applied</Badge>}
+                  {job.status === "interviewing" && <Badge className="bg-accent text-accent-foreground text-xs">Interview</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm text-muted-foreground">{job.company}</p>
 
-        <CardContent className="space-y-2">
-          <p className="text-sm text-muted-foreground">{job.company}</p>
+                
+                <div className="mt-1">
+  <Badge variant="outline" className="text-xs capitalize">
+    {job.shift_Preference} shifts
+  </Badge>
+</div>
+                
+                <p className="font-semibold text-primary">{job.pay}</p>
+               
+                {job.tips ? (
+      <Badge className="bg-green-500/10 text-green-600 border border-green-500/20 text-[10px] px-2 py-0">
+       + Tips
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="text-[10px] px-2 py-0">
+        no tips
+      </Badge>
+    )}
+               
+                <p className="mt-1 text-xs text-muted-foreground">
+                {job.matchScore}% Match
+                </p>
+                <Button
+  size="sm"
+  className="w-full mt-2"
+  onClick={async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
 
-          <div className="mt-1">
-            <Badge variant="outline" className="text-xs capitalize">
-              {job.shift_Preference} shifts
-            </Badge>
-          </div>
+    // 1. Get current student user
+    const { data: authData } = await supabase.auth.getUser()
+    const studentId = authData?.user?.id
 
-          <p className="font-semibold text-primary">{job.pay}</p>
+    if (!studentId) {
+      console.log("No student user")
+      return
+    }
 
-          {job.tips ? (
-            <Badge className="bg-green-500/10 text-green-600 border border-green-500/20 text-[10px] px-2 py-0">
-              + Tips
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="text-[10px] px-2 py-0">
-              no tips
-            </Badge>
-          )}
+    // 2. Get student's name (for message)
+    const { data: studentData } = await supabase
+      .from("Students")
+      .select("name")
+      .eq("user_id", studentId)
+      .single()
 
-          <p className="mt-1 text-xs text-muted-foreground">
-            {job.matchScore}% Match
-          </p>
+    const studentName = studentData?.name || "A student"
 
-          <Button
-            size="sm"
-            className="w-full mt-2"
-            onClick={async (e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              // (keep your apply logic unchanged)
-            }}
-          >
-            Apply
-          </Button>
-        </CardContent>
-      </Card>
-    </Link>
-  ))
-)}
+    // 3. Get employer ID from job
+    const { data: jobData, error: jobError } = await supabase
+      .from("job")
+      .select("user_id, title")
+      .eq("id", job.id)
+      .single()
+
+    if (jobError || !jobData) {
+      console.log("JOB FETCH ERROR:", jobError)
+      return
+    }
+
+    const employerId = jobData.user_id
+
+    // 4. Insert notification
+   // 4. Insert notification (UPDATED)
+   const { error: notifError } = await supabase
+   .from("notifications")
+   .insert({
+     employer_id: employerId,
+     student_user_id: studentId,
+     type: "application",
+     title: "New Applicant",
+     message: `${studentName} thinks they are a great fit for ${jobData.title}`,
+     read: false,
+   })
+
+    if (notifError) {
+      console.log("NOTIFICATION ERROR:", notifError)
+    }
+
+    // 5. Optional: update job status locally
+    toast.success(`Application sent successfully!`)
+  }}
+>
+  Apply
+</Button>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
     </div>
   )
