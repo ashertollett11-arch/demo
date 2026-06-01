@@ -86,47 +86,41 @@ export default function MobileStudentPage() {
 
   return (
     <div className="min-h-screen bg-background p-6 pb-28">
+
       {/* HEADER */}
-{/* HEADER (FULL HERO STYLE) */}
-<div className="mb-6 w-full">
+      <div className="mb-6 w-full">
 
-  {/* TOP BRAND AREA (BIG) */}
-  <div className="flex flex-col items-center text-center py-6">
+        <div className="flex flex-col items-center text-center py-6">
 
-    {/* LOGO (BIG) */}
-    <img
-      src="/icon-512x512.png"
-      alt="Simply Apply logo"
-      className="h-20 w-20 sm:h-24 sm:w-24 object-contain mb-3"
-    />
+          <img
+            src="/icon-512x512.png"
+            alt="Simply Apply logo"
+            className="h-20 w-20 sm:h-24 sm:w-24 object-contain mb-3"
+          />
 
-    {/* BRAND NAME (BIG) */}
-    <h1 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight">
-      Simply Apply
-    </h1>
+          <h1 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight">
+            Simply Apply
+          </h1>
 
-    {/* TAGLINE */}
-    <p className="text-sm sm:text-base text-muted-foreground mt-2">
-      Simple. Smart. Speedy.
-    </p>
-  </div>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2">
+            Simple. Smart. Speedy.
+          </p>
+        </div>
 
-  {/* BOTTOM ROW */}
-  <div className="flex items-center justify-between px-1 mt-4">
+        <div className="flex items-center justify-between px-1 mt-4">
+          <span className="text-sm font-semibold text-foreground">
+            Best matches
+          </span>
 
-    <span className="text-sm font-semibold text-foreground">
-      Best matches
-    </span>
+          <button
+            onClick={() => router.push("/matching/student")}
+            className="text-sm text-primary font-medium hover:underline"
+          >
+            See all
+          </button>
+        </div>
+      </div>
 
-    <button
-      onClick={() => router.push("/matching/student")}
-      className="text-sm text-primary font-medium hover:underline"
-    >
-      See all
-    </button>
-
-  </div>
-</div>
       {/* JOB LIST */}
       {jobs.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center mt-10">
@@ -137,30 +131,44 @@ export default function MobileStudentPage() {
           {jobs.map((job) => (
             <Link key={job.id} href={`/matching/student/${job.id}`}>
               <div className="min-h-[180px] mb-10 rounded-2xl border bg-card p-5 flex flex-col justify-between active:scale-[0.98] transition">
-                
+
+                {/* TOP */}
                 <div>
                   <div className="flex justify-between items-start gap-3">
                     <h2 className="font-semibold text-lg leading-tight line-clamp-2">
                       {job.title}
                     </h2>
+
                     <span className="text-base font-bold text-primary shrink-0">
                       {job.matchScore}%
                     </span>
                   </div>
 
-                  <p className="text-sm text-muted-foreground mt-2 line-clamp-1">
-                    {job.company}
-                  </p>
+                  {/* COMPANY + STATUS */}
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <p className="text-sm text-muted-foreground line-clamp-1">
+                      {job.company}
+                    </p>
+
+                    {job.status && (
+                      <span className="text-[11px] px-2 py-0.5 rounded-full border bg-secondary text-muted-foreground capitalize shrink-0">
+                        {job.status}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
+                {/* LOCATION */}
                 <div className="flex items-center text-sm text-muted-foreground gap-2">
                   <MapPin className="h-4 w-4" />
                   <span className="truncate">{job.location}</span>
                 </div>
 
+                {/* PAY */}
                 <div className="text-base font-medium text-foreground">
                   {job.pay}
                 </div>
+
               </div>
             </Link>
           ))}
@@ -168,43 +176,40 @@ export default function MobileStudentPage() {
       )}
 
       {/* BOTTOM NAV BAR */}
-   {/* BOTTOM NAV BAR (UPGRADED) */}
-{/* BOTTOM NAV BAR (BIGGER + AIRIER) */}
-<div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-50">
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-50">
 
-  <div className="flex items-center justify-between px-8 py-6">
+        <div className="flex items-center justify-between px-8 py-6">
 
-    {/* LEFT: MATCHES */}
-    <button
-      onClick={() => router.push("/matching/student")}
-      className="flex flex-col items-center text-muted-foreground hover:text-foreground"
-    >
-      <Search className="h-5 w-5" />
-      <span className="text-xs mt-2">Matches</span>
-    </button>
+          <button
+            onClick={() => router.push("/matching/student")}
+            className="flex flex-col items-center text-muted-foreground hover:text-foreground"
+          >
+            <Search className="h-5 w-5" />
+            <span className="text-xs mt-2">Matches</span>
+          </button>
 
-    {/* CENTER: HOME (NOT HUGE ANYMORE) */}
-    <button
-      onClick={() => router.push("/student/mobile")}
-      className="flex flex-col items-center -mt-6"
-    >
-      <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition">
-        <MapPin className="h-5 w-5" />
+          <button
+            onClick={() => router.push("/student/mobile")}
+            className="flex flex-col items-center -mt-6"
+          >
+            <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition">
+              <MapPin className="h-5 w-5" />
+            </div>
+            <span className="text-xs mt-2 text-foreground font-medium">
+              Home
+            </span>
+          </button>
+
+          <button
+            onClick={() => router.push("/student/profile")}
+            className="flex flex-col items-center text-muted-foreground hover:text-foreground"
+          >
+            <User className="h-5 w-5" />
+            <span className="text-xs mt-2">Profile</span>
+          </button>
+
+        </div>
       </div>
-      <span className="text-xs mt-2 text-foreground font-medium">Home</span>
-    </button>
-
-    {/* RIGHT: PROFILE */}
-    <button
-      onClick={() => router.push("/student/profile")}
-      className="flex flex-col items-center text-muted-foreground hover:text-foreground"
-    >
-      <User className="h-5 w-5" />
-      <span className="text-xs mt-2">Profile</span>
-    </button>
-
-  </div>
-</div>
     </div>
   )
 }
