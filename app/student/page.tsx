@@ -326,14 +326,26 @@ export default function StudentDashboard() {
             <div className="lg:col-span-2 space-y-6">
               <Card className="border-border bg-card">
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between text-lg">
-                    <span>Matches Near You</span>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href="/matching/student" className="gap-1 text-primary text-sm">
-                        View All <ChevronRight className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </CardTitle>
+                <CardTitle className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-lg">
+  
+  {/* Title (hidden on mobile optional OR centered) */}
+  <span className="text-center sm:text-left w-full sm:w-auto">
+    Matches Near You
+  </span>
+
+  {/* View All button centered on mobile */}
+  <Button
+    variant="ghost"
+    size="sm"
+    asChild
+    className="mx-auto sm:mx-0"
+  >
+    <Link href="/matching/student" className="gap-1 text-primary text-sm">
+      View All <ChevronRight className="h-4 w-4" />
+    </Link>
+  </Button>
+
+</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
   {matchedJobsWithScore.length === 0 ? (
@@ -349,8 +361,7 @@ export default function StudentDashboard() {
   ) : (
     matchedJobsWithScore.map(job => (
       <Link key={job.id} href={`/matching/student/${job.id}`} className="block">
-        <div className="rounded-xl border border-border bg-secondary/30 p-3 transition-colors hover:bg-secondary/50">
-          
+<div className="rounded-xl border border-border bg-secondary/30 p-4 sm:p-3 transition-colors hover:bg-secondary/50">          
           {/* TOP ROW */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
