@@ -185,7 +185,7 @@ export default function MobileStudentPage() {
 
     {/* CENTER: HOME (NOT HUGE ANYMORE) */}
     <button
-      onClick={() => router.push("/student")}
+      onClick={() => router.push("/student/mobile")}
       className="flex flex-col items-center -mt-6"
     >
       <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition">
