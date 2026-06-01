@@ -42,7 +42,7 @@ export default function LoginPage() {
       }
   
       if (roleData.role === "student") {
-        router.replace("/student")
+        router.replace("/student/mobile")
         return
       }
   
