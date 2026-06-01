@@ -101,7 +101,6 @@ function MatchCircle({ score }: { score: number }) {
 export default function MobileStudentPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<any[]>([])
-  const isHighMatch = job.matchScore >= 80
   useEffect(() => {
     const fetchJobs = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -192,72 +191,70 @@ export default function MobileStudentPage() {
 
       {/* JOBS */}
       <div className="overflow-y-auto px-1">
-        {jobs.map((job) => {
-          const Icon = getCompanyIcon(job)
+  {jobs.map((job) => {
+    const Icon = getCompanyIcon(job)
+    const isHighMatch = job.matchScore >= 80
 
-          return (
-            <Link key={job.id} href={`/matching/student/${job.id}`}>
-<div
-  className={`
-    mb-10 rounded-2xl p-5 flex flex-col
-    border transition-all duration-300
-    bg-[#140a25]
+    return (
+      <Link key={job.id} href={`/matching/student/${job.id}`}>
+        <div
+          className={`
+            mb-10 rounded-2xl p-5 flex flex-col
+            border transition-all duration-300
+            bg-[#140a25]
 
-    ${
-      isHighMatch
-        ? "border-purple-400/40 shadow-[0_0_35px_rgba(168,85,247,0.25)]"
-        : "border-purple-900/40 shadow-[0_0_0px_rgba(0,0,0,0)]"
-    }
+            ${
+              isHighMatch
+                ? "border-purple-400/40 shadow-[0_0_35px_rgba(168,85,247,0.25)]"
+                : "border-purple-900/40"
+            }
 
-    hover:bg-[#1b1033]
-    hover:shadow-[0_0_25px_rgba(168,85,247,0.20)]
-  `}
->
-                {/* TOP */}
-                <div className="flex justify-between gap-4">
+            hover:bg-[#1b1033]
+            hover:shadow-[0_0_25px_rgba(168,85,247,0.20)]
+          `}
+        >
+          {/* TOP */}
+          <div className="flex justify-between gap-4">
+            <div className="flex gap-3 flex-1">
+              <Icon className="h-6 w-6 text-purple-300 mt-1" />
 
-                  <div className="flex gap-3 flex-1">
-                    <Icon className="h-6 w-6 text-purple-300 mt-1" />
+              <div>
+                <h2 className="font-semibold text-lg text-white line-clamp-2">
+                  {job.title}
+                </h2>
 
-                    <div>
-                      <h2 className="font-semibold text-lg text-white line-clamp-2">
-                        {job.title}
-                      </h2>
-
-                      <p className="text-sm text-purple-300">
-                        {job.company}
-                      </p>
-                    </div>
-                  </div>
-
-                  <MatchCircle score={job.matchScore} />
-                </div>
-
-                {/* LOCATION */}
-                <div className="flex items-center text-sm text-purple-300 gap-2 mt-3">
-                  <MapPin className="h-4 w-4" />
-                  <span className="truncate">{job.location}</span>
-                </div>
-
-                {/* PAY + STATUS */}
-                <div className="flex justify-between mt-2">
-                  <div className="font-medium text-white">
-                    {job.pay}
-                  </div>
-
-                  {job.status && (
-                    <span className="text-xs px-2 py-1 rounded-full border border-purple-800 bg-purple-900/30 text-purple-200 capitalize">
-                      {job.status}
-                    </span>
-                  )}
-                </div>
-
+                <p className="text-sm text-purple-300">
+                  {job.company}
+                </p>
               </div>
-            </Link>
-          )
-        })}
-      </div>
+            </div>
 
+            <MatchCircle score={job.matchScore} />
+          </div>
+
+          {/* LOCATION */}
+          <div className="flex items-center text-sm text-purple-300 gap-2 mt-3">
+            <MapPin className="h-4 w-4" />
+            <span className="truncate">{job.location}</span>
+          </div>
+
+          {/* PAY + STATUS */}
+          <div className="flex justify-between mt-2">
+            <div className="font-medium text-white">
+              {job.pay}
+            </div>
+
+            {job.status && (
+              <span className="text-xs px-2 py-1 rounded-full border border-purple-800 bg-purple-900/30 text-purple-200 capitalize">
+                {job.status}
+              </span>
+            )}
+          </div>
+        </div>
+      </Link>
+    )
+  })}
+</div>
       {/* BOTTOM NAV */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-purple-900/40 bg-[#0b0614]/95 backdrop-blur z-50">
         <div className="flex justify-between px-8 py-6 text-white">
