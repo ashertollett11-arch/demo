@@ -85,41 +85,50 @@ export default function MobileStudentPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-background p-4 space-y-4">
-
+    <div className="min-h-screen bg-background p-3">
+  
       {jobs.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center mt-10">
           No jobs found
         </p>
       ) : (
-        jobs.map((job) => (
-          <Link key={job.id} href={`/matching/student/${job.id}`}>
-            <div className="rounded-2xl border bg-card p-4 active:scale-[0.99] transition">
-              
-              <div className="flex justify-between items-start">
+        <div className="grid grid-cols-2 gap-3">
+          {jobs.map((job) => (
+            <Link key={job.id} href={`/matching/student/${job.id}`}>
+              <div className="h-[180px] rounded-2xl border bg-card p-3 flex flex-col justify-between active:scale-[0.98] transition">
+  
+                {/* TOP */}
                 <div>
-                  <h2 className="font-semibold text-lg">{job.title}</h2>
-                  <p className="text-sm text-muted-foreground">
+                  <div className="flex justify-between items-start gap-2">
+                    <h2 className="font-semibold text-sm leading-tight line-clamp-2">
+                      {job.title}
+                    </h2>
+  
+                    <span className="text-xs font-bold text-primary shrink-0">
+                      {job.matchScore}%
+                    </span>
+                  </div>
+  
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
                     {job.company}
                   </p>
                 </div>
-
-                <div className="text-sm font-bold text-primary">
-                  {job.matchScore}%
+  
+                {/* MIDDLE */}
+                <div className="flex items-center text-xs text-muted-foreground gap-1">
+                  <MapPin className="h-3 w-3" />
+                  <span className="truncate">{job.location}</span>
                 </div>
+  
+                {/* BOTTOM */}
+                <div className="text-xs font-medium text-foreground">
+                  {job.pay}
+                </div>
+  
               </div>
-
-              <div className="mt-3 flex items-center text-sm text-muted-foreground gap-2">
-                <MapPin className="h-4 w-4" />
-                {job.location}
-              </div>
-
-              <div className="mt-2 text-sm font-medium">
-                {job.pay}
-              </div>
-            </div>
-          </Link>
-        ))
+            </Link>
+          ))}
+        </div>
       )}
     </div>
   )
