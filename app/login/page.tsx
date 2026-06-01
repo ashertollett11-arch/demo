@@ -25,22 +25,43 @@ export default function LoginPage() {
     if (typeof window === "undefined") return false
     return window.matchMedia("(max-width: 768px)").matches
   }
+  const [checkingSession, setCheckingSession] = useState(true)
+
   useEffect(() => {
+    let mounted = true
+  
     const checkExistingSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      setCheckingSession(true)
   
-      if (!session?.user) return
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
   
-      const { data: roleData } = await supabase
+      if (!mounted) return
+  
+      if (!session?.user) {
+        setCheckingSession(false)
+        return
+      }
+  
+      const { data: roleData, error } = await supabase
         .from("users")
         .select("role")
         .eq("id", session.user.id)
         .single()
   
-      if (!roleData?.role) return
+      if (!mounted) return
   
-      // ONLY redirect if user is ACTUALLY on login page
-      if (window.location.pathname !== "/login") return
+      if (error || !roleData?.role) {
+        setCheckingSession(false)
+        return
+      }
+  
+      // IMPORTANT: only redirect if we're actually on /login
+      if (window.location.pathname !== "/login") {
+        setCheckingSession(false)
+        return
+      }
   
       if (roleData.role === "student") {
         const dest = isMobileDevice() ? "/student/mobile" : "/student"
@@ -50,9 +71,15 @@ export default function LoginPage() {
       if (roleData.role === "employer") {
         router.replace("/matching/employer")
       }
+  
+      setCheckingSession(false)
     }
   
     checkExistingSession()
+  
+    return () => {
+      mounted = false
+    }
   }, [])
 
   // CREATE ACCOUNT
