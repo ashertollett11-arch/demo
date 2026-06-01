@@ -346,8 +346,7 @@ export default function StudentDashboard() {
 
 </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 sm:p-6 sm:space-y-3 max-h-[85vh] overflow-y-auto space-y-6 sm:overflow-visible">
-                                                        {matchedJobsWithScore.length === 0 ? (
+                <CardContent className="p-0 sm:p-6 sm:space-y-3 space-y-6">                                                        {matchedJobsWithScore.length === 0 ? (
     <div className="text-center py-10 text-muted-foreground">
       <MapPin className="mx-auto h-6 w-6 mb-2 opacity-60" />
       <p className="text-sm font-medium">
