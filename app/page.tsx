@@ -43,7 +43,17 @@ export default function LandingPage() {
   
     loadFeaturedJobs()
   }, [])
+  useEffect(() => {
+    const isMobile = () => {
+      return window.matchMedia("(max-width: 768px)").matches
+    }
   
+    if (typeof window === "undefined") return
+  
+    if (isMobile()) {
+      window.location.replace("/mobile")
+    }
+  }, [])
   
   return (
     <div className="min-h-screen bg-background">
