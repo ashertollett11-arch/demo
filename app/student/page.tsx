@@ -273,8 +273,8 @@ export default function StudentDashboard() {
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 
           {/* WELCOME */}
-          <div className="mb-6">
-            <h1 className="text-xl font-bold text-foreground sm:text-3xl">Ready to land your first job?</h1>
+          <div className="mb-6 hidden sm:block">
+                        <h1 className="text-xl font-bold text-foreground sm:text-3xl">Ready to land your first job?</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {name ? `Welcome back, ${name}! ` : "Welcome! "}
               You have {newJobsCount} new job matches.
@@ -283,10 +283,10 @@ export default function StudentDashboard() {
 
           {/* STATS CARDS */}
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Card
-              className="border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
-              onClick={() => router.push("/student/profile")}
-            >
+          <Card
+  className="hidden sm:block border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
+  onClick={() => router.push("/student/profile")}
+>
               <CardContent className="flex items-center gap-3 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-4/10">
                   <Star className="h-5 w-5 text-chart-4" />
@@ -303,9 +303,9 @@ export default function StudentDashboard() {
             </Card>
 
             <Card
-              className="border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
-              onClick={() => router.push("/matching/student")}
-            >
+  className="hidden sm:block border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
+  onClick={() => router.push("/matching/student")}
+>
               <CardContent className="flex items-center gap-3 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-2/10">
                   <span className="text-lg font-bold text-chart-2">{greatMatches}</span>
