@@ -85,18 +85,18 @@ export default function MobileStudentPage() {
   }, [])
 
   return (
-    <div className="h-screen overflow-hidden bg-background p-6">
+    <div className="min-h-screen bg-background p-6">
   
       {jobs.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center mt-10">
           No jobs found
         </p>
       ) : (
-        <div className="h-full overflow-y-auto space-y-12 px-1 pb-12">
+        <div className="overflow-y-auto px-1 pb-16">
   
           {jobs.map((job) => (
             <Link key={job.id} href={`/matching/student/${job.id}`}>
-              <div className="h-[22vh] rounded-2xl border bg-card p-5 flex flex-col justify-between active:scale-[0.98] transition">
+              <div className="min-h-[180px] sm:min-h-[200px] mb-10 rounded-2xl border bg-card p-5 flex flex-col justify-between active:scale-[0.98] transition">
   
                 {/* TOP */}
                 <div>
