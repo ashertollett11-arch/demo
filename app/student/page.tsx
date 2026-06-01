@@ -362,36 +362,58 @@ export default function StudentDashboard() {
   key={job.id}
   href={`/matching/student/${job.id}`}
   className="block mb-3 sm:mb-0"
-  ><div className="w-full rounded-3xl sm:rounded-xl border border-border/60 bg-secondary/30 px-4 py-6 sm:p-3 transition-colors hover:bg-secondary/50 min-h-[28vh] sm:min-h-0">
-             {/* TOP ROW */}
+  ><div className="w-full rounded-3xl border border-border/60 bg-secondary/30 px-5 py-8 sm:p-6 transition-colors hover:bg-secondary/50 min-h-[32vh]">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1">
-                <h3 className="font-semibold text-foreground text-sm">{job.title}</h3>
-                {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
+              <h3 className="font-semibold text-foreground text-lg sm:text-xl">
+  {job.title}
+</h3>                {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
                 {job.status === "applied" && <Badge variant="secondary" className="text-xs">Applied</Badge>}
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">{job.company}</p>
+              <p className="text-sm text-muted-foreground mt-1">
+  {job.company}
+</p>
             </div>
-            <Badge className="bg-primary/10 text-primary shrink-0 text-xs">
-              {job.matchScore}%
-            </Badge>
+            <Badge className="bg-primary/10 text-primary shrink-0 text-sm px-3 py-1">
+  {job.matchScore}%
+</Badge>
           </div>
 
           {/* BOTTOM ROW */}
-          <div className="mt-5 flex flex-wrap items-center gap-3">         <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />{job.distance}
-            </span>
-            <span className="font-semibold text-primary text-xs">{job.pay}</span>
-            {job.tips ? (
-              <Badge className="bg-green-500/10 text-green-600 border border-green-500/20 text-[10px] px-2 py-0">+ Tips</Badge>
-            ) : (
-              <Badge variant="outline" className="text-[10px] px-2 py-0">no tips</Badge>
-            )}
-            <Badge variant="outline" className="text-[10px] px-2 py-0 capitalize">
-              {job.shiftPreference}
-            </Badge>
-          </div>
+         {/* BOTTOM ROW */}
+<div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm">
+  
+  <div className="flex items-center gap-4 text-muted-foreground">
+    
+    <span className="flex items-center gap-1">
+      <MapPin className="h-4 w-4" />
+      {job.distance}
+    </span>
+
+    <span className="font-semibold text-primary">
+      {job.pay}
+    </span>
+
+  </div>
+
+  <div className="flex items-center gap-2 flex-wrap">
+    {job.tips ? (
+      <Badge className="bg-green-500/10 text-green-600 border border-green-500/20 text-xs px-2 py-1">
+        + Tips
+      </Badge>
+    ) : (
+      <Badge variant="outline" className="text-xs px-2 py-1">
+        No Tips
+      </Badge>
+    )}
+
+    <Badge variant="outline" className="text-xs px-2 py-1 capitalize">
+      {job.shiftPreference}
+    </Badge>
+  </div>
+
+</div>
 
         </div>
       </Link>
