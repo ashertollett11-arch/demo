@@ -287,6 +287,7 @@ export default function StudentDashboard() {
   className="hidden sm:block border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
   onClick={() => router.push("/student/profile")}
 >
+
               <CardContent className="flex items-center gap-3 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-4/10">
                   <Star className="h-5 w-5 text-chart-4" />
