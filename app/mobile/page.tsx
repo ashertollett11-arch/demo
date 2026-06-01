@@ -61,7 +61,7 @@ export default function MobileLandingPage() {
             <Link href="/" className="text-sm text-purple-300 hover:text-white">
               How it Works
             </Link>
-            <Link href="/" className="text-sm text-purple-300 hover:text-white">
+            <Link href="/pricing/mobile" className="text-sm text-purple-300 hover:text-white">
               Pricing
             </Link>
           </div>
@@ -98,7 +98,7 @@ export default function MobileLandingPage() {
           <div className="border-t border-purple-900/40 bg-[#140a25] px-4 py-4 md:hidden">
             <div className="flex flex-col gap-4 text-purple-300">
               <Link href="#how-it-works">How it Works</Link>
-              <Link href="/">Pricing</Link>
+              <Link href="/pricing/mobile">Pricing</Link>
               <Link href="/login/mobile">Log in</Link>
               <Link href="/login/mobile">Get Started</Link>
             </div>
