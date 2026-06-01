@@ -21,7 +21,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  
+  const isMobileDevice = () => {
+    if (typeof window === "undefined") return false
+    return window.matchMedia("(max-width: 768px)").matches
+  }
   useEffect(() => {
     const checkExistingSession = async () => {
       const {
@@ -42,7 +45,8 @@ export default function LoginPage() {
       }
   
       if (roleData.role === "student") {
-        router.replace("/student/mobile")
+        const dest = isMobileDevice() ? "/student/mobile" : "/student"
+        router.replace(dest)
         return
       }
   
@@ -137,10 +141,10 @@ export default function LoginPage() {
         return
       }
 
-    if (roleData.role === "student") {
-      router.push("/student")
-    }
-
+      if (roleData.role === "student") {
+        const dest = isMobileDevice() ? "/student/mobile" : "/student"
+        router.push(dest)
+      }
     if (roleData.role === "employer") {
       router.push("/matching/employer")
     }

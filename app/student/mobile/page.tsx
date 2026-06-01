@@ -169,26 +169,27 @@ export default function MobileStudentPage() {
 
       {/* BOTTOM NAV BAR */}
    {/* BOTTOM NAV BAR (UPGRADED) */}
+{/* BOTTOM NAV BAR (BIGGER + AIRIER) */}
 <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-50">
-  
-  <div className="flex items-center justify-between px-10 py-4">
 
-    {/* LEFT: SEARCH / ALL MATCHES */}
+  <div className="flex items-center justify-between px-8 py-6">
+
+    {/* LEFT: MATCHES */}
     <button
       onClick={() => router.push("/matching/student")}
       className="flex flex-col items-center text-muted-foreground hover:text-foreground"
     >
-      <Search className="h-6 w-6" />
-      <span className="text-xs mt-1">Matches</span>
+      <Search className="h-5 w-5" />
+      <span className="text-xs mt-2">Matches</span>
     </button>
 
-    {/* CENTER: HOME (BIGGER) */}
+    {/* CENTER: HOME (NOT HUGE ANYMORE) */}
     <button
       onClick={() => router.push("/student")}
-      className="flex flex-col items-center -mt-8"
+      className="flex flex-col items-center -mt-6"
     >
-      <div className="h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg active:scale-95 transition">
-        <MapPin className="h-6 w-6" />
+      <div className="h-12 w-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md active:scale-95 transition">
+        <MapPin className="h-5 w-5" />
       </div>
       <span className="text-xs mt-2 text-foreground font-medium">Home</span>
     </button>
@@ -198,8 +199,8 @@ export default function MobileStudentPage() {
       onClick={() => router.push("/student/profile")}
       className="flex flex-col items-center text-muted-foreground hover:text-foreground"
     >
-      <User className="h-6 w-6" />
-      <span className="text-xs mt-1">Profile</span>
+      <User className="h-5 w-5" />
+      <span className="text-xs mt-2">Profile</span>
     </button>
 
   </div>
