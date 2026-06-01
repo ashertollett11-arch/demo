@@ -59,9 +59,9 @@ function MatchCircle({ score }: { score: number }) {
 
   return (
     <svg height={size} width={size} className="shrink-0">
-      {/* background ring */}
+      {/* background */}
       <circle
-        stroke="#2a2a2a"
+        stroke="#2a1b3d"
         fill="transparent"
         strokeWidth={stroke}
         r={radius}
@@ -161,7 +161,7 @@ export default function MobileStudentPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-6 pb-28">
+    <div className="min-h-screen bg-[#0b0614] text-white p-6 pb-28">
 
       {/* HEADER */}
       <div className="mb-6 w-full text-center">
@@ -170,8 +170,11 @@ export default function MobileStudentPage() {
           className="h-20 w-20 mx-auto mb-3"
         />
 
-        <h1 className="text-4xl font-bold text-white">Simply Apply</h1>
-        <p className="text-zinc-400 mt-2">
+        <h1 className="text-4xl font-bold text-white">
+          Simply Apply
+        </h1>
+
+        <p className="text-purple-300 mt-2">
           Simple. Smart. Speedy.
         </p>
 
@@ -180,7 +183,7 @@ export default function MobileStudentPage() {
 
           <button
             onClick={() => router.push("/matching/student")}
-            className="text-emerald-400 text-sm"
+            className="text-purple-400 text-sm"
           >
             See all
           </button>
@@ -194,20 +197,20 @@ export default function MobileStudentPage() {
 
           return (
             <Link key={job.id} href={`/matching/student/${job.id}`}>
-              <div className="mb-10 rounded-2xl border border-zinc-800 bg-zinc-900 p-5 flex flex-col hover:bg-zinc-800 transition">
+              <div className="mb-10 rounded-2xl border border-purple-900/40 bg-[#140a25] p-5 flex flex-col hover:bg-[#1b1033] transition">
 
                 {/* TOP */}
                 <div className="flex justify-between gap-4">
 
                   <div className="flex gap-3 flex-1">
-                    <Icon className="h-6 w-6 text-zinc-400 mt-1" />
+                    <Icon className="h-6 w-6 text-purple-300 mt-1" />
 
                     <div>
                       <h2 className="font-semibold text-lg text-white line-clamp-2">
                         {job.title}
                       </h2>
 
-                      <p className="text-sm text-zinc-400">
+                      <p className="text-sm text-purple-300">
                         {job.company}
                       </p>
                     </div>
@@ -217,17 +220,19 @@ export default function MobileStudentPage() {
                 </div>
 
                 {/* LOCATION */}
-                <div className="flex items-center text-sm text-zinc-400 gap-2 mt-3">
+                <div className="flex items-center text-sm text-purple-300 gap-2 mt-3">
                   <MapPin className="h-4 w-4" />
                   <span className="truncate">{job.location}</span>
                 </div>
 
                 {/* PAY + STATUS */}
                 <div className="flex justify-between mt-2">
-                  <div className="font-medium text-white">{job.pay}</div>
+                  <div className="font-medium text-white">
+                    {job.pay}
+                  </div>
 
                   {job.status && (
-                    <span className="text-xs px-2 py-1 rounded-full border border-zinc-700 bg-zinc-800 text-zinc-300 capitalize">
+                    <span className="text-xs px-2 py-1 rounded-full border border-purple-800 bg-purple-900/30 text-purple-200 capitalize">
                       {job.status}
                     </span>
                   )}
@@ -240,16 +245,16 @@ export default function MobileStudentPage() {
       </div>
 
       {/* BOTTOM NAV */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur z-50">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-purple-900/40 bg-[#0b0614]/95 backdrop-blur z-50">
         <div className="flex justify-between px-8 py-6 text-white">
 
           <button onClick={() => router.push("/matching/student")}>
             <Search className="h-5 w-5" />
-            <div className="text-xs mt-2 text-zinc-400">Matches</div>
+            <div className="text-xs mt-2 text-purple-300">Matches</div>
           </button>
 
           <button onClick={() => router.push("/student/mobile")} className="-mt-6">
-            <div className="h-12 w-12 rounded-full bg-emerald-500 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center">
               <MapPin className="h-5 w-5 text-white" />
             </div>
             <div className="text-xs mt-2 font-medium">Home</div>
@@ -257,7 +262,7 @@ export default function MobileStudentPage() {
 
           <button onClick={() => router.push("/student/profile")}>
             <User className="h-5 w-5" />
-            <div className="text-xs mt-2 text-zinc-400">Profile</div>
+            <div className="text-xs mt-2 text-purple-300">Profile</div>
           </button>
 
         </div>
