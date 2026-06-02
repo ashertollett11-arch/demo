@@ -492,10 +492,10 @@ className="text-base sm:text-xl font-bold text-white truncate">
       {/* PREFERRED JOBS */}
       <Card className="mb-4 border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-xl">
               <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Briefcase className="h-5 w-5 text-primary" />
-            Preferred Positions
-          </CardTitle>
+              <CardTitle className="flex items-center gap-2 text-lg text-white">
+  <Briefcase className="h-5 w-5 text-violet-300" />
+  Preferred Positions
+</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
@@ -527,7 +527,9 @@ className="text-base sm:text-xl font-bold text-white truncate">
       {/* INTERESTS */}
       <Card className="mb-4 border border-white/10 bg-slate-900/60 backdrop-blur-xl shadow-xl">
               <CardHeader>
-          <CardTitle className="text-lg">Interests</CardTitle>
+              <CardTitle className="text-lg text-white">
+  Interests
+</CardTitle>
         </CardHeader>
         <CardContent>
           <input
