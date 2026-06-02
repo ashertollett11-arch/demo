@@ -228,7 +228,6 @@ useEffect(() => {
   const parsePay = (p: string) => parseFloat(p.replace(/[^0-9.]/g, "")) || 0
 
   const sortedJobs = [...matchedJobs].sort((a, b) => {
-    
     switch (filter) {
       case "pay":
         return parsePay(b.pay) - parsePay(a.pay)
@@ -240,227 +239,273 @@ useEffect(() => {
         return b.matchScore - a.matchScore
     }
   })
-
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-8">
-  {/* STICKY HEADER */}
-  <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-
-          {/* LEFT */}
+    <div className="relative min-h-screen overflow-hidden bg-background">
+  
+      {/* BACKGROUND */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-background to-cyan-600/10" />
+      <div className="absolute left-0 top-0 h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-3xl" />
+      <div className="absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-3xl" />
+  
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+  
           <Button
             variant="ghost"
-            className="flex items-center gap-2"
-            onClick={() => (window.location.href = "/student")}
+            className="gap-2 rounded-xl"
+            onClick={() => router.push("/student")}
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4" />
             Back
           </Button>
-
-          {/* CENTER NAV */}
-          <div className="hidden items-center gap-6 md:flex">
-
-{/* NOT ACTIVE */}
-<Link
-  href="/student"
-  className="text-sm font-medium text-muted-foreground transition-all hover:text-foreground"
->
-  Dashboard
-</Link>
-
-{/* ACTIVE PAGE */}
-<Link
-  href="/matching/student"
-  className="text-base font-semibold text-foreground transition-all"
->
-  Jobs near you
-</Link>
-
-</div>
-
-          {/* RIGHT */}
-          <div className="flex items-center gap-4">
-
-           
-
-            {/* PROFILE */}
-           {/* PROFILE */}
-<DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" className="flex items-center gap-2">
-
-      {/* PROFILE CIRCLE */}
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-      {(name || "")         
-       .trim()
-          .split(" ")
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((n) => n[0]?.toUpperCase())
-          .join("") || "?"}
-      </div>
-
-      {/* COMPANY NAME */}
-      <span className="hidden text-sm font-medium sm:block">
-      {name}     
-       </span>
-
-    </Button>
-  </DropdownMenuTrigger>
-
-  <DropdownMenuContent align="end" className="w-48">
-
-    <DropdownMenuItem asChild>
-    <Link href="/student/profile">
-  Profile
-</Link>
-    </DropdownMenuItem>
-
-    <DropdownMenuSeparator />
-
-    <DropdownMenuItem asChild>
-      <Link href="/">
-        Log out
-      </Link>
-    </DropdownMenuItem>
-
-  </DropdownMenuContent>
-</DropdownMenu>
-
+  
+          <div className="hidden items-center gap-8 md:flex">
+            <Link
+              href="/student"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Dashboard
+            </Link>
+  
+            <Link
+              href="/matching/student"
+              className="text-sm font-semibold text-primary"
+            >
+              Jobs Near You
+            </Link>
           </div>
+  
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="gap-3 rounded-xl">
+  
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-bold text-white">
+                  {(name || "")
+                    .trim()
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((n) => n[0]?.toUpperCase())
+                    .join("") || "?"}
+                </div>
+  
+                <span className="hidden sm:block font-medium">
+                  {name}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+  
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href="/student/profile">
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+  
+              <DropdownMenuSeparator />
+  
+              <DropdownMenuItem asChild>
+                <Link href="/">
+                  Log Out
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+  
         </div>
       </header>
-      <h1 className="text-2xl font-bold mb-4">Jobs Near You</h1>
-
-      <div className="flex gap-3 mb-6">
-      <Button
-  variant={filter === "pay" ? "default" : "outline"}
-  size="sm"
-  onClick={() => setFilter("pay")}
->
-  Pay
-</Button>
-
-<Button
-  variant={filter === "tips" ? "default" : "outline"}
-  size="sm"
-  onClick={() => setFilter("tips")}
->
-  Tips
-</Button>
-
-<Button
-  variant={filter === "matchScore" ? "default" : "outline"}
-  size="sm"
-  onClick={() => setFilter("matchScore")}
->
-  Match
-</Button>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sortedJobs.map(job => (
-          <Link key={job.id} href={`/matching/student/${job.id}`}>
-            <Card className="border-border bg-card hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  {job.title}
-                  {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
-                  {job.status === "applied" && <Badge variant="secondary" className="text-xs">Applied</Badge>}
-                  {job.status === "interviewing" && <Badge className="bg-accent text-accent-foreground text-xs">Interview</Badge>}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-muted-foreground">{job.company}</p>
-
-                
-                <div className="mt-1">
-  <Badge variant="outline" className="text-xs capitalize">
-    {job.shift_Preference} shifts
-  </Badge>
-</div>
-                
-                <p className="font-semibold text-primary">{job.pay}</p>
-               
-                {job.tips ? (
-      <Badge className="bg-green-500/10 text-green-600 border border-green-500/20 text-[10px] px-2 py-0">
-       + Tips
-      </Badge>
-    ) : (
-      <Badge variant="outline" className="text-[10px] px-2 py-0">
-        no tips
-      </Badge>
-    )}
-               
-                <p className="mt-1 text-xs text-muted-foreground">
-                {job.matchScore}% Match
-                </p>
-                <Button
-  size="sm"
-  className="w-full mt-2"
-  onClick={async (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-
-    // 1. Get current student user
-    const { data: authData } = await supabase.auth.getUser()
-    const studentId = authData?.user?.id
-
-    if (!studentId) {
-      console.log("No student user")
-      return
-    }
-
-    // 2. Get student's name (for message)
-    const { data: studentData } = await supabase
-      .from("Students")
-      .select("name")
-      .eq("user_id", studentId)
-      .single()
-
-    const studentName = studentData?.name || "A student"
-
-    // 3. Get employer ID from job
-    const { data: jobData, error: jobError } = await supabase
-      .from("job")
-      .select("user_id, title")
-      .eq("id", job.id)
-      .single()
-
-    if (jobError || !jobData) {
-      console.log("JOB FETCH ERROR:", jobError)
-      return
-    }
-
-    const employerId = jobData.user_id
-
-    // 4. Insert notification
-   // 4. Insert notification (UPDATED)
-   const { error: notifError } = await supabase
-   .from("notifications")
-   .insert({
-     employer_id: employerId,
-     student_user_id: studentId,
-     type: "application",
-     title: "New Applicant",
-     message: `${studentName} thinks they are a great fit for ${jobData.title}`,
-     read: false,
-   })
-
-    if (notifError) {
-      console.log("NOTIFICATION ERROR:", notifError)
-    }
-
-    // 5. Optional: update job status locally
-    toast.success(`Application sent successfully!`)
-  }}
->
-  Apply
-</Button>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+  
+      {/* PAGE CONTENT */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-8">
+  
+        {/* HERO */}
+        <div className="mb-8 rounded-3xl border border-blue-500/20 bg-card/80 p-8 backdrop-blur-xl">
+  
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+  
+            <div>
+              <Badge className="mb-4 bg-violet-500/10 text-violet-600 border border-blue-500/20">
+                <Sparkles className="mr-1 h-3 w-3" />
+                Personalized Matches
+              </Badge>
+  
+              <h1 className="text-4xl font-bold tracking-tight">
+                Jobs Near You
+              </h1>
+  
+              <p className="mt-3 max-w-2xl text-muted-foreground">
+                Browse local opportunities that match your schedule,
+                preferences, and availability.
+              </p>
+            </div>
+  
+            <div className="grid grid-cols-3 gap-4">
+  
+              <Card className="border-blue-500/20 bg-card/60 backdrop-blur">
+                <CardContent className="p-4 text-center">
+                  <Briefcase className="mx-auto mb-2 h-5 w-5  text-blue-500" />
+                  <p className="text-xl font-bold">
+                    {matchedJobs.length}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Jobs
+                  </p>
+                </CardContent>
+              </Card>
+  
+              <Card className="border-blue-500/20 bg-card/60 backdrop-blur">
+                <CardContent className="p-4 text-center">
+                  <TrendingUp className="mx-auto mb-2 h-5 w-5 text-blue-500" />
+                  <p className="text-xl font-bold">
+                    {matchedJobs.length > 0
+                      ? Math.max(...matchedJobs.map(j => j.matchScore))
+                      : 0}
+                    %
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Best Match
+                  </p>
+                </CardContent>
+              </Card>
+  
+              <Card className="border-green-500/20 bg-card/60 backdrop-blur">
+                <CardContent className="p-4 text-center">
+                  <CheckCircle2 className="mx-auto mb-2 h-5 w-5 text-green-500" />
+                  <p className="text-xl font-bold">
+                    Ready
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    To Apply
+                  </p>
+                </CardContent>
+              </Card>
+  
+            </div>
+          </div>
+        </div>
+  
+        {/* FILTERS */}
+        <div className="mb-8 flex flex-wrap gap-3">
+  
+          <Button
+            variant={filter === "matchScore" ? "default" : "outline"}
+            onClick={() => setFilter("matchScore")}
+            className="rounded-xl"
+          >
+            Best Match
+          </Button>
+  
+          <Button
+            variant={filter === "pay" ? "default" : "outline"}
+            onClick={() => setFilter("pay")}
+            className="rounded-xl"
+          >
+            Highest Pay
+          </Button>
+  
+          <Button
+            variant={filter === "tips" ? "default" : "outline"}
+            onClick={() => setFilter("tips")}
+            className="rounded-xl"
+          >
+            Tips Included
+          </Button>
+  
+        </div>
+  
+        {/* JOBS GRID */}
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+  
+          {sortedJobs.map((job) => (
+            <Link
+              key={job.id}
+              href={`/matching/student/${job.id}`}
+            >
+              <Card className="group h-full cursor-pointer border-border/50 bg-card/70 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-500/30 hover:shadow-2xl">
+  
+                <CardHeader>
+  
+                  <div className="flex items-start justify-between">
+  
+                    <div>
+                      <CardTitle className="group-hover:text-primary transition-colors">
+                        {job.title}
+                      </CardTitle>
+  
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {job.company}
+                      </p>
+                    </div>
+  
+                    <Badge className="bg-blue-500/10 text-blue-600 border border-blue-500/20">                      {job.matchScore}% Match
+                    </Badge>
+  
+                  </div>
+                </CardHeader>
+  
+                <CardContent className="space-y-4">
+  
+                  <div className="flex flex-wrap gap-2">
+  
+                    <Badge variant="outline">
+                      {job.shift_Preference}
+                    </Badge>
+  
+                    {job.tips ? (
+                      <Badge className="bg-green-500/10 text-green-600 border border-green-500/20">
+                        + Tips
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">
+                        No Tips
+                      </Badge>
+                    )}
+                  </div>
+  
+                  <p className="text-2xl font-bold text-primary">
+                    {job.pay}
+                  </p>
+  
+                  <Button
+                    className="w-full rounded-xl"
+                    onClick={async (e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+  
+                      toast.success("Application sent successfully!")
+                    }}
+                  >
+                    Apply Now
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+  
+                </CardContent>
+  
+              </Card>
+            </Link>
+          ))}
+  
+        </div>
+  
+        {sortedJobs.length === 0 && (
+          <Card className="mt-12 border-dashed bg-card/50 backdrop-blur-xl">
+            <CardContent className="py-16 text-center">
+  
+              <Briefcase className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+  
+              <h3 className="text-xl font-semibold">
+                No Jobs Found
+              </h3>
+  
+              <p className="mt-2 text-muted-foreground">
+                We couldn't find any jobs matching your location right now.
+              </p>
+  
+            </CardContent>
+          </Card>
+        )}
+  
       </div>
     </div>
   )

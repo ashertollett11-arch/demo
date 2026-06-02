@@ -1,5 +1,5 @@
 "use client"
-
+import { LogOut } from "lucide-react"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -180,12 +180,7 @@ export default function MobileStudentPage() {
         <div className="flex justify-between mt-4 px-1">
           <span className="font-semibold text-white">Best matches</span>
 
-          <button
-            onClick={() => router.push("/matching/student")}
-            className="text-purple-400 text-sm"
-          >
-            See all
-          </button>
+    
         </div>
       </div>
 
@@ -196,7 +191,7 @@ export default function MobileStudentPage() {
     const isHighMatch = job.matchScore >= 80
 
     return (
-      <Link key={job.id} href={`/matching/student/${job.id}`}>
+      <Link key={job.id} href={`/matching/mobile/${job.id}`}>
         <div
           className={`
             mb-10 rounded-2xl p-5 flex flex-col
@@ -259,9 +254,9 @@ export default function MobileStudentPage() {
       <div className="fixed bottom-0 left-0 right-0 border-t border-purple-900/40 bg-[#0b0614]/95 backdrop-blur z-50">
         <div className="flex justify-between px-8 py-6 text-white">
 
-          <button onClick={() => router.push("/matching/student")}>
-            <Search className="h-5 w-5" />
-            <div className="text-xs mt-2 text-purple-300">Matches</div>
+          <button onClick={() => router.push("/mobile")}>
+          <LogOut className="h-5 w-5" />
+                      <div className="text-xs mt-2 text-purple-300">Log out</div>
           </button>
 
           <button onClick={() => router.push("/student/mobile")} className="-mt-6">
