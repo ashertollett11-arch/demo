@@ -21,56 +21,47 @@ export default function LoginPage() {
   const [checkingSession, setCheckingSession] = useState(true)
 
   useEffect(() => {
-    let mounted = true
-
-    const checkExistingSession = async () => {
+    const checkAuth = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession()
-
-      if (!mounted) return
-
-      if (!session?.user) {
-        setCheckingSession(false)
-        return
-      }
-
+  
+      if (!session?.user) return
+  
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
         .eq("id", session.user.id)
         .single()
-
-      if (!mounted) return
-
-      if (!roleData?.role) {
-        setCheckingSession(false)
-        return
-      }
-
-      if (window.location.pathname !== "/login") {
-        setCheckingSession(false)
-        return
-      }
-
+  
+      if (!roleData?.role) return
+  
       if (roleData.role === "student") {
-        const dest = isMobileDevice() ? "/student/mobile" : "/student"
-        router.replace(dest)
+        router.replace("/student/mobile")
+        return
       }
-
+  
       if (roleData.role === "employer") {
         router.replace("/matching/employer")
+        return
       }
-
-      setCheckingSession(false)
     }
-
-    checkExistingSession()
-
+  
+    checkAuth()
+  
+    // 🔥 THIS is the missing piece:
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          checkAuth()
+        }
+      }
+    )
+  
     return () => {
-      mounted = false
+      listener.subscription.unsubscribe()
     }
-  }, [])
+  }, [router])
 
   // SIGN UP
   const signUp = async () => {
