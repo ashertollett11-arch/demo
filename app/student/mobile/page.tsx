@@ -266,7 +266,7 @@ export default function MobileStudentPage() {
             <div className="text-xs mt-2 font-medium">Home</div>
           </button>
 
-          <button onClick={() => router.push("/student/profile")}>
+          <button onClick={() => router.push("/student/mobileprofile")}>
             <User className="h-5 w-5" />
             <div className="text-xs mt-2 text-purple-300">Profile</div>
           </button>
