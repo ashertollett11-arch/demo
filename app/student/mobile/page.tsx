@@ -280,10 +280,15 @@ export default function MobileStudentPage() {
       <div className="fixed bottom-0 left-0 right-0 border-t border-purple-900/40 bg-[#0b0614]/95 backdrop-blur z-50">
         <div className="flex justify-between px-8 py-6 text-white">
 
-          <button onClick={() => router.push("/mobile")}>
-          <LogOut className="h-5 w-5" />
-                      <div className="text-xs mt-2 text-purple-300">Log out</div>
-          </button>
+        <button
+  onClick={async () => {
+    await supabase.auth.signOut()
+    router.replace("/login/mobile")
+  }}
+>
+  <LogOut className="h-5 w-5" />
+  <div className="text-xs mt-2 text-purple-300">Log out</div>
+</button>
 
           <button onClick={() => router.push("/student/mobile")} className="-mt-6">
             <div className="h-12 w-12 rounded-full bg-purple-600 flex items-center justify-center">

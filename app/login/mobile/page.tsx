@@ -128,9 +128,9 @@ export default function LoginPage() {
     }
 
     if (roleData.role === "student") {
-      const dest = isMobileDevice() ? "/student/mobile" : "/student"
-      router.push(dest)
-    }
+        router.replace("/student/mobile")
+        return
+      }
 
     if (roleData.role === "employer") {
       router.push("/matching/employer")
