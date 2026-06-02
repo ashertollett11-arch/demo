@@ -47,7 +47,7 @@ export default function MobileLandingPage() {
       <header className="sticky top-0 z-50 border-b border-purple-900/40 bg-[#0b0614]/95 backdrop-blur">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
 
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/mobile" className="flex items-center gap-2">
             <Image
               src="/icon-192x192.png"
               alt="SimplyApply"
@@ -58,12 +58,10 @@ export default function MobileLandingPage() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/" className="text-sm text-purple-300 hover:text-white">
-              How it Works
-            </Link>
             <Link href="/pricing/mobile" className="text-sm text-purple-300 hover:text-white">
-              Pricing
-            </Link>
+Pricing            </Link>
+            <Link href="/login/mobile" className="text-sm text-purple-300 hover:text-white">
+            Start Now                       </Link>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -97,7 +95,6 @@ export default function MobileLandingPage() {
         {mobileMenuOpen && (
           <div className="border-t border-purple-900/40 bg-[#140a25] px-4 py-4 md:hidden">
             <div className="flex flex-col gap-4 text-purple-300">
-              <Link href="#how-it-works">How it Works</Link>
               <Link href="/pricing/mobile">Pricing</Link>
               <Link href="/login/mobile">Log in</Link>
               <Link href="/login/mobile">Get Started</Link>

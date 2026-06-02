@@ -1,4 +1,5 @@
 "use client"
+import Image from "next/image"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -91,23 +92,23 @@ export default function PricingPage() {
       <header className="sticky top-0 z-50 border-b border-purple-900/40 bg-[#0b0614]/95 backdrop-blur">
         <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
 
-          <Link href="/mobile" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center">
-              <Briefcase className="h-5 w-5 text-purple-300" />
-            </div>
+        <Link href="/mobile" className="flex items-center gap-2">
+            <Image
+              src="/icon-192x192.png"
+              alt="SimplyApply"
+              width={28}
+              height={28}
+            />
             <span className="text-xl font-bold text-white">SimplyApply</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/#how-it-works" className="text-sm text-purple-300 hover:text-white">
-              How it Works
-            </Link>
+          
             <Link href="/pricing/mobile" className="text-sm text-white">
               Pricing
             </Link>
             <Link href="/login/mobile" className="text-sm text-purple-300 hover:text-white">
-              Get Started
-            </Link>
+Start Now            </Link>
           </div>
 
           <div className="flex items-center gap-3">
