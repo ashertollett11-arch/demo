@@ -8,10 +8,34 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, Briefcase, Calendar } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { useMobileAuth } from "@/hooks/useMobileAuth"
 
 export default function ProfilePage() {
   const router = useRouter()
-
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+  
+      if (!session?.user) {
+        router.replace("/login/mobile")
+        return
+      }
+  
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", session.user.id)
+        .single()
+  
+      if (!roleData || roleData.role !== "student") {
+        router.replace("/login/mobile")
+      }
+    }
+  
+    checkAuth()
+  }, [])
   useEffect(() => {
     const missing = window.location.search.includes("missing=true")
     if (missing) {
@@ -21,6 +45,7 @@ export default function ProfilePage() {
     }
   }, [])
 
+ 
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getUser()

@@ -101,6 +101,32 @@ function MatchCircle({ score }: { score: number }) {
 export default function MobileStudentPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<any[]>([])
+  
+  useEffect(() => {
+    const checkAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+  
+      if (!session?.user) {
+        router.replace("/login/mobile")
+        return
+      }
+  
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", session.user.id)
+        .single()
+  
+      if (!roleData || roleData.role !== "student") {
+        router.replace("/login/mobile")
+      }
+    }
+  
+    checkAuth()
+  }, [])
+
   useEffect(() => {
     const fetchJobs = async () => {
       const { data: { user } } = await supabase.auth.getUser()
