@@ -277,7 +277,7 @@ export default function LandingPage() {
                     "Access verified student profiles",
                     "Filter by availability and GPA",
                     "Hire faster with instant matching",
-                    "Simple $9.99/month pricing",
+                    "Free to start",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-3">
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" />

@@ -1,290 +1,234 @@
 "use client"
 
 import Link from "next/link"
+import { Briefcase, CheckCircle2, ArrowRight, Zap, Users, Star } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { 
-  Briefcase, 
-  Check, 
-  Zap,
-  Users,
-  Clock,
-  Shield,
-  ArrowRight,
-  HelpCircle
-} from "lucide-react"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
-
-const features = [
-  "Access to all verified student profiles",
-  "Smart matching algorithm",
-  "Instant messaging with candidates",
-  "GPA verification included",
-  "Email support",
-]
-
-const additionalFeatures = [
-  "No long-term contracts",
-  "Cancel anytime",
-]
-
-const benefits = [
-  {
-    icon: Users,
-    title: "No Resumes to Review",
-    description: "Students create simple profiles with verified GPA and availability. You see what matters.",
-  },
-  {
-    icon: Clock,
-    title: "Hire Faster",
-    description: "Average time to hire is just 2.5 days. Get students working when you need them.",
-  },
-  {
-    icon: Shield,
-    title: "Access Verified Students",
-    description: "All students have verified GPAs and are ready to work. No more guessing.",
-  },
-]
-
-const faqs = [
-  {
-    question: "What does the $9.99/month include?",
-    answer: "Your monthly subscription includes unlimited access to all verified student profiles, our smart matching algorithm, all contact information.",
-  },
-  {
-    question: "How does the verification process work?",
-    answer: "Students submit their school information and GPA, which is submitted through a screenshot thatsd verified by a human. This ensures you're seeing accurate, trustworthy information about each candidate.",
-  },
-  {
-    question: "Can I cancel my subscription?",
-    answer: "Yes! There are no long-term contracts. You can cancel your subscription at any time, and you'll continue to have access until the end of your billing period.",
-  },
-  {
-    question: "What types of jobs can I post?",
-    answer: "SimplyApply is designed for part-time and entry-level positions suitable for students ages 14-18. This includes retail, food service, summer jobs, and other similar opportunities.",
-  },
-  {
-    question: "How quickly can I start hiring?",
-    answer: "You can start browsing candidates immediately after signing up. Most employers find suitable candidates within 24-48 hours and complete their first hire within 3 days.",
-  },
-]
 
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+
+      {/* HEADER */}
+      <header className="border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
               <Briefcase className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-foreground">SimplyApply</span>
           </Link>
-
-          <div className="hidden items-center gap-8 md:flex">
-            <Link href="/#how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              How it Works
-            </Link>
-            <Link href="/pricing" className="text-sm font-medium text-foreground">
-              Pricing
-            </Link>
-            <Link href="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-Get Started
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link href="/employer">Log in</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/employer">Start Hiring</Link>
-            </Button>
-          </div>
-        </nav>
+          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+            ← Back to home
+          </Link>
+        </div>
       </header>
 
-      <main>
-        {/* Hero Section */}
-        <section className="px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-          <div className="mx-auto max-w-4xl text-center">
-            <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm font-medium">
-              Simple, transparent pricing
-            </Badge>
-            <h1 className="text-balance text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-              One plan. Everything you need.
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-pretty text-lg text-muted-foreground">
-              No complicated tiers. No hidden fees. Just simple pricing that helps you hire great students.
-            </p>
-          </div>
-        </section>
+      <main className="mx-auto max-w-5xl px-4 py-16 sm:px-6 lg:px-8">
 
-        {/* Pricing Card */}
-        <section className="px-4 pb-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-lg">
-            <Card className="relative overflow-hidden border-2 border-primary bg-card shadow-xl">
-              <div className="absolute right-4 top-4">
-                <Badge className="bg-accent text-accent-foreground">Most Popular</Badge>
-              </div>
-              <CardHeader className="pb-4 pt-8 text-center">
-                <CardTitle className="text-2xl font-bold">Employer Plan</CardTitle>
-                <div className="mt-4 flex items-baseline justify-center gap-1">
-                  <span className="text-5xl font-bold text-foreground">$9.99</span>
-                  <span className="text-muted-foreground">/month</span>
-                </div>
-              
-              </CardHeader>
-              <CardContent className="space-y-6 pb-8">
-                <ul className="space-y-3">
-                  {features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                      <span className="text-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-             
-
-                <Button size="lg" className="w-full gap-2" asChild>
-                  <Link href="/employer">
-                    Start Hiring Now
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-
-                <ul className="space-y-2 pt-2 text-center text-sm text-muted-foreground">
-                  {additionalFeatures.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
-        {/* Benefits Section */}
-        <section className="border-t border-border bg-secondary/30 px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                Why employers choose SimplyApply
-              </h2>
-              <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-                We&apos;ve made hiring students simple so you can focus on running your business.
-              </p>
-            </div>
-
-            <div className="mt-12 grid gap-8 md:grid-cols-3">
-              {benefits.map((benefit) => (
-                <Card key={benefit.title} className="border-border bg-card">
-                  <CardContent className="p-6">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                      <benefit.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="mt-4 text-lg font-semibold text-foreground">{benefit.title}</h3>
-                    <p className="mt-2 text-muted-foreground">{benefit.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Stats Section */}
-        <section className="bg-primary px-4 py-12 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="grid gap-8 text-center sm:grid-cols-3">
-              {[
-                { stat: "Various Local", label: "Partner Employers" },
-                { stat: "2.5 Days", label: "Avg. Time to Hire" },
-                { stat: "Various Local", label: "Students" },
-
-              ].map((item) => (
-                <div key={item.label}>
-                  <p className="text-3xl font-bold text-primary-foreground sm:text-4xl">{item.stat}</p>
-                  <p className="mt-2 text-primary-foreground/80">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* FAQ Section */}
-        <section className="px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl">
-            <div className="text-center">
-              <div className="mb-4 flex items-center justify-center gap-2">
-                <HelpCircle className="h-6 w-6 text-primary" />
-                <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                  Frequently Asked Questions
-                </h2>
-              </div>
-              <p className="text-muted-foreground">
-                Everything you need to know about SimplyApply pricing.
-              </p>
-            </div>
-
-            <Accordion type="single" collapsible className="mt-10">
-              {faqs.map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`}>
-                  <AccordionTrigger className="text-left text-foreground">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="border-t border-border bg-secondary/30 px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl text-center">
-            <Zap className="mx-auto h-10 w-10 text-primary" />
-            <h2 className="mt-4 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Ready to start hiring?
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Join 500+ employers who have already discovered a better way to hire young talent.
-            </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Button size="lg" className="w-full gap-2 px-8 sm:w-auto" asChild>
-                <Link href="/employer">
-                  Get Started for $9.99/mo
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-border bg-background px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Briefcase className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-bold text-foreground">SimplyApply</span>
-          </Link>
-          <p className="text-sm text-muted-foreground">
-            &copy; 2026 SimplyApply. All rights reserved.
+        {/* HERO */}
+        <div className="text-center mb-14">
+          <Badge variant="secondary" className="mb-4 px-4 py-1.5 text-sm">
+            Early Access — Free to Start
+          </Badge>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            Simple, honest pricing
+          </h1>
+          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+            We're in early access and want to grow alongside our users. Get full access today — free while we build together.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Pricing may increase in the future as we add more features. Early users lock in the best deal.
           </p>
         </div>
+
+        {/* PRICING CARDS */}
+        <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
+
+          {/* STUDENTS — FREE */}
+          <Card className="border-border bg-card relative overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-1 bg-chart-2" />
+            <CardContent className="p-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-chart-2/10 mb-4">
+                <Users className="h-6 w-6 text-chart-2" />
+              </div>
+              <h2 className="text-xl font-bold text-foreground">For Students</h2>
+              <p className="text-muted-foreground text-sm mt-1">Ages 14–18 looking for their first job</p>
+              <div className="mt-6 mb-6">
+                <span className="text-4xl font-bold text-foreground">Free</span>
+                <span className="text-muted-foreground ml-2 text-sm">always</span>
+              </div>
+              <ul className="space-y-3 mb-8">
+                {[
+                  "Create a full student profile",
+                  "Browse jobs near you",
+                  "Get matched to local employers",
+                  "GPA verification badge",
+                  "Apply with one tap",
+                  "No resume needed",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-chart-2 shrink-0 mt-0.5" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Button className="w-full bg-chart-2 hover:bg-chart-2/90 text-white" asChild>
+                <Link href="/login">Get Started Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* EMPLOYERS — FREE EARLY ACCESS */}
+          <Card className="border-primary/30 bg-card relative overflow-hidden shadow-lg">
+            <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
+            <div className="absolute top-4 right-4">
+              <Badge className="bg-primary text-primary-foreground text-xs">Early Access</Badge>
+            </div>
+            <CardContent className="p-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 mb-4">
+                <Briefcase className="h-6 w-6 text-primary" />
+              </div>
+              <h2 className="text-xl font-bold text-foreground">For Employers</h2>
+              <p className="text-muted-foreground text-sm mt-1">Local businesses hiring motivated students</p>
+              <div className="mt-6 mb-1">
+                <span className="text-4xl font-bold text-foreground">Free</span>
+                <span className="text-muted-foreground ml-2 text-sm">during early access</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-6">
+                Pricing will increase as we grow. Early users get the best deal.
+              </p>
+              <ul className="space-y-3 mb-8">
+                {[
+                  "Full access to student profiles",
+                  "Smart availability matching",
+                  "Hiring pipeline tools",
+                  "GPA verified candidates",
+                  "Location-based filtering",
+                  "Unlimited candidate browsing",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Button className="w-full" asChild>
+                <Link href="/login">Start Hiring Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+        </div>
+
+        {/* EARLY ACCESS NOTE */}
+        <div className="mt-12 rounded-2xl bg-secondary/40 border border-border p-6 text-center max-w-3xl mx-auto">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mx-auto mb-3">
+            <Zap className="h-5 w-5 text-primary" />
+          </div>
+          <h3 className="font-semibold text-foreground">Why free?</h3>
+          <p className="mt-2 text-sm text-muted-foreground max-w-xl mx-auto">
+            We're early and focused on building something great. Right now the most important thing is getting real students and employers on the platform so we can make it better. We'd rather grow with you than charge you before we've earned it.
+          </p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Pricing may be introduced in the future. We'll give existing users plenty of notice before anything changes.
+          </p>
+        </div>
+
+        {/* FEATURE COMPARISON */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-bold text-foreground text-center mb-8">Everything included</h2>
+          <div className="grid gap-6 sm:grid-cols-3">
+            {[
+              {
+                icon: Users,
+                title: "No Resume Needed",
+                description: "Students create a simple profile with availability, GPA, and job interests. No cover letters or resumes required.",
+              },
+              {
+                icon: Zap,
+                title: "Smart Matching",
+                description: "Our algorithm connects students and employers based on schedule fit, location, and job preferences.",
+              },
+              {
+                icon: Star,
+                title: "GPA Verification",
+                description: "Students can verify their GPA with a simple photo upload, building trust with employers instantly.",
+              },
+            ].map((feature) => (
+              <Card key={feature.title} className="border-border bg-card">
+                <CardContent className="p-6">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mb-4">
+                    <feature.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground">{feature.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="mt-16 max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold text-foreground text-center mb-8">Common questions</h2>
+          <div className="space-y-4">
+            {[
+              {
+                q: "Is it really free?",
+                a: "Yes — completely free during early access for both students and employers. No credit card required.",
+              },
+              {
+                q: "Will it always be free?",
+                a: "Probably not forever. As we grow and add more features, we'll introduce pricing. We'll give everyone plenty of notice and early users will always be treated fairly.",
+              },
+              {
+                q: "What happens if pricing changes?",
+                a: "We'll notify all users well in advance. Early adopters who helped us grow will always be appreciated — we'll make sure any pricing changes are fair.",
+              },
+              {
+                q: "Is it free for students?",
+                a: "Yes, SimplyApply is always free for students. We want to remove every barrier between a student and their first job.",
+              },
+            ].map((faq) => (
+              <div key={faq.q} className="rounded-xl border border-border bg-card p-5">
+                <p className="font-semibold text-foreground text-sm">{faq.q}</p>
+                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-16 text-center">
+          <h2 className="text-2xl font-bold text-foreground">Ready to get started?</h2>
+          <p className="mt-3 text-muted-foreground">Join for free today. No credit card, no commitment.</p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button size="lg" asChild>
+              <Link href="/login">Get Started as a Student</Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/login">Start Hiring Students</Link>
+            </Button>
+          </div>
+        </div>
+
+      </main>
+
+      {/* FOOTER */}
+      <footer className="border-t border-border mt-16 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">&copy; 2026 SimplyApply. All rights reserved.</p>
+          <div className="flex gap-6 text-sm text-muted-foreground">
+            <Link href="/" className="hover:text-foreground">Home</Link>
+            <Link href="/about" className="hover:text-foreground">About</Link>
+            <Link href="/contact" className="hover:text-foreground">Contact</Link>
+            <Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link>
+          </div>
+        </div>
       </footer>
+
     </div>
   )
 }

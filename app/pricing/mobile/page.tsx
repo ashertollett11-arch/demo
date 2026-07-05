@@ -1,287 +1,304 @@
 "use client"
-import Image from "next/image"
 
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   Briefcase,
-  Check,
-  Zap,
+  CheckCircle2,
   Users,
-  Clock,
-  Shield,
+  Zap,
+  Star,
   ArrowRight,
-  HelpCircle
 } from "lucide-react"
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
 
-const features = [
-  "Access to all verified student profiles",
-  "Smart matching algorithm",
-  "Instant messaging with candidates",
-  "GPA verification included",
-  "Email support",
-]
+export default function BillingPage() {
+  const router = useRouter()
 
-const additionalFeatures = [
-  "No long-term contracts",
-  "Cancel anytime",
-]
+  const [loading, setLoading] = useState(true)
+  const [activating, setActivating] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [isActive, setIsActive] = useState(false)
 
-const benefits = [
-  {
-    icon: Users,
-    title: "No Resumes to Review",
-    description:
-      "Students create simple profiles with verified GPA and availability. You see what matters.",
-  },
-  {
-    icon: Clock,
-    title: "Hire Faster",
-    description:
-      "Average time to hire is just 2.5 days. Get students working when you need them.",
-  },
-  {
-    icon: Shield,
-    title: "Access Verified Students",
-    description:
-      "All students have verified GPAs and are ready to work. No more guessing.",
-  },
-]
+  // -------------------------
+  // LOAD USER + PROFILE
+  // -------------------------
+  const loadBilling = async () => {
+    setLoading(true)
 
-const faqs = [
-  {
-    question: "What does the $9.99/month include?",
-    answer:
-      "Your monthly subscription includes unlimited access to all verified student profiles, our smart matching algorithm, all contact information.",
-  },
-  {
-    question: "How does the verification process work?",
-    answer:
-      "Students submit their school information and GPA, which is submitted through a screenshot that is verified by a human.",
-  },
-  {
-    question: "Can I cancel my subscription?",
-    answer:
-      "Yes! There are no long-term contracts. You can cancel at any time and keep access until the end of your billing period.",
-  },
-  {
-    question: "What types of jobs can I post?",
-    answer:
-      "SimplyApply is designed for part-time and entry-level positions suitable for students ages 14–18.",
-  },
-  {
-    question: "How quickly can I start hiring?",
-    answer:
-      "Most employers find suitable candidates within 24–48 hours and complete their first hire within 3 days.",
-  },
-]
+    const { data: userData } = await supabase.auth.getUser()
+    const user = userData?.user
 
-export default function PricingPage() {
+    if (!user) {
+      router.replace("/login")
+      return
+    }
+
+    setUserId(user.id)
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("subscription_status")
+      .eq("id", user.id)
+      .single()
+
+    if (!error && data?.subscription_status === "active") {
+      setIsActive(true)
+    }
+
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    loadBilling()
+  }, [])
+
+  // -------------------------
+  // ACTIVATE FREE ACCESS
+  // -------------------------
+  const activateFreeAccess = async () => {
+    if (!userId || activating) return
+    setActivating(true)
+
+    const { error } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: userId,
+          subscription_status: "active",
+        },
+        { onConflict: "id" }
+      )
+
+    if (error) {
+      toast.error("Something went wrong. Please try again.")
+      setActivating(false)
+      return
+    }
+
+    toast.success("Access activated! Welcome to SimplyApply.")
+    setIsActive(true)
+    setActivating(false)
+    router.push("/employer")
+  }
+
+  // -------------------------
+  // LOADING
+  // -------------------------
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    )
+  }
+
+  // -------------------------
+  // UI
+  // -------------------------
   return (
-    <div className="min-h-screen bg-[#0b0614] text-white">
+    <div className="min-h-screen bg-background">
 
       {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-purple-900/40 bg-[#0b0614]/95 backdrop-blur">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-
-        <Link href="/mobile" className="flex items-center gap-2">
-            <Image
-              src="/icon-192x192.png"
-              alt="SimplyApply"
-              width={28}
-              height={28}
-            />
-            <span className="text-xl font-bold text-white">SimplyApply</span>
+      <header className="border-b border-border bg-background/95 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+              <Briefcase className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-bold text-foreground">SimplyApply</span>
           </Link>
-
-          <div className="hidden md:flex items-center gap-8">
-          
-            <Link href="/pricing/mobile" className="text-sm text-white">
-              Pricing
+          {isActive && (
+            <Link href="/employer" className="text-sm text-muted-foreground hover:text-foreground">
+              ← Back to dashboard
             </Link>
-            <Link href="/login/mobile" className="text-sm text-purple-300 hover:text-white">
-Start Now            </Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link href="/login/mobile">Log in</Link>
-            </Button>
-            <Button asChild className="bg-purple-600 hover:bg-purple-500">
-              <Link href="/login/mobile">Start Hiring</Link>
-            </Button>
-          </div>
-
-        </nav>
+          )}
+        </div>
       </header>
 
-      <main>
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 space-y-8">
 
-        {/* HERO */}
-        <section className="px-6 py-20 text-center relative">
-          <div className="absolute inset-0 -z-10">
-            <div className="absolute left-1/2 top-0 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-600/10 blur-3xl" />
+        {/* HERO — not yet active */}
+        {!isActive && (
+          <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-background to-accent/5 border border-primary/20 p-8 text-center space-y-4">
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto">
+              <Briefcase className="h-7 w-7 text-primary" />
+            </div>
+            <Badge variant="secondary" className="px-4 py-1.5 text-sm">
+              Early Access — Free to Start
+            </Badge>
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+              One step away from finding your next hire
+            </h1>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              SimplyApply is free during early access. Activate your account to browse verified student profiles, use smart matching, and manage your entire hiring pipeline — no credit card needed.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Pricing may be introduced in the future. Early users will always be treated fairly.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+              {[
+                "Access all student profiles",
+                "Smart availability matching",
+                "Hiring pipeline tools",
+                "Free during early access",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                  {item}
+                </div>
+              ))}
+            </div>
           </div>
+        )}
 
-          <Badge className="mb-6 bg-purple-900/40 text-purple-200 border border-purple-800">
-            Simple, transparent pricing
-          </Badge>
+        {/* ACTIVE HERO */}
+        {isActive && (
+          <div className="rounded-2xl bg-gradient-to-br from-green-50 to-background border border-green-200 p-6 flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-100 shrink-0">
+              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Your account is active</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                You have full access to SimplyApply. Free during early access.
+              </p>
+            </div>
+          </div>
+        )}
 
-          <h1 className="text-4xl font-bold">
-            One plan. Everything you need.
-          </h1>
+        <div className="grid gap-6 lg:grid-cols-2">
 
-          <p className="mt-4 text-purple-300 max-w-2xl mx-auto">
-            No complicated tiers. No hidden fees. Just simple pricing that helps you hire great students.
-          </p>
-        </section>
+          {/* LEFT — ACTIVATE / STATUS */}
+          <div className="space-y-6">
 
-        {/* PRICING CARD */}
-        <section className="px-6 pb-20">
-          <div className="max-w-lg mx-auto">
-
-            <Card className="bg-[#140a25] border border-purple-900/40 shadow-xl relative">
-
-              <div className="absolute top-4 right-4">
-                <Badge className="bg-purple-600 text-white">
-                  Most Popular
-                </Badge>
-              </div>
-
-              <CardHeader className="text-center">
-                <CardTitle className="text-white text-2xl">
-                  Employer Plan
-                </CardTitle>
-
-                <div className="mt-4 text-5xl font-bold text-white">
-                  $9.99
-                  <span className="text-sm text-purple-300 font-normal">/month</span>
-                </div>
+            {/* PLAN CARD */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Current Plan</CardTitle>
               </CardHeader>
-
-              <CardContent className="space-y-6">
-
-                <ul className="space-y-3">
-                  {features.map((f) => (
-                    <li key={f} className="flex gap-3 text-purple-200">
-                      <Check className="h-5 w-5 text-purple-400 mt-0.5" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                <Button className="w-full bg-purple-600 hover:bg-purple-500" asChild>
-                  <Link href="/login/mobile">
-                    Start Hiring Now
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-
-                <div className="text-center text-sm text-purple-300 space-y-1">
-                  {additionalFeatures.map((f) => (
-                    <p key={f}>{f}</p>
-                  ))}
+              <CardContent className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-lg font-semibold">
+                    {isActive ? "Employer — Early Access" : "No Active Plan"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {isActive ? "Free during early access" : "Activate for free — no card needed"}
+                  </p>
                 </div>
-
+                {isActive ? (
+                  <Badge className="bg-green-100 text-green-700">Active</Badge>
+                ) : (
+                  <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
+                )}
               </CardContent>
             </Card>
 
-          </div>
-        </section>
-
-        {/* BENEFITS */}
-        <section className="border-t border-purple-900/40 bg-[#0b0614] px-6 py-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold">
-              Why employers choose SimplyApply
-            </h2>
-            <p className="text-purple-300 mt-2">
-              Hiring made simple for busy business owners
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {benefits.map((b) => (
-              <Card key={b.title} className="bg-[#140a25] border border-purple-900/40">
-                <CardContent className="p-6">
-                  <b.icon className="h-6 w-6 text-purple-400" />
-                  <h3 className="mt-4 text-white font-semibold">{b.title}</h3>
-                  <p className="text-purple-300 text-sm mt-2">{b.description}</p>
+            {/* ACTIVATE */}
+            {!isActive && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardContent className="p-6 space-y-4">
+                  <div>
+                    <p className="font-semibold text-foreground text-lg">Employer Early Access</p>
+                    <p className="text-3xl font-bold text-primary mt-1">
+                      Free
+                      <span className="text-base font-normal text-muted-foreground ml-2">during early access</span>
+                    </p>
+                  </div>
+                  <Button className="w-full" size="lg" onClick={activateFreeAccess} disabled={activating}>
+                    {activating ? "Activating..." : "Activate Free Access"}
+                    {!activating && <ArrowRight className="ml-2 h-4 w-4" />}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    No credit card required. Pricing may change in the future.
+                  </p>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        </section>
+            )}
 
-        {/* STATS */}
-        <section className="bg-purple-600 px-6 py-16 text-center">
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              { stat: "Local Employers", label: "Trust SimplyApply" },
-              { stat: "2.5 Days", label: "Avg Time to Hire" },
-              { stat: "Students", label: "Ready to Work" },
-            ].map((s) => (
-              <div key={s.label}>
-                <p className="text-3xl font-bold text-white">{s.stat}</p>
-                <p className="text-purple-200">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+            {/* ALREADY ACTIVE */}
+            {isActive && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Status</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    You have full access to all SimplyApply employer features during early access. We'll notify you well in advance of any pricing changes.
+                  </p>
+                  <Button variant="outline" asChild>
+                    <Link href="/employer">Go to Dashboard</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* FAQ */}
-        <section className="px-6 py-20 max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <HelpCircle className="mx-auto text-purple-400" />
-            <h2 className="text-3xl font-bold mt-2">FAQs</h2>
           </div>
 
-          <Accordion type="single" collapsible>
-            {faqs.map((f, i) => (
-              <AccordionItem key={i} value={`item-${i}`} className="border-purple-900/40">
-                <AccordionTrigger className="text-white">
-                  {f.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-purple-300">
-                  {f.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </section>
+          {/* RIGHT — WHAT'S INCLUDED */}
+          <div>
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle>What's Included</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[
+                  {
+                    icon: Users,
+                    title: "Full Candidate Access",
+                    description: "Browse all verified student profiles in your area with complete availability and GPA info.",
+                  },
+                  {
+                    icon: Zap,
+                    title: "Smart Matching",
+                    description: "Our algorithm scores candidates based on schedule fit, GPA, and job preferences.",
+                  },
+                  {
+                    icon: CheckCircle2,
+                    title: "Hiring Pipeline",
+                    description: "Track every candidate from new to contacted to hired in one simple view.",
+                  },
+                  {
+                    icon: Star,
+                    title: "Verified Student Badges",
+                    description: "Students with verified GPAs are flagged so you can hire with confidence.",
+                  },
+                  {
+                    icon: Briefcase,
+                    title: "Company Profile",
+                    description: "Showcase your business, pay rate, available shifts, and the roles you're hiring for.",
+                  },
+                ].map((feature) => (
+                  <div key={feature.title} className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <feature.icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{feature.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{feature.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* CTA */}
-        <section className="border-t border-purple-900/40 px-6 py-20 text-center">
-          <h2 className="text-3xl font-bold">
-            Ready to start hiring?
-          </h2>
-          <p className="text-purple-300 mt-2">
-            Join employers already using SimplyApply
-          </p>
+        </div>
 
-          <Button className="mt-6 bg-purple-600 hover:bg-purple-500" asChild>
-            <Link href="/login/mobile">
-              Get Started
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </section>
+        {/* BACK LINKS */}
+        {isActive && (
+          <div className="flex items-center gap-4 pt-2">
+            <Link href="/employer" className="text-sm text-muted-foreground hover:text-foreground">← Back to dashboard</Link>
+            <Link href="/employer/profile" className="text-sm text-muted-foreground hover:text-foreground">← Go to profile</Link>
+          </div>
+        )}
 
-      </main>
-
-      {/* FOOTER */}
-      <footer className="border-t border-purple-900/40 px-6 py-10 text-center text-purple-300">
-        <p>© 2026 SimplyApply</p>
-      </footer>
-
+      </div>
     </div>
   )
 }
