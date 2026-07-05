@@ -297,7 +297,6 @@ export default function BillingPage() {
             <Link href="/employer/profile" className="text-sm text-muted-foreground hover:text-foreground">← Go to profile</Link>
           </div>
         )}
-
       </div>
     </div>
   )
