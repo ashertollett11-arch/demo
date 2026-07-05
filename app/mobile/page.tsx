@@ -58,7 +58,7 @@ export default function MobileLandingPage() {
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/pricing/mobile" className="text-sm text-purple-300 hover:text-white">
+            <Link href="/mobile/login" className="text-sm text-purple-300 hover:text-white">
 Pricing            </Link>
             <Link href="/login/mobile" className="text-sm text-purple-300 hover:text-white">
             Start Now                       </Link>
