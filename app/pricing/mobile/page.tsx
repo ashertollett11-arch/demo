@@ -23,7 +23,12 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true)
   const [activating, setActivating] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
-  const [isActive, setIsActive] = useState(false)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string | null>(null)
+
+  // derived helpers
+  const isActive = subscriptionStatus === "active"
+  const isFreeActive = subscriptionStatus === "freeactive"
+  const isSubscribed = isActive || isFreeActive
 
   // -------------------------
   // LOAD USER + PROFILE
@@ -47,8 +52,8 @@ export default function BillingPage() {
       .eq("id", user.id)
       .single()
 
-    if (!error && data?.subscription_status === "active") {
-      setIsActive(true)
+    if (!error && data) {
+      setSubscriptionStatus(data.subscription_status)
     }
 
     setLoading(false)
@@ -70,7 +75,7 @@ export default function BillingPage() {
       .upsert(
         {
           id: userId,
-          subscription_status: "active",
+          subscription_status: "freeactive",
         },
         { onConflict: "id" }
       )
@@ -82,7 +87,7 @@ export default function BillingPage() {
     }
 
     toast.success("Access activated! Welcome to SimplyApply.")
-    setIsActive(true)
+    setSubscriptionStatus("freeactive")
     setActivating(false)
     router.push("/employer")
   }
@@ -113,7 +118,7 @@ export default function BillingPage() {
             </div>
             <span className="text-xl font-bold text-foreground">SimplyApply</span>
           </Link>
-          {isActive && (
+          {isSubscribed && (
             <Link href="/employer" className="text-sm text-muted-foreground hover:text-foreground">
               ← Back to dashboard
             </Link>
@@ -124,7 +129,7 @@ export default function BillingPage() {
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 space-y-8">
 
         {/* HERO — not yet active */}
-        {!isActive && (
+        {!isSubscribed && (
           <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-background to-accent/5 border border-primary/20 p-8 text-center space-y-4">
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto">
               <Briefcase className="h-7 w-7 text-primary" />
@@ -157,6 +162,21 @@ export default function BillingPage() {
           </div>
         )}
 
+        {/* FREEACTIVE HERO */}
+        {isFreeActive && (
+          <div className="rounded-2xl bg-gradient-to-br from-primary/5 to-background border border-primary/20 p-6 flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+              <CheckCircle2 className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">You're on free early access</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Full access at no cost while we grow. Pricing may be introduced in the future — early users will always be treated fairly.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ACTIVE HERO */}
         {isActive && (
           <div className="rounded-2xl bg-gradient-to-br from-green-50 to-background border border-green-200 p-6 flex items-center gap-4">
@@ -164,9 +184,9 @@ export default function BillingPage() {
               <CheckCircle2 className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">Your account is active</h1>
+              <h1 className="text-xl font-bold text-foreground">Your subscription is active</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                You have full access to SimplyApply. Free during early access.
+                You have full access to SimplyApply.
               </p>
             </div>
           </div>
@@ -185,13 +205,19 @@ export default function BillingPage() {
               <CardContent className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-lg font-semibold">
-                    {isActive ? "Employer — Early Access" : "No Active Plan"}
+                    {isFreeActive ? "Employer — Early Access" :
+                     isActive ? "Employer Pro" :
+                     "No Active Plan"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {isActive ? "Free during early access" : "Activate for free — no card needed"}
+                    {isFreeActive ? "Free during early access" :
+                     isActive ? "Paid subscription" :
+                     "Activate for free — no card needed"}
                   </p>
                 </div>
-                {isActive ? (
+                {isFreeActive ? (
+                  <Badge className="bg-primary/10 text-primary">Early Access</Badge>
+                ) : isActive ? (
                   <Badge className="bg-green-100 text-green-700">Active</Badge>
                 ) : (
                   <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
@@ -200,7 +226,7 @@ export default function BillingPage() {
             </Card>
 
             {/* ACTIVATE */}
-            {!isActive && (
+            {!isSubscribed && (
               <Card className="border-primary/30 bg-primary/5">
                 <CardContent className="p-6 space-y-4">
                   <div>
@@ -221,15 +247,17 @@ export default function BillingPage() {
               </Card>
             )}
 
-            {/* ALREADY ACTIVE */}
-            {isActive && (
+            {/* ALREADY SUBSCRIBED */}
+            {isSubscribed && (
               <Card>
                 <CardHeader>
                   <CardTitle>Account Status</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    You have full access to all SimplyApply employer features during early access. We'll notify you well in advance of any pricing changes.
+                    {isFreeActive
+                      ? "You have full access to all SimplyApply employer features during early access. We'll notify you well in advance of any pricing changes."
+                      : "You have full access to all SimplyApply employer features."}
                   </p>
                   <Button variant="outline" asChild>
                     <Link href="/employer">Go to Dashboard</Link>
@@ -291,12 +319,13 @@ export default function BillingPage() {
         </div>
 
         {/* BACK LINKS */}
-        {isActive && (
+        {isSubscribed && (
           <div className="flex items-center gap-4 pt-2">
             <Link href="/employer" className="text-sm text-muted-foreground hover:text-foreground">← Back to dashboard</Link>
             <Link href="/employer/profile" className="text-sm text-muted-foreground hover:text-foreground">← Go to profile</Link>
           </div>
         )}
+
       </div>
     </div>
   )

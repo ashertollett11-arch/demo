@@ -54,15 +54,15 @@ export default function EmployerDashboard() {
   
         console.log("PROFILE CHECK:", profile)
   
-        if (error || !profile || profile.subscription_status !== "active") {
-          router.replace("/billing")
+        const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
+        if (error || !profile || !isSubscribed) {          router.replace("/pricing/mobile")
           return
         }
   
         setUserId(user.id)
       } catch (err) {
         console.error("ACCESS CHECK ERROR:", err)
-        router.replace("/billing")
+        router.replace("/pricing/mobile")
       }
     }
   
@@ -262,7 +262,7 @@ export default function EmployerDashboard() {
             <Link href="/matching/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Find Candidates
             </Link>
-            <Link href="/billing" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            <Link href="/pricing/mobile" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Billing
             </Link>
           </div>
@@ -411,7 +411,7 @@ export default function EmployerDashboard() {
           <CardContent className="space-y-2">
             <p>Current Plan: Employer Plan</p>
             <Button asChild>
-              <Link href="/billing">Manage Billing</Link>
+              <Link href="/pricing/mobile">Manage Billing</Link>
             </Button>
           </CardContent>
         </Card>

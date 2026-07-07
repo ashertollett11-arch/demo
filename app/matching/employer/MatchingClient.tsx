@@ -162,14 +162,14 @@ export default function MatchingPage() {
           .eq("id", user.id)
           .maybeSingle()
 
-        if (error || !profile || profile.subscription_status !== "active") {
-          router.replace("/billing")
+          const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
+          if (error || !profile || !isSubscribed) {          router.replace("/pricing/mobile")
           return
         }
 
         setUserId(user.id)
       } catch (err) {
-        router.replace("/billing")
+        router.replace("/pricing/mobile")
       }
     }
     checkAccess()
@@ -573,7 +573,7 @@ useEffect(() => {
           <div className="hidden items-center gap-6 md:flex">
             <Link href="/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">Dashboard</Link>
             <Link href="/matching/employer" className="text-sm font-medium text-foreground">Find Candidates</Link>
-            <Link href="/billing" className="text-sm font-medium text-muted-foreground hover:text-foreground">Billing</Link>
+            <Link href="/pricing/mobile" className="text-sm font-medium text-muted-foreground hover:text-foreground">Billing</Link>
           </div>
 
           <div className="flex items-center gap-4">
