@@ -244,7 +244,7 @@ useEffect(() => {
     }
   })
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <div className="relative min-h-screen overflow-hidden bg-background" suppressHydrationWarning>
   
       {/* BACKGROUND */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-background to-cyan-600/10" />
@@ -255,14 +255,10 @@ useEffect(() => {
       <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
   
-          <Button
-            variant="ghost"
-            className="gap-2 rounded-xl"
-            onClick={() => router.push("/student")}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back
-          </Button>
+        <Button variant="ghost" className="hidden sm:flex items-center gap-2" onClick={() => router.push("/student")}>
+  <ChevronLeft className="h-5 w-5" />
+  Back
+</Button>
   
           <div className="hidden items-center gap-8 md:flex">
             <Link
@@ -282,12 +278,22 @@ useEffect(() => {
   
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            {!isMobile && (
-  <Button variant="ghost" className="flex items-center gap-2" onClick={() => router.push("/student")}>
-    <ChevronLeft className="h-5 w-5" />
-    Back
-  </Button>
-)}
+              <Button variant="ghost" className="gap-3 rounded-xl">
+  
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-bold text-white">
+                  {(name || "")
+                    .trim()
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((n) => n[0]?.toUpperCase())
+                    .join("") || "?"}
+                </div>
+  
+                <span className="hidden sm:block font-medium">
+                  {name}
+                </span>
+              </Button>
             </DropdownMenuTrigger>
   
             <DropdownMenuContent align="end">
