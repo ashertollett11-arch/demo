@@ -15,7 +15,18 @@ export default function Home() {
         return
       }
 
-      window.location.replace("/desktop")
+      // Check role and route accordingly
+      const { data: userData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", session.user.id)
+        .single()
+
+      if (userData?.role === "student") {
+        window.location.replace("/matching/student")
+      } else {
+        window.location.replace("/employer")
+      }
     }
 
     routeUser()
