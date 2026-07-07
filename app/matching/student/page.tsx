@@ -277,41 +277,27 @@ useEffect(() => {
           </div>
   
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-3 rounded-xl">
-  
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-bold text-white">
-                  {(name || "")
-                    .trim()
-                    .split(" ")
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((n) => n[0]?.toUpperCase())
-                    .join("") || "?"}
-                </div>
-  
-                <span className="hidden sm:block font-medium">
-                  {name}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-  
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href="/student/profile">
-                  Profile
-                </Link>
-              </DropdownMenuItem>
-  
-              <DropdownMenuSeparator />
-  
-              <DropdownMenuItem asChild>
-                <Link href="/">
-                  Log Out
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" className="flex items-center gap-2 shrink-0 px-2">
+      <div className="flex h-11 w-11 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-primary/10 text-base sm:text-sm font-semibold text-primary">
+        {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+      </div>
+      <span className="hidden sm:block text-sm font-medium max-w-[100px] truncate">{name}</span>
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-64 sm:w-48">
+    <DropdownMenuItem asChild>
+      <Link href="/student/profile" className="text-base sm:text-sm py-3 sm:py-2">Profile</Link>
+    </DropdownMenuItem>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem
+      onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+      className="text-base sm:text-sm py-3 sm:py-2"
+    >
+      Log out
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
   
         </div>
       </header>

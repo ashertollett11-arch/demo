@@ -284,7 +284,7 @@ isDobValid &&
                   setSaving(true)
                   const success = await saveStudentProfile()
                   if (!success) return
-                  router.push("/student?from=profile&saved=true")
+                  router.push("/matching/student?from=profile&saved=true")
                 } finally {
                   setSaving(false)
                 }
