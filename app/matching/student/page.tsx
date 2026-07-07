@@ -38,6 +38,7 @@ interface Job {
   location: string
   pay: string
   tips?: boolean
+  details?: string
   matchScore: number
   status: "new" | "applied" | "interviewing"
   shifts: { day: string; active: boolean }[]
@@ -155,7 +156,6 @@ const [gpa, setGpa] = useState<number | null>(null)
     const { data, error } = await supabase
       .from("job")
       .select(`id, title, company, location, pay, details, available_shifts, shift_preference, status, hours, has_tips, zip_code, zip_match_precision`)
-
     if (error) { console.log("JOB FETCH ERROR:", error); return }
 
     const updated = (data || [])
@@ -186,6 +186,7 @@ const [gpa, setGpa] = useState<number | null>(null)
           id: job.id,
           title: job.title || "Untitled Job",
           company: job.company || "Unknown",
+          details: job.details || "",
           pay: job.pay || "$0",
           status: job.status || "new",
           tips: Boolean(job.has_tips),
@@ -419,9 +420,7 @@ useEffect(() => {
                         {job.title}
                       </CardTitle>
   
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {job.company}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{job.details || job.company}</p>
                     </div>
   
                     <Badge className="bg-blue-500/10 text-blue-600 border border-blue-500/20">                      {job.matchScore}% Match
