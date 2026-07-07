@@ -64,7 +64,7 @@ export default function LoginPage() {
       }
   
       if (roleData.role === "student") {
-        const dest = isMobileDevice() ? "/student/mobile" : "/student"
+        const dest = isMobileDevice() ? "/student" : "/student"
         router.replace(dest)
       }
   
@@ -165,7 +165,7 @@ export default function LoginPage() {
       }
 
       if (roleData.role === "student") {
-        const dest = isMobileDevice() ? "/student/mobile" : "/student"
+        const dest = isMobileDevice() ? "/student" : "/student"
         router.push(dest)
       }
     if (roleData.role === "employer") {
