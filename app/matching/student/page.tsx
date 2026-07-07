@@ -226,7 +226,11 @@ useEffect(() => {
   // Sorting
   const parseDistance = (d: string) => parseFloat(d.split(" ")[0]) || 0
   const parsePay = (p: string) => parseFloat(p.replace(/[^0-9.]/g, "")) || 0
+  const [isMobile, setIsMobile] = useState(false)
 
+  useEffect(() => {
+    setIsMobile(window.matchMedia("(max-width: 768px)").matches)
+  }, [])
   const sortedJobs = [...matchedJobs].sort((a, b) => {
     switch (filter) {
       case "pay":
@@ -278,22 +282,12 @@ useEffect(() => {
   
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-3 rounded-xl">
-  
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 text-sm font-bold text-white">
-                  {(name || "")
-                    .trim()
-                    .split(" ")
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((n) => n[0]?.toUpperCase())
-                    .join("") || "?"}
-                </div>
-  
-                <span className="hidden sm:block font-medium">
-                  {name}
-                </span>
-              </Button>
+            {!isMobile && (
+  <Button variant="ghost" className="flex items-center gap-2" onClick={() => router.push("/student")}>
+    <ChevronLeft className="h-5 w-5" />
+    Back
+  </Button>
+)}
             </DropdownMenuTrigger>
   
             <DropdownMenuContent align="end">
