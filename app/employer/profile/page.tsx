@@ -205,7 +205,7 @@ export default function EmployerProfilePage() {
     if (status === "active" || status === "freeactive") {
       router.push("/employer")
     } else {
-      router.push("/billing")
+      router.push("/pricing/mobile")
     }
   }
 
