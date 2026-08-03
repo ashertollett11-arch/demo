@@ -214,23 +214,21 @@ export default function EmployerProfilePage() {
   // -------------------------
   const handleSwitchRole = async () => {
     setSwitching(true)
-
+  
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSwitching(false); return }
-
-    // Delete the user — cascades to all associated data
-    const { error } = await supabase.auth.admin.deleteUser(user.id)
-
-    if (error) {
-      // Fall back to signing out and letting them re-register
-      console.error("Delete error:", error)
-    }
-
+  
+    // Delete from all tables
+    await supabase.from("student_statuses").delete().eq("employer_id", user.id)
+    await supabase.from("notifications").delete().eq("employer_id", user.id)
+    await supabase.from("job").delete().eq("user_id", user.id)
+    await supabase.from("profiles").delete().eq("id", user.id)
+    await supabase.from("users").delete().eq("id", user.id)
+  
     await supabase.auth.signOut()
     toast.success("Account removed. You can now sign up with a new role.")
     router.replace("/")
   }
-
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
 

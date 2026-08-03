@@ -179,16 +179,17 @@ export default function ProfilePage() {
   // -------------------------
   const handleSwitchRole = async () => {
     setSwitching(true)
-
+  
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSwitching(false); return }
-
-    // Sign out first then redirect — auth.admin.deleteUser requires service role
-    // so we clear their session and they'll need to re-register
+  
+    // Delete from all tables
+    await supabase.from("student_statuses").delete().eq("employer_id", user.id)
     await supabase.from("Students").delete().eq("user_id", user.id)
+    await supabase.from("profiles").delete().eq("id", user.id)
     await supabase.from("users").delete().eq("id", user.id)
+  
     await supabase.auth.signOut()
-
     toast.success("Account removed. You can now sign up with a new role.")
     router.replace("/")
   }
