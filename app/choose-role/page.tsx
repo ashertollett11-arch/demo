@@ -69,7 +69,7 @@ export default function ChooseRolePage() {
       setPendingRole(null)
       return
     }
-
+    
     if (role === "student") {
       await supabase.from("Students").insert({ user_id: user.id })
       router.push("/student/onboarding")
