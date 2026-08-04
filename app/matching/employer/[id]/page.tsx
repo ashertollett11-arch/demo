@@ -33,15 +33,14 @@ export default function StudentPage() {
   const [loadingDistance, setLoadingDistance] = useState(false)
   const [employerLocation, setEmployerLocation] = useState<{ address: string; zip: string } | null>(null)
 
-  // -------------------------
-  // LOAD EMPLOYER + STUDENT
-  // -------------------------
+  // Load employer data + student
   useEffect(() => {
     if (!studentId) return
 
     const loadStudent = async () => {
       setLoading(true)
 
+      // GET AUTH USER FIRST
       const { data: authData } = await supabase.auth.getUser()
       const userId = authData?.user?.id
 
@@ -65,6 +64,7 @@ export default function StudentPage() {
         })
       }
 
+      // GET STUDENT
       const { data: studentData, error } = await supabase
         .from("Students")
         .select("*")
@@ -74,7 +74,7 @@ export default function StudentPage() {
       if (error) { console.error(error); setLoading(false); return }
       setStudent(studentData)
 
-      // Load existing status
+      // GET EXISTING STATUS
       const { data: statusData } = await supabase
         .from("student_statuses")
         .select("status")
@@ -89,9 +89,7 @@ export default function StudentPage() {
     loadStudent()
   }, [studentId])
 
-  // -------------------------
-  // FETCH DISTANCE
-  // -------------------------
+  // FETCH DISTANCE once student + employer location are loaded
   useEffect(() => {
     if (!student || !employerLocation) return
     if (!student.location || !student.zip_code) return
@@ -111,9 +109,7 @@ export default function StudentPage() {
     fetchDistance()
   }, [student, employerLocation])
 
-  // -------------------------
   // MATCH SCORE
-  // -------------------------
   const activeShifts = useMemo(() => {
     return Array.isArray(employerShifts)
       ? employerShifts.filter((s) => s.active === true || s.active === "true" || s.active === 1)
@@ -135,37 +131,38 @@ export default function StudentPage() {
     )
   }, [student, jobDays, shiftPreference, preferredJobs])
 
-  // -------------------------
   // UPDATE STATUS
-  // -------------------------
   const updateStatus = async (newStatus: string) => {
     if (!employerId) return
     setSavedStatus(newStatus)
 
-    await supabase
+    const { error } = await supabase
       .from("student_statuses")
       .upsert(
         { employer_id: employerId, student_id: studentId, status: newStatus },
         { onConflict: "employer_id,student_id" }
       )
 
-    toast.success(`Status updated to ${newStatus}`)
+    if (error) {
+      console.error(error)
+      toast.error("Failed to update status")
+      return
+    }
+
+    toast.success(`Marked as ${newStatus}`)
   }
 
-  // -------------------------
-  // LOADING
-  // -------------------------
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading student profile...</p>
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     )
   }
 
   if (!student) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground">Student not found.</p>
       </div>
     )
@@ -173,63 +170,50 @@ export default function StudentPage() {
 
   const availableDays = (student.availability ?? [])
     .filter((a: any) => a?.available)
-    .map((a: any) => a?.day)
+    .map((a: any) => `${a.day} ${a.start}–${a.end}`)
 
-  // -------------------------
-  // UI
-  // -------------------------
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background p-4 sm:p-8">
+      <div className="mx-auto max-w-2xl space-y-6">
 
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-          <Button variant="ghost" className="flex items-center gap-2" onClick={() => router.back()}>
-            <ChevronLeft className="h-5 w-5" />
-            Back
-          </Button>
-          <span className="text-sm font-medium text-muted-foreground">Student Profile</span>
-          <div className="w-16" />
-        </div>
-      </header>
+        {/* BACK */}
+        <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-2 -ml-2">
+          <ChevronLeft className="h-4 w-4" /> Back
+        </Button>
 
-      <main className="mx-auto max-w-3xl px-4 py-8 space-y-6">
-
-        {/* PROFILE HEADER */}
+        {/* HEADER CARD */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
                   {student.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-foreground">{student.name}</h1>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Star className="h-4 w-4" />
-                      GPA: {student.gpa ?? "N/A"}
-                      {student.is_gpa_verified && (
-                        <Badge variant="outline" className="gap-1 text-[10px] ml-1">
-                          ✓ Verified
-                        </Badge>
-                      )}
-                    </div>
+
+                  {/* GPA */}
+                  <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
+                    <Star className="h-4 w-4" />
+                    <span>GPA: {student.gpa ?? "N/A"}</span>
+                    {student.is_gpa_verified && (
+                      <Badge variant="outline" className="text-[10px] gap-1 ml-1">✓ Verified</Badge>
+                    )}
                   </div>
 
                   {/* DISTANCE */}
-                  <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5 mt-1 text-sm text-muted-foreground">
                     <MapPin className="h-3.5 w-3.5" />
                     {loadingDistance ? (
-                      <span className="text-xs">Calculating distance...</span>
+                      <span className="text-xs">Calculating...</span>
                     ) : distance && distance.distance !== "Unknown" ? (
-                      <span className="flex items-center gap-2">
-                        <span>{distance.distance}</span>
+                      <span className="flex items-center gap-1.5">
+                        {distance.distance}
                         {distance.duration && (
                           <>
-                            <span className="text-muted-foreground/50">•</span>
+                            <span>•</span>
                             <Clock className="h-3 w-3" />
-                            <span>{distance.duration}</span>
+                            {distance.duration}
                           </>
                         )}
                       </span>
@@ -237,12 +221,21 @@ export default function StudentPage() {
                       <span className="text-xs">Distance unavailable</span>
                     )}
                   </div>
+
+                  {/* AGE + SCHOOL */}
+                  {student.age && (
+                    <p className="text-sm text-muted-foreground mt-0.5">Age: {student.age}</p>
+                  )}
+                  {student.school && (
+                    <p className="text-sm text-muted-foreground mt-0.5">{student.school}</p>
+                  )}
                 </div>
               </div>
 
-              <Badge className="bg-primary/10 text-primary text-sm px-3 py-1 shrink-0">
-                {matchScore}% match
-              </Badge>
+              <div className="text-right shrink-0">
+                <div className="text-2xl font-bold text-primary">{matchScore}%</div>
+                <div className="text-xs text-muted-foreground">match</div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -252,7 +245,7 @@ export default function StudentPage() {
           <CardHeader><CardTitle>Candidate Status</CardTitle></CardHeader>
           <CardContent>
             <Select value={savedStatus ?? "new"} onValueChange={updateStatus}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -268,21 +261,20 @@ export default function StudentPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Availability
+              <Calendar className="h-5 w-5" /> Availability
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex flex-wrap gap-2">
-              {availableDays.length > 0 ? (
-                availableDays.map((day: string) => (
-                  <Badge key={day} variant="secondary">{day}</Badge>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">No availability listed</p>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground capitalize">
+          <CardContent>
+            {availableDays.length > 0 ? (
+              <ul className="space-y-1">
+                {availableDays.map((d: string) => (
+                  <li key={d} className="text-sm text-foreground">{d}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No availability listed</p>
+            )}
+            <p className="text-sm text-muted-foreground mt-2 capitalize">
               Shift preference: {student.shift_preference || "flexible"}
             </p>
           </CardContent>
@@ -308,25 +300,15 @@ export default function StudentPage() {
             <CardHeader><CardTitle>Interests</CardTitle></CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {student.interests.map((interest: string) => (
-                  <Badge key={interest} variant="secondary">{interest}</Badge>
+                {student.interests.map((i: string) => (
+                  <Badge key={i} variant="secondary">{i}</Badge>
                 ))}
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* SCHOOL */}
-        {student.school && (
-          <Card>
-            <CardHeader><CardTitle>Education</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-sm text-foreground">{student.school}</p>
-            </CardContent>
-          </Card>
-        )}
-
-      </main>
+      </div>
     </div>
   )
 }
