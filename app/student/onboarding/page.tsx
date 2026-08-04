@@ -340,7 +340,7 @@ export default function StudentOnboarding() {
                       Almost done!
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      After this we'll take you to your full profile where you can set your availability, job preferences, and more. It's all pre-filled — just review and save.
+                      After this we'll take you to your dashboard, you can always change your information and ajust your avalibilty by editing your profile - just hit the icon in the top right and tap profile.
                     </p>
                   </CardContent>
                 </Card>
