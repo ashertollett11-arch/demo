@@ -72,7 +72,7 @@ export default function ChooseRolePage() {
 
     if (role === "student") {
       await supabase.from("Students").insert({ user_id: user.id })
-      router.push("/student/profile")
+      router.push("/student/onboarding")
     }
 
     if (role === "employer") {
