@@ -75,11 +75,11 @@ export default function StudentOnboarding() {
     if (!user) { setSaving(false); return }
 
     const defaultAvailability = [
-      { day: "Monday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
-      { day: "Tuesday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
-      { day: "Wednesday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
-      { day: "Thursday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
-      { day: "Friday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
+      { day: "Monday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
+      { day: "Tuesday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
+      { day: "Wednesday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
+      { day: "Thursday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
+      { day: "Friday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
       { day: "Saturday", start: "3:00 PM", end: "10:00 PM", available: true, hours: "7" },
       { day: "Sunday", start: "3:00 PM", end: "10:00 PM", available: true, hours: "7" },
     ]
@@ -100,9 +100,9 @@ export default function StudentOnboarding() {
           phone,
           availability: defaultAvailability,
           shift_preference: "flexible",
-          interests: [],
-          preferred_jobs: [],
-          profile_complete: false, // still need to finish on profile page
+          interests: ["School", "Hanging out with friends"],
+          preferred_jobs: ["Busser", "Customer Service", "Dishwasher"],
+                    profile_complete: true, // still need to finish on profile page
         },
         { onConflict: "user_id" }
       )
@@ -115,8 +115,7 @@ export default function StudentOnboarding() {
     }
 
     toast.success("Looking good! Finish your profile to get matched.")
-    router.push("/student/profile")
-  }
+    router.push("/student")  }
 
   const next = () => {
     if (!canProceed()) {
