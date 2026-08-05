@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, User, Bell } from "lucide-react"
+import { ChevronDown, User, Bell, MapPin } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   CheckCircle2,
@@ -57,12 +57,45 @@ const getStatusBadge = (status: string) => {
   }
 }
 
-const jobTypes = ["Retail", "Food Service", "Summer Jobs"]
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+const ALL_AGES = [14, 15, 16, 17, 18, 19, 20, 21]
 
-function FilterContent({ minGpa, setMinGpa, selectedDays, setSelectedDays, verifiedOnly, setVerifiedOnly, daysOfWeek, activeFiltersCount, clearFilters }: any) {
+function FilterContent({
+  minGpa, setMinGpa,
+  selectedDays, setSelectedDays,
+  verifiedOnly, setVerifiedOnly,
+  areaRadius, employerZip,
+  // age filters
+  ageMode, setAgeMode,
+  ageMin, setAgeMin,
+  ageMax, setAgeMax,
+  specificAges, setSpecificAges,
+  daysOfWeek,
+  activeFiltersCount,
+  clearFilters,
+}: any) {
   return (
     <div className="space-y-6">
+
+      {/* LOCATION */}
+      {employerZip && (
+        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <MapPin className="h-3.5 w-3.5 text-primary" />
+            Location Filter
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Zip: <span className="font-medium text-foreground">{employerZip}</span>
+            {" — "}
+            <span className="font-medium text-foreground">
+              {areaRadius === "exact" ? "Same zip" : areaRadius === "broad" ? "Broader region" : "All areas"}
+            </span>
+          </p>
+          <p className="text-[11px] text-muted-foreground mt-1">Change in your company profile.</p>
+        </div>
+      )}
+
+      {/* MIN GPA */}
       <div>
         <Label className="text-sm font-medium">Minimum GPA</Label>
         <input
@@ -79,6 +112,92 @@ function FilterContent({ minGpa, setMinGpa, selectedDays, setSelectedDays, verif
         />
       </div>
 
+      {/* AGE FILTER */}
+      <div>
+        <Label className="text-sm font-medium">Age Filter</Label>
+
+        {/* MODE TOGGLE */}
+        <div className="flex gap-2 mt-2 mb-3">
+          <button
+            onClick={() => setAgeMode("range")}
+            className={`flex-1 py-1.5 text-xs rounded-lg border transition-all ${
+              ageMode === "range"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border text-muted-foreground hover:border-primary/50"
+            }`}
+          >
+            Age Range
+          </button>
+          <button
+            onClick={() => setAgeMode("specific")}
+            className={`flex-1 py-1.5 text-xs rounded-lg border transition-all ${
+              ageMode === "specific"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border text-muted-foreground hover:border-primary/50"
+            }`}
+          >
+            Specific Ages
+          </button>
+        </div>
+
+        {/* RANGE MODE */}
+        {ageMode === "range" && (
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground mb-1">Min</p>
+              <select
+                value={ageMin}
+                onChange={(e) => setAgeMin(Number(e.target.value))}
+                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              >
+                {ALL_AGES.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
+            <span className="text-muted-foreground mt-4">—</span>
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground mb-1">Max</p>
+              <select
+                value={ageMax}
+                onChange={(e) => setAgeMax(Number(e.target.value))}
+                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+              >
+                {ALL_AGES.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* SPECIFIC MODE */}
+        {ageMode === "specific" && (
+          <div className="flex flex-wrap gap-2">
+            {ALL_AGES.map((age) => (
+              <button
+                key={age}
+                onClick={() => {
+                  setSpecificAges((prev: number[]) =>
+                    prev.includes(age)
+                      ? prev.filter((a) => a !== age)
+                      : [...prev, age]
+                  )
+                }}
+                className={`px-3 py-1 text-xs rounded-full border transition-all ${
+                  specificAges.includes(age)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border text-muted-foreground hover:border-primary/50"
+                }`}
+              >
+                {age}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* AVAILABILITY */}
       <div>
         <Label className="mb-3 block text-sm font-medium">Availability</Label>
         <div className="flex flex-wrap gap-2">
@@ -101,6 +220,7 @@ function FilterContent({ minGpa, setMinGpa, selectedDays, setSelectedDays, verif
         </div>
       </div>
 
+      {/* VERIFIED ONLY */}
       <div className="flex items-center space-x-2">
         <Checkbox
           checked={verifiedOnly}
@@ -119,20 +239,23 @@ function FilterContent({ minGpa, setMinGpa, selectedDays, setSelectedDays, verif
 }
 
 export default function MatchingPage() {
-  const [selectedContact, setSelectedContact] = useState<{
-    name: string
-    email: string
-    phone: string
-  } | null>(null)
   const router = useRouter()
-  const [employerZip, setEmployerZip] = useState("")
-  const [zipPrecision, setZipPrecision] = useState(5)
+
   const [name, setName] = useState("Employer")
+  const [employerZip, setEmployerZip] = useState<string | null>(null)
+  const [areaRadius, setAreaRadius] = useState<"exact" | "broad" | "all">("exact")
   const [minGpa, setMinGpa] = useState<(number | "")[]>([1.0])
   const [selectedDays, setSelectedDays] = useState<string[]>([])
   const [verifiedOnly, setVerifiedOnly] = useState(false)
-  const [sortBy, setSortBy] = useState<"matchScore" | "gpa">("matchScore")
+  const [sortBy, setSortBy] = useState<"matchScore" | "gpa" | "age">("matchScore")
   const [filtersOpen, setFiltersOpen] = useState(false)
+
+  // AGE FILTER STATE
+  const [ageMode, setAgeMode] = useState<"range" | "specific">("range")
+  const [ageMin, setAgeMin] = useState(14)
+  const [ageMax, setAgeMax] = useState(21)
+  const [specificAges, setSpecificAges] = useState<number[]>([])
+
   const searchParams = useSearchParams()
   const statusParam = searchParams.get("status")
   const [employerShifts, setEmployerShifts] = useState<any[]>([])
@@ -146,106 +269,82 @@ export default function MatchingPage() {
   const [loading, setLoading] = useState(true)
   const [statuses, setStatuses] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [preferredJobs, setPreferredJobs] = useState<string[]>([])
 
-  // -------------------------
-  // AUTH + ACCESS CHECK
-  // -------------------------
+  // ZIP FILTER
+  const matchesZip = (studentZip: string | null): boolean => {
+    if (!employerZip || areaRadius === "all") return true
+    if (!studentZip) return false
+    if (areaRadius === "exact") return studentZip === employerZip
+    if (areaRadius === "broad") return studentZip.slice(0, 3) === employerZip.slice(0, 3)
+    return true
+  }
+
+  // AGE FILTER
+  const matchesAge = (age: number | null): boolean => {
+    if (!age) return true
+    if (ageMode === "range") return age >= ageMin && age <= ageMax
+    if (ageMode === "specific") return specificAges.length === 0 || specificAges.includes(age)
+    return true
+  }
+
+  // AUTH
   useEffect(() => {
     const checkAccess = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.replace("/login"); return }
-
         const { data: profile, error } = await supabase
           .from("profiles")
           .select("subscription_status")
           .eq("id", user.id)
           .maybeSingle()
-
-          const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
-          if (error || !profile || !isSubscribed) {          router.replace("/pricing/mobile")
-          return
-        }
-
+        const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
+        if (error || !profile || !isSubscribed) { router.replace("/billing"); return }
         setUserId(user.id)
       } catch (err) {
-        router.replace("/pricing/mobile")
+        router.replace("/billing")
       }
     }
     checkAccess()
   }, [router])
 
-  // -------------------------
-  // LOAD STUDENTS (complete profiles only)
-  // -------------------------
+  // LOAD STUDENTS
   useEffect(() => {
-    if (!employerZip) return
-  
     const loadStudents = async () => {
       setLoading(true)
-  
       try {
-        let query = supabase
+        const { data, error } = await supabase
           .from("Students")
           .select("*")
           .eq("profile_complete", true)
-  
-        // LOCAL (exact zip)
-        if (zipPrecision === 5) {
-          query = query.eq("zip_code", employerZip)
-        }
-  
-        // REGIONAL (first 3 digits)
-        else {
-          const prefix = employerZip.slice(0, 3)
-          query = query.like("zip_code", `${prefix}%`)
-        }
-  
-        const { data, error } = await query
-  
-        if (error) {
-          console.error(error)
-          setStudents([])
-          return
-        }
-  
-        setStudents(
-          (data ?? []).map((s) => ({
-            ...s,
-            availability: s.availability ?? [],
-            gpa: s.gpa ?? 0,
-          }))
-        )
+        if (error) { setStudents([]); return }
+        setStudents((data ?? []).map((s) => ({ ...s, availability: s.availability ?? [], gpa: s.gpa ?? 0 })))
       } catch (err) {
-        console.error(err)
         setStudents([])
       } finally {
         setLoading(false)
       }
     }
-  
     loadStudents()
-  }, [employerZip, zipPrecision])
+  }, [])
 
-  // -------------------------
-  // LOAD JOB SETTINGS
-  // -------------------------
+  // LOAD JOB + ZIP
   useEffect(() => {
     const loadJob = async () => {
       const { data: user } = await supabase.auth.getUser()
       if (!user?.user?.id) return
-
       const { data } = await supabase
         .from("job")
-        .select("available_shifts, shift_preference, zip_code, zip_match_precision")
-                .eq("user_id", user.user.id)
+        .select("available_shifts, shift_preference, zip_code, zip_match_precision, preferred_jobs")
+        .eq("user_id", user.user.id)
         .single()
-
       if (!data) return
       setEmployerShifts(data.available_shifts ?? [])
       setShiftPreference(data.shift_preference ?? "flexible")
-      setEmployerZip(data.zip_code ?? "")
-      setZipPrecision(data.zip_match_precision ?? 5)
+      setEmployerZip(data.zip_code ?? null)
+      setAreaRadius(data.zip_match_precision ?? "exact")
+      setPreferredJobs(data.preferred_jobs ?? [])
     }
     loadJob()
   }, [])
@@ -258,9 +357,7 @@ export default function MatchingPage() {
 
   const jobDays = useMemo(() => activeShifts.map((s) => s.day), [activeShifts])
 
-  // -------------------------
-  // LOAD EMPLOYER
-  // -------------------------
+  // LOAD EMPLOYER ID
   useEffect(() => {
     const loadEmployer = async () => {
       const { data } = await supabase.auth.getUser()
@@ -270,129 +367,44 @@ export default function MatchingPage() {
     loadEmployer()
   }, [])
 
-  // -------------------------
   // LOAD STATUSES
-  // -------------------------
   useEffect(() => {
     if (!employerId) return
-
     const loadStatuses = async () => {
       const { data, error } = await supabase
         .from("student_statuses")
         .select("*")
         .eq("employer_id", employerId)
-
       if (error) { console.error(error); return }
       setStatuses(data || [])
     }
     loadStatuses()
   }, [employerId])
 
-  // -------------------------
-  // SEED STATUSES (complete profiles only)
-  // -------------------------
-  const isInZipRange = (studentZip: string) => {
-    if (!employerZip) return false
-  
-    if (zipPrecision === 5) {
-      return studentZip === employerZip
-    }
-  
-    return studentZip?.slice(0, 3) === employerZip.slice(0, 3)
-  }
-  
-  
-// -------------------------
-// RECONCILE STATUSES (keeps DB in sync with eligibility)
-// -------------------------
-useEffect(() => {
-  if (!employerId || students.length === 0 || !employerZip) return
-
-  const reconcileStatuses = async () => {
-    try {
-      // 1. Determine which students are CURRENTLY eligible
-      const eligibleStudents = students.filter((student) => {
-        if (!student.profile_complete) return false
-        return isInZipRange(student.zip_code)
-      })
-
-      const eligibleIds = new Set(eligibleStudents.map((s) => s.id))
-
-      // 2. Fetch existing statuses
-      const { data: existing, error } = await supabase
+  // SEED STATUSES
+  useEffect(() => {
+    if (!employerId || students.length === 0 || !employerZip) return
+    const seedStatuses = async () => {
+      const rows = students
+        .filter((student) => student.profile_complete === true)
+        .filter((student) => matchesZip(student.zip_code))
+        .map((student) => ({ employer_id: employerId, student_id: student.id, status: "new" }))
+      const { error } = await supabase
+        .from("student_statuses")
+        .upsert(rows, { onConflict: "employer_id,student_id", ignoreDuplicates: true })
+      if (error) { console.error("Error seeding statuses:", error.message); return }
+      const { data } = await supabase
         .from("student_statuses")
         .select("*")
         .eq("employer_id", employerId)
-
-      if (error) {
-        console.error("Status fetch error:", error.message)
-        return
-      }
-
-      const existingMap = new Map(
-        (existing || []).map((s) => [s.student_id, s])
-      )
-
-      // 3. Build UPSERT list (ONLY eligible students get "new")
-      const upserts = eligibleStudents.map((student) => {
-        const existingRow = existingMap.get(student.id)
-
-        return {
-          employer_id: employerId,
-          student_id: student.id,
-          status: existingRow?.status || "new",
-        }
-      })
-
-      // 4. DELETE stale statuses (students no longer eligible)
-      const staleIds = (existing || [])
-        .filter((s) => !eligibleIds.has(s.student_id))
-        .map((s) => s.student_id)
-
-      if (staleIds.length > 0) {
-        const { error: deleteError } = await supabase
-          .from("student_statuses")
-          .delete()
-          .eq("employer_id", employerId)
-          .in("student_id", staleIds)
-
-        if (deleteError) {
-          console.error("Delete stale statuses error:", deleteError.message)
-        }
-      }
-
-      // 5. UPSERT refreshed eligible set
-      const { error: upsertError } = await supabase
-        .from("student_statuses")
-        .upsert(upserts, {
-          onConflict: "employer_id,student_id",
-        })
-
-      if (upsertError) {
-        console.error("Upsert statuses error:", upsertError.message)
-        return
-      }
-
-      // 6. Refresh local state
-      const { data: refreshed } = await supabase
-        .from("student_statuses")
-        .select("*")
-        .eq("employer_id", employerId)
-
-      setStatuses(refreshed || [])
-    } catch (err) {
-      console.error("Reconcile error:", err)
+      setStatuses(data || [])
     }
-  }
+    seedStatuses()
+  }, [employerId, students, employerZip, areaRadius])
 
-  reconcileStatuses()
-}, [employerId, students, employerZip, zipPrecision])
-  // -------------------------
-  // LOAD NOTIFICATIONS
-  // -------------------------
+  // NOTIFICATIONS
   useEffect(() => {
     if (!userId) return
-
     const loadNotifications = async () => {
       const { data, error } = await supabase
         .from("notifications")
@@ -400,7 +412,6 @@ useEffect(() => {
         .eq("employer_id", userId)
         .eq("read", false)
         .order("created_at", { ascending: false })
-
       if (error) return
       setNotifications(data || [])
     }
@@ -409,17 +420,13 @@ useEffect(() => {
 
   useEffect(() => {
     if (!userId) return
-
     const channel = supabase
       .channel("notifications-realtime")
       .on("postgres_changes", {
         event: "INSERT", schema: "public", table: "notifications",
         filter: `employer_id=eq.${userId}`,
-      }, (payload) => {
-        setNotifications((prev) => [payload.new, ...prev])
-      })
+      }, (payload) => { setNotifications((prev) => [payload.new, ...prev]) })
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
   }, [userId])
 
@@ -428,25 +435,21 @@ useEffect(() => {
     await supabase.from("notifications").update({ read: true }).eq("id", id)
   }
 
-  // -------------------------
   // SCORE CANDIDATES
-  // -------------------------
   useEffect(() => {
     if (!students.length) return
-
     const results = students.map((candidate) => {
       const matchScore = calculateEmployerMatch(
-        { shifts: jobDays, shiftPreference, preferred_jobs: candidate.preferredJobs || [] },
+        { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
         candidate.availability,
         candidate.shift_preference,
         candidate.gpa,
-        candidate.preferredJobs
+        candidate.preferred_jobs
       )
       return { ...candidate, matchScore: Math.round(matchScore) }
     })
-
     setScoredCandidates(results)
-  }, [students, employerShifts, shiftPreference])
+  }, [students, employerShifts, shiftPreference, preferredJobs])
 
   useEffect(() => {
     if (statusParam === "new" || statusParam === "contacted" || statusParam === "hired") {
@@ -458,20 +461,17 @@ useEffect(() => {
     const loadEmployerName = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-
       const { data, error } = await supabase
         .from("job")
         .select("company")
         .eq("user_id", user.id)
         .maybeSingle()
-
       if (!data || error) {
         setLoading(false)
         toast.error("Please complete your profile")
         router.replace("/employer/profile?missing=true")
         return
       }
-
       setName(data.company || "Employer")
     }
     loadEmployerName()
@@ -484,9 +484,7 @@ useEffect(() => {
     router.replace("/matching/employer")
   }, [searchParams, router])
 
-  // -------------------------
   // FILTER + SORT
-  // -------------------------
   const statusPriority: Record<string, number> = { new: 0, contacted: 1, hired: 2 }
 
   const filteredCandidates = scoredCandidates
@@ -494,27 +492,25 @@ useEffect(() => {
       if (searchQuery.trim() !== "") {
         const q = searchQuery.toLowerCase()
         const matchesName = candidate.name?.toLowerCase().includes(q)
-        const matchesJob = candidate.preferredJobs?.some((j: string) => j.toLowerCase().includes(q))
+        const matchesJob = candidate.preferred_jobs?.some((j: string) => j.toLowerCase().includes(q))
         if (!matchesName && !matchesJob) return null
       }
-
       const statusRow = statuses.find((s) => s.student_id === candidate.id)
       return { ...candidate, status: statusRow?.status || "new" }
     })
     .filter((candidate): candidate is NonNullable<typeof candidate> => {
       if (!candidate) return false
+      if (!matchesZip(candidate.zip_code)) return false
+      if (!matchesAge(candidate.age)) return false
       if (candidate.gpa < minGpa[0]) return false
-
       const perfect = searchParams.get("perfect")
       if (perfect === "true" && candidate.matchScore !== 100) return false
       if (verifiedOnly && !candidate.is_gpa_verified) return false
-
       const safeAvailability = candidate.availability ?? []
       if (selectedDays.length > 0) {
         const hasMatch = safeAvailability.some((a: any) => a.available && selectedDays.includes(a.day))
         if (!hasMatch) return false
       }
-
       return true
     })
     .sort((a, b) => {
@@ -523,6 +519,7 @@ useEffect(() => {
       }
       if (sortBy === "matchScore") return b.matchScore - a.matchScore
       if (sortBy === "gpa") return b.gpa - a.gpa
+      if (sortBy === "age") return a.age - b.age
       return 0
     })
 
@@ -536,7 +533,6 @@ useEffect(() => {
     if (!filteredCandidates.length) return
     if (statusParam) return
     if (groupedCandidates[activeStatus]?.length > 0) return
-
     const firstAvailableTab = (["new", "contacted", "hired"] as const).find(
       (status) => groupedCandidates[status].length > 0
     )
@@ -547,37 +543,34 @@ useEffect(() => {
     setMinGpa([1.0])
     setSelectedDays([])
     setVerifiedOnly(false)
+    setAgeMode("range")
+    setAgeMin(14)
+    setAgeMax(21)
+    setSpecificAges([])
   }
 
   const activeFiltersCount = [
     minGpa[0] > 1.0,
     selectedDays.length > 0,
     verifiedOnly,
+    ageMode === "range" ? (ageMin > 14 || ageMax < 21) : specificAges.length > 0,
   ].filter(Boolean).length
-  const noResults =
-  !loading && students.length > 0 && filteredCandidates.length === 0
-  // -------------------------
-  // UI
-  // -------------------------
+
   return (
     <div className="min-h-screen bg-background">
       {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-
           <Button variant="ghost" className="flex items-center gap-2" onClick={() => router.push("/employer")}>
             <ChevronLeft className="h-5 w-5" />
             Back
           </Button>
-
           <div className="hidden items-center gap-6 md:flex">
             <Link href="/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">Dashboard</Link>
             <Link href="/matching/employer" className="text-sm font-medium text-foreground">Find Candidates</Link>
-            <Link href="/pricing/mobile" className="text-sm font-medium text-muted-foreground hover:text-foreground">Billing</Link>
+            <Link href="/billing" className="text-sm font-medium text-muted-foreground hover:text-foreground">Billing</Link>
           </div>
-
           <div className="flex items-center gap-4">
-            {/* NOTIFICATIONS */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
@@ -616,8 +609,6 @@ useEffect(() => {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* PROFILE DROPDOWN */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2">
@@ -630,28 +621,30 @@ useEffect(() => {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem asChild><Link href="/employer/profile">Company Profile</Link></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-  onClick={async () => {
-    await supabase.auth.signOut()
-    window.location.href = "/"
-  }}
->
-  Log out
-</DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/">Log out</Link></DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Find Your Perfect Match</h1>
-          <p className="mt-2 text-muted-foreground">Browse verified students filtered by availability, GPA, and job preferences. No resumes to review.</p>
+          <p className="mt-2 text-muted-foreground">Browse verified students filtered by availability, GPA, age, and location.</p>
+          {employerZip && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-1.5 text-sm">
+              <MapPin className="h-3.5 w-3.5 text-primary" />
+              <span className="text-muted-foreground">Showing students in</span>
+              <span className="font-semibold text-foreground">
+                {areaRadius === "exact" ? `zip code ${employerZip}` :
+                 areaRadius === "broad" ? `region ${employerZip.slice(0, 3)}xx` : "all areas"}
+              </span>
+              <Link href="/employer/profile" className="text-xs text-primary hover:underline ml-1">Change</Link>
+            </div>
+          )}
         </div>
 
-        {/* HOW MATCHING WORKS */}
         <Card className="mb-8 border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
@@ -661,24 +654,7 @@ useEffect(() => {
               <div>
                 <h3 className="font-semibold text-foreground">Smart Matching</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Our algorithm matches students based on verified GPA, availability, job preferences, and location. A major factor is schedule fit — how many of your required workdays overlap with a student's availability. The more overlap, the higher the match score.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* VERIFIED GPA INFO */}
-        <Card className="mb-8 border-primary/20 bg-gradient-to-r from-primary/5 to-blue-500/5">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground">Verified GPA Badge</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Students with the verified badge have submitted proof of their GPA for review. This helps employers confidently identify academically reliable candidates.
+                  Filter by GPA, age, availability, and location. Sort by best match, GPA, or age.
                 </p>
               </div>
             </div>
@@ -700,14 +676,20 @@ useEffect(() => {
                   minGpa={minGpa} setMinGpa={setMinGpa}
                   selectedDays={selectedDays} setSelectedDays={setSelectedDays}
                   verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}
-                  jobTypes={jobTypes} daysOfWeek={daysOfWeek}
-                  activeFiltersCount={activeFiltersCount} clearFilters={clearFilters}
+                  areaRadius={areaRadius} employerZip={employerZip}
+                  ageMode={ageMode} setAgeMode={setAgeMode}
+                  ageMin={ageMin} setAgeMin={setAgeMin}
+                  ageMax={ageMax} setAgeMax={setAgeMax}
+                  specificAges={specificAges} setSpecificAges={setSpecificAges}
+                  daysOfWeek={daysOfWeek}
+                  activeFiltersCount={activeFiltersCount}
+                  clearFilters={clearFilters}
                 />
               </CardContent>
             </Card>
           </aside>
 
-          {/* MAIN CONTENT */}
+          {/* MAIN */}
           <div className="flex-1">
             {/* SEARCH */}
             <div className="mb-4 flex items-center gap-2">
@@ -739,8 +721,14 @@ useEffect(() => {
                       minGpa={minGpa} setMinGpa={setMinGpa}
                       selectedDays={selectedDays} setSelectedDays={setSelectedDays}
                       verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}
-                      jobTypes={jobTypes} daysOfWeek={daysOfWeek}
-                      activeFiltersCount={activeFiltersCount} clearFilters={clearFilters}
+                      areaRadius={areaRadius} employerZip={employerZip}
+                      ageMode={ageMode} setAgeMode={setAgeMode}
+                      ageMin={ageMin} setAgeMin={setAgeMin}
+                      ageMax={ageMax} setAgeMax={setAgeMax}
+                      specificAges={specificAges} setSpecificAges={setSpecificAges}
+                      daysOfWeek={daysOfWeek}
+                      activeFiltersCount={activeFiltersCount}
+                      clearFilters={clearFilters}
                     />
                   </div>
                 </SheetContent>
@@ -748,23 +736,36 @@ useEffect(() => {
 
               <div className="flex items-center gap-2">
                 <span className="hidden text-sm text-muted-foreground sm:block">{filteredCandidates.length} candidates</span>
-                <Select value={sortBy} onValueChange={setSortBy}>
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
                   <SelectTrigger className="w-40 gap-2"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="matchScore">Best Match</SelectItem>
                     <SelectItem value="gpa">Highest GPA</SelectItem>
+                    <SelectItem value="age">Age</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* ACTIVE FILTER PILLS */}
+            {/* FILTER PILLS */}
             {activeFiltersCount > 0 && (
               <div className="mb-6 flex flex-wrap gap-2">
                 {minGpa[0] > 1.0 && (
                   <Badge variant="secondary" className="gap-1">
                     GPA ≥ {minGpa[0].toFixed(1)}
                     <button onClick={() => setMinGpa([1.0])}><X className="h-3 w-3" /></button>
+                  </Badge>
+                )}
+                {ageMode === "range" && (ageMin > 14 || ageMax < 21) && (
+                  <Badge variant="secondary" className="gap-1">
+                    Age {ageMin}–{ageMax}
+                    <button onClick={() => { setAgeMin(14); setAgeMax(21) }}><X className="h-3 w-3" /></button>
+                  </Badge>
+                )}
+                {ageMode === "specific" && specificAges.length > 0 && (
+                  <Badge variant="secondary" className="gap-1">
+                    Ages: {specificAges.join(", ")}
+                    <button onClick={() => setSpecificAges([])}><X className="h-3 w-3" /></button>
                   </Badge>
                 )}
                 {selectedDays.length > 0 && (
@@ -808,7 +809,7 @@ useEffect(() => {
                         </div>
                         <div>
                           <h3 className="font-semibold text-foreground">{candidate.name}</h3>
-                          <div className="flex items-center gap-2 text-muted-foreground">
+                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <Star className="h-4 w-4" />
                             <span>GPA: {candidate.gpa}</span>
                             {candidate.is_gpa_verified && (
@@ -817,6 +818,9 @@ useEffect(() => {
                               </Badge>
                             )}
                           </div>
+                          {candidate.age && (
+                            <p className="text-xs text-muted-foreground mt-0.5">Age: {candidate.age}</p>
+                          )}
                           {getStatusBadge(candidate.status)}
                         </div>
                       </div>
@@ -832,153 +836,62 @@ useEffect(() => {
                     </div>
 
                     <div className="mt-5 flex gap-2">
-  <Button
-    variant="outline"
-    className="flex-1"
-    size="sm"
-    onClick={(e) => {
-      e.stopPropagation()
-      router.push(`/matching/employer/${candidate.id}`)
-    }}
-  >
-    View Profile
-  </Button>
-
-  <Select
-    value={
-      statuses.find(
-        (s) =>
-          s.student_id === candidate.id &&
-          s.employer_id === employerId
-      )?.status || "new"
-    }
-    onValueChange={async (value) => {
-      if (!employerId) return
-      const newStatus = value as "new" | "contacted" | "hired"
-
-      setStatuses((prev) => {
-        const exists = prev.find(
-          (s) =>
-            s.student_id === candidate.id &&
-            s.employer_id === employerId
-        )
-
-        if (exists) {
-          return prev.map((s) =>
-            s.student_id === candidate.id &&
-            s.employer_id === employerId
-              ? { ...s, status: newStatus }
-              : s
-          )
-        }
-
-        return [
-          ...prev,
-          {
-            student_id: candidate.id,
-            employer_id: employerId,
-            status: newStatus,
-          },
-        ]
-      })
-
-      await supabase.from("student_statuses").upsert(
-        {
-          student_id: candidate.id,
-          employer_id: employerId,
-          status: newStatus,
-        },
-        { onConflict: "student_id,employer_id" }
-      )
-
-      setActiveStatus(newStatus)
-    }}
-  >
-    <SelectTrigger className="flex-1">
-      <SelectValue />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="new">New</SelectItem>
-      <SelectItem value="contacted">Contacted</SelectItem>
-      <SelectItem value="hired">Hired</SelectItem>
-    </SelectContent>
-  </Select>
-</div>
-
-<Button
-  variant="secondary"
-  className="mt-2 w-full"
-  size="sm"
-  onClick={(e) => {
-    e.stopPropagation()
-    setSelectedContact({
-      name: candidate.name,
-      email: candidate.email || "No email provided",
-      phone: candidate.phone || "No phone provided",
-    })
-  }}
->
-  Contact
-</Button>
+                      <Button variant="outline" className="flex-1" size="sm"
+                        onClick={(e) => { e.stopPropagation(); router.push(`/matching/employer/${candidate.id}`) }}
+                      >
+                        View Profile
+                      </Button>
+                      <Select
+                        value={statuses.find((s) => s.student_id === candidate.id && s.employer_id === employerId)?.status || "new"}
+                        onValueChange={async (value) => {
+                          if (!employerId) return
+                          const newStatus = value as "new" | "contacted" | "hired"
+                          setStatuses((prev) => {
+                            const exists = prev.find((s) => s.student_id === candidate.id && s.employer_id === employerId)
+                            if (exists) {
+                              return prev.map((s) =>
+                                s.student_id === candidate.id && s.employer_id === employerId
+                                  ? { ...s, status: newStatus } : s
+                              )
+                            }
+                            return [...prev, { student_id: candidate.id, employer_id: employerId, status: newStatus }]
+                          })
+                          await supabase.from("student_statuses").upsert(
+                            { student_id: candidate.id, employer_id: employerId, status: newStatus },
+                            { onConflict: "student_id,employer_id" }
+                          )
+                          setActiveStatus(newStatus)
+                        }}
+                      >
+                        <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="contacted">Contacted</SelectItem>
+                          <SelectItem value="hired">Hired</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
 
             {loading ? (
-  <Card>
-    <CardContent className="py-12 text-center">
-      <p className="text-muted-foreground">Loading students...</p>
-    </CardContent>
-  </Card>
-
-) : students.length === 0 || noResults ? (
-  <Card className="border-dashed">
-    <CardContent className="py-12 text-center">
-      <div className="mb-2 text-lg">📍</div>
-      <p className="font-medium">No students found in your area</p>
-      <p className="text-sm text-muted-foreground">
-        Try expanding your zip range or adjusting filters
-      </p>
-      <Button variant="outline" className="mt-4" onClick={clearFilters}>
-        Clear filters
-      </Button>
-    </CardContent>
-  </Card>
-
-) : null}
-
+              <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Loading students...</p></CardContent></Card>
+            ) : students.length === 0 ? (
+              <Card className="border-dashed"><CardContent className="py-12 text-center"><p className="font-medium">No students in database</p></CardContent></Card>
+            ) : filteredCandidates.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="py-12 text-center">
+                  <p className="font-medium">No matches found</p>
+                  <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters</p>
+                  <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear filters</Button>
+                </CardContent>
+              </Card>
+            ) : null}
           </div>
         </div>
       </main>
-      <Dialog
-  open={!!selectedContact}
-  onOpenChange={() => setSelectedContact(null)}
->
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>
-        Contact {selectedContact?.name}
-      </DialogTitle>
-
-      <DialogDescription>
-        View contact details for this student
-      </DialogDescription>
-    </DialogHeader>
-
-    <div className="space-y-4">
-      <div>
-        <p className="text-sm text-muted-foreground">Email</p>
-        <p>{selectedContact?.email}</p>
-      </div>
-
-      <div>
-        <p className="text-sm text-muted-foreground">Phone</p>
-        <p>{selectedContact?.phone}</p>
-      </div>
-    </div>
-  </DialogContent>
-</Dialog>
     </div>
   )
 }

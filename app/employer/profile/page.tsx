@@ -51,7 +51,8 @@ export default function EmployerProfilePage() {
   const [details, setDetails] = useState("")
   const [hourlyPay, setHourlyPay] = useState("")
   const [hasTips, setHasTips] = useState(false)
-  const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
+  const [zipMatchPrecision, setZipMatchPrecision] = useState<5 | 3>(5)
+    const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [availableShifts, setAvailableShifts] = useState([
     { day: "Monday", start: "9:00 AM", end: "5:00 PM", active: true },
@@ -129,8 +130,8 @@ export default function EmployerProfilePage() {
 
       if (error && error.code !== "PGRST116") { console.log("Employer load error:", error); setLoading(false); return }
       if (!data) { setLoading(false); return }
-
-      setJobId(data.id ?? null)
+      setZipMatchPrecision(data.zip_match_precision ?? 5)
+            setJobId(data.id ?? null)
       setCompanyName(data.company ?? "")
       setOwnerName(data.owner_name ?? "")
       setEmail(data.email ?? user.email ?? "")
@@ -179,6 +180,7 @@ export default function EmployerProfilePage() {
           preferred_jobs: preferredJobs,
           status: "new",
           distance: "0",
+          zip_match_precision: zipMatchPrecision,
         },
         { onConflict: "user_id" }
       )
@@ -306,6 +308,35 @@ export default function EmployerProfilePage() {
             onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 5) setZipCode(value) }}
             className="w-full border rounded px-2 py-1 text-sm" placeholder="Zip Code (5 digits)" maxLength={5}
           />
+         <div className="flex gap-2 mt-1">
+  <button
+    type="button"
+    onClick={() => setZipMatchPrecision(5)}
+    className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
+      zipMatchPrecision === 5
+        ? "bg-blue-100 text-blue-700 border-blue-200"
+        : "bg-gray-100 text-gray-600 border-gray-200"
+    }`}
+  >
+    Local (same zip)
+  </button>
+  <button
+    type="button"
+    onClick={() => setZipMatchPrecision(3)}
+    className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
+      zipMatchPrecision === 3
+        ? "bg-blue-100 text-blue-700 border-blue-200"
+        : "bg-gray-100 text-gray-600 border-gray-200"
+    }`}
+  >
+    Regional (nearby)
+  </button>
+</div>
+<p className="text-xs text-muted-foreground mt-1">
+  {zipMatchPrecision === 5
+    ? "Only show students with the exact same zip code."
+    : "Show students in your broader region (first 3 digits match)."}
+</p>
           <input ref={emailRef} value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Email" />
           <input
             ref={phoneRef} value={phone}
