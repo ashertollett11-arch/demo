@@ -35,14 +35,17 @@ interface Availability {
 
 type Job = {
   id: string
+  jobId?: string
   title: string
   company: string
+  details?: string
   distance: string
   hours: string
   pay: string
   tips?: boolean
   status?: string
   shiftPreference?: string
+  preferredJobs?: string[]
 }
 
 export default function StudentDashboard() {
@@ -89,7 +92,7 @@ export default function StudentDashboard() {
         .maybeSingle()
 
       if (!profile || !profile.profile_complete) {
-        router.replace("/student/profile?missing=true")
+        router.replace("/student/onboarding?missing=true")
       }
     }
     checkProfile()
@@ -120,41 +123,62 @@ export default function StudentDashboard() {
   
       const studentZip = studentData?.zip_code ?? ""
   
-      const { data: jobs, error: jobsError } = await supabase
-        .from("job")
-        .select(`id, title, company, location, hours, pay, status, shift_preference, available_shifts, has_tips, zip_code, zip_match_precision`)
+      // Query locations joined with job for company info
+      const { data: locations, error: locError } = await supabase
+        .from("locations")
+        .select(`
+          id,
+          name,
+          address,
+          zip_code,
+          zip_match_precision,
+          available_shifts,
+          shift_preference,
+          hourly_pay,
+          has_tips,
+          preferred_jobs,
+          employer_id,
+          job:employer_id (
+            id,
+            company,
+            details,
+            status
+          )
+        `)
   
-      if (jobsError) return
+      if (locError) { console.error(locError); return }
   
-      const scoredJobs = (jobs || [])
-        .filter((job: any) => {
-          const jobZip = job.zip_code ?? ""
-          const precision = job.zip_match_precision ?? 5
-          if (!jobZip || !studentZip) return false
-          if (precision === 5) return jobZip === studentZip
-          return jobZip.slice(0, 3) === studentZip.slice(0, 3)
+      const scoredJobs = (locations || [])
+        .filter((loc: any) => {
+          const locZip = loc.zip_code ?? ""
+          const precision = loc.zip_match_precision ?? 5
+          if (!locZip || !studentZip) return false
+          if (precision === 5) return locZip === studentZip
+          return locZip.slice(0, 3) === studentZip.slice(0, 3)
         })
-        .map((job: any) => {
-          let shifts = job.available_shifts ?? []
+        .map((loc: any) => {
+          let shifts = loc.available_shifts ?? []
           if (!Array.isArray(shifts)) shifts = Object.values(shifts || {})
           const activeShifts = shifts.filter((s: any) => s.active === true || s.active === "true" || s.active === 1)
           const jobDays = activeShifts.map((s: any) => s.day)
   
           const matchScore = calculateMatch(
             { availability: studentData.availability || [], shiftPreference: studentData.shift_preference || "flexible" },
-            { shifts: jobDays, shiftPreference: job.shift_preference || "flexible" }
+            { shifts: jobDays, shiftPreference: loc.shift_preference || "flexible" }
           )
   
           return {
-            id: job.id,
-            title: job.title || "Untitled Job",
-            company: job.company || "Unknown Company",
-            distance: job.location || "N/A",
-            hours: job.hours || "N/A",
-            pay: job.pay || "N/A",
-            status: job.status || "new",
-            shiftPreference: job.shift_preference || "flexible",
-            tips: Boolean(job.has_tips),
+            id: loc.id, // location id — use for the detail page link
+            jobId: loc.job?.id, // employer job id
+            title: loc.name || "Untitled Location",
+            company: loc.job?.company || "Unknown Company",
+            details: loc.job?.details || "",
+            distance: loc.address || "N/A",
+            pay: loc.hourly_pay ? `$${loc.hourly_pay}/hr` : "N/A",
+            status: loc.job?.status || "new",
+            shiftPreference: loc.shift_preference || "flexible",
+            tips: Boolean(loc.has_tips),
+            preferredJobs: loc.preferred_jobs || [],
             matchScore: Math.round(matchScore),
           }
         })
@@ -165,7 +189,6 @@ export default function StudentDashboard() {
   
     fetchJobs()
   }, [])
-
   // -------------------------
   // FETCH STUDENT
   // -------------------------
