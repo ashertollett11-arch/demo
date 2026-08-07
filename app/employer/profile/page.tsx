@@ -307,7 +307,29 @@ export default function EmployerProfilePage() {
         </CardContent>
       </Card>
 
-    
+      {/* HIRING ROLE */}
+      <Card className="mb-4">
+        <CardHeader><CardTitle>Hiring Role</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {["Cashier","Server","Busser","Barista","Cook","Dishwasher","Host","Sales Associate","Stock Associate","Customer Service","Store Associate"].map((role) => (
+              <button
+                key={role}
+                onClick={() => {
+                  setPreferredJobs((prev) => {
+                    if (prev.includes(role)) return prev.filter((r) => r !== role)
+                    if (prev.length >= 3) { toast.error("You can only select up to 3 hiring roles"); return prev }
+                    return [...prev, role]
+                  })
+                }}
+                className={`px-3 py-1 text-xs rounded-full border transition-all ${preferredJobs.includes(role) ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm" : "bg-gray-100 text-gray-600 border-gray-200"}`}
+              >
+                {role}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* LOCATIONS */}
       <Card className="mb-4">
