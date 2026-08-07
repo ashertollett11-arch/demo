@@ -263,13 +263,12 @@ if (rec) setRecommendation(rec)
             </span>
 
             <div className="flex items-center gap-2">
-              <Star className="h-4 w-4 text-yellow-500" />
               <span>GPA: {student.gpa}</span>
-              {student.is_gpa_verified && (
-                <Badge variant="outline" className="gap-1 border-primary/30 text-[10px]">
-                  Verified
-                </Badge>
-              )}
+              {recommendation && (
+  <Badge variant="outline" className="gap-1 border-primary/30 text-[10px] text-yellow-600 border-yellow-300 bg-yellow-50">
+     Recommended
+  </Badge>
+)}
             </div>
 
             <span>Age {student.age}</span>
@@ -314,8 +313,7 @@ if (rec) setRecommendation(rec)
 {recommendation && (
   <div>
     <h2 className="font-semibold text-lg mb-2 flex items-center gap-2">
-      ⭐ Recommendation
-      <Badge className="bg-primary/10 text-primary text-xs">Verified</Badge>
+       Recommendation
     </h2>
     <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 space-y-3">
       <div className="flex items-center gap-2 text-sm">

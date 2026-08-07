@@ -59,7 +59,6 @@ const getStatusBadge = (status: string) => {
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 const ALL_AGES = [14, 15, 16, 17, 18, 19, 20, 21]
-
 function FilterContent({
   minGpa, setMinGpa,
   selectedDays, setSelectedDays,
@@ -249,7 +248,7 @@ export default function MatchingPage() {
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [sortBy, setSortBy] = useState<"matchScore" | "gpa" | "age">("matchScore")
   const [filtersOpen, setFiltersOpen] = useState(false)
-
+  const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
   // AGE FILTER STATE
   const [ageMode, setAgeMode] = useState<"range" | "specific">("range")
   const [ageMin, setAgeMin] = useState(14)
@@ -328,6 +327,20 @@ export default function MatchingPage() {
     }
     loadStudents()
   }, [])
+
+  useEffect(() => {
+    if (!students.length) return
+    const loadRecommendations = async () => {
+      const { data } = await supabase
+        .from("recommendations")
+        .select("student_user_id")
+        .eq("submitted", true)
+      const recMap: Record<string, boolean> = {}
+      ;(data || []).forEach((r) => { recMap[r.student_user_id] = true })
+      setRecommendations(recMap)
+    }
+    loadRecommendations()
+  }, [students])
 
   // LOAD JOB + ZIP
   useEffect(() => {
@@ -918,11 +931,11 @@ export default function MatchingPage() {
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <Star className="h-4 w-4" />
                             <span>GPA: {candidate.gpa}</span>
-                            {candidate.is_gpa_verified && (
-                              <Badge variant="outline" className="gap-1 text-[10px]">
-                                <CheckCircle2 className="h-3 w-3" />Verified
-                              </Badge>
-                            )}
+                            {recommendations[candidate.user_id] && (
+  <Badge variant="outline" className="gap-1 text-[10px] text-yellow-600 border-yellow-300 bg-yellow-50">
+    Recommended
+  </Badge>
+)}
                           </div>
                           {candidate.age && (
                             <p className="text-xs text-muted-foreground mt-0.5">Age: {candidate.age}</p>

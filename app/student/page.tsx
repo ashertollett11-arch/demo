@@ -328,11 +328,9 @@ export default function StudentDashboard() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-lg font-bold text-foreground truncate">
-                    {gpa !== null ? `${gpa.toFixed(1)}/4.0` : "--/4.0"}
+                    {gpa !== null ? `${gpa.toFixed(1)}/4.0` : "--/4.0 GPA"}
                   </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {hasRecommendation ? "Recommended ⭐" : "Tap to add rec"}
-                  </p>
+ 
                 </div>
               </CardContent>
             </Card>
@@ -429,7 +427,7 @@ export default function StudentDashboard() {
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className="h-6 w-6 text-primary shrink-0" />
                         <div>
-                          <h3 className="font-semibold">Recommended ⭐</h3>
+                          <h3 className="font-semibold">Recommended </h3>
                           <p className="text-sm text-muted-foreground">You have a recommendation</p>
                         </div>
                       </div>
