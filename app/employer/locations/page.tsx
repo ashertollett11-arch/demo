@@ -86,11 +86,7 @@ export default function LocationsPage() {
         .eq("user_id", user.id)
         .single()
 
-      if (!job) {
-        toast.error("Please complete your employer profile first.")
-        router.replace("/employer/profile")
-        return
-      }
+     
 
       setJobId(job.id)
       await loadLocations(job.id)
