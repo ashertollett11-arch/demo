@@ -336,8 +336,8 @@ if (rec) setRecommendation(rec)
 )}
 
 
-          {/* CONTACT STUDENT */}
-          <div className="mt-6">
+         {/* CONTACT STUDENT */}
+         <div className="mt-6">
             <h2 className="font-semibold text-lg mb-2">Contact Student</h2>
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between rounded-lg border p-3 bg-secondary/30">
@@ -348,6 +348,44 @@ if (rec) setRecommendation(rec)
                 <span className="text-muted-foreground">Phone</span>
                 <span className="font-medium">{student.phone}</span>
               </div>
+            </div>
+
+            {/* NOTIFY BUTTON */}
+            <div className="mt-3">
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={async () => {
+                  const { data: userData } = await supabase.auth.getUser()
+                  const employerId = userData?.user?.id
+                  if (!employerId) return
+                  const { data: jobData } = await supabase
+                    .from("job")
+                    .select("company")
+                    .eq("user_id", employerId)
+                    .single()
+                  const companyName = jobData?.company || "An employer"
+                  const { error } = await supabase
+                    .from("student_notifications")
+                    .insert({
+                      student_user_id: student.user_id,
+                      employer_id: employerId,
+                      message: `Check your phone and email — ${companyName} is interested in hiring you!`,
+                      read: false,
+                    })
+                  if (error) {
+                    toast.error("Failed to send notification.")
+                    console.error(error)
+                  } else {
+                    toast.success("Student notified!")
+                  }
+                }}
+              >
+                📲 Notify Student
+              </Button>
+              <p className="text-xs text-muted-foreground text-center mt-1">
+                Sends the student an in-app alert to check their phone and email.
+              </p>
             </div>
 
             {/* STATUS */}
