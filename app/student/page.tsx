@@ -1,9 +1,8 @@
 "use client"
 import Image from "next/image"
-
 import { useRouter } from "next/navigation"
 import { calculateMatch } from "@/lib/matchScore"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -54,17 +53,10 @@ type Job = {
 export default function StudentDashboard() {
   const router = useRouter()
 
-  const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
-  const [phone, setPhone] = useState("")
   const [name, setName] = useState("")
-  const [age, setAge] = useState("")
   const [gpa, setGpa] = useState<number | null>(null)
-  const [location, setLocation] = useState("")
-  const [email, setEmail] = useState("")
-  const [gpaStatus, setGpaStatus] = useState<"none" | "pending" | "approved" | "rejected">("none")
+  const [hasRecommendation, setHasRecommendation] = useState(false)
   const [matchedJobsWithScore, setMatchedJobsWithScore] = useState<(Job & { matchScore: number })[]>([])
-  const [interests, setInterests] = useState<string[]>(["Music", "Sports", "Gaming", "Art"])
-  const [school, setSchool] = useState("")
   const [availability, setAvailability] = useState<Availability[]>([
     { day: "Monday", available: true, start: "3:00 PM", end: "8:00 PM", hours: "5" },
     { day: "Tuesday", available: true, start: "3:00 PM", end: "8:00 PM", hours: "5" },
@@ -74,7 +66,6 @@ export default function StudentDashboard() {
     { day: "Saturday", available: true, start: "9:00 AM", end: "6:00 PM", hours: "9" },
     { day: "Sunday", available: true, start: "12:00 PM", end: "5:00 PM", hours: "5" },
   ])
-  const [preferredJobs, setPreferredJobs] = useState<string[]>(["Retail", "Food Service", "Summer Jobs"])
 
   const greatMatches = matchedJobsWithScore.filter(job => job.matchScore >= 45).length
   const newJobsCount = matchedJobsWithScore.filter(job => job.status === "new").length
@@ -87,13 +78,11 @@ export default function StudentDashboard() {
       const { data } = await supabase.auth.getUser()
       const user = data?.user
       if (!user) { router.replace("/login"); return }
-
       const { data: profile } = await supabase
         .from("Students")
         .select("profile_complete")
         .eq("user_id", user.id)
         .maybeSingle()
-
       if (!profile || !profile.profile_complete) {
         router.replace("/student/onboarding?missing=true")
       }
@@ -115,18 +104,17 @@ export default function StudentDashboard() {
     const fetchJobs = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-  
+
       const { data: studentData, error: studentError } = await supabase
         .from("Students")
         .select("availability, shift_preference, zip_code")
         .eq("user_id", user.id)
         .single()
-  
+
       if (studentError || !studentData) return
-  
+
       const studentZip = studentData?.zip_code ?? ""
-  
-      // Query locations joined with job for company info
+
       const { data: locations, error: locError } = await supabase
         .from("locations")
         .select(`
@@ -148,9 +136,9 @@ export default function StudentDashboard() {
             status
           )
         `)
-  
+
       if (locError) { console.error(locError); return }
-  
+
       const scoredJobs = (locations || [])
         .filter((loc: any) => {
           const locZip = loc.zip_code ?? ""
@@ -164,15 +152,15 @@ export default function StudentDashboard() {
           if (!Array.isArray(shifts)) shifts = Object.values(shifts || {})
           const activeShifts = shifts.filter((s: any) => s.active === true || s.active === "true" || s.active === 1)
           const jobDays = activeShifts.map((s: any) => s.day)
-  
+
           const matchScore = calculateMatch(
             { availability: studentData.availability || [], shiftPreference: studentData.shift_preference || "flexible" },
             { shifts: jobDays, shiftPreference: loc.shift_preference || "flexible" }
           )
-  
+
           return {
-            id: loc.id, // location id — use for the detail page link
-            jobId: loc.job?.id, // employer job id
+            id: loc.id,
+            jobId: loc.job?.id,
             title: loc.name || "Untitled Location",
             company: loc.job?.company || "Unknown Company",
             details: loc.job?.details || "",
@@ -185,15 +173,16 @@ export default function StudentDashboard() {
             matchScore: Math.round(matchScore),
           }
         })
-  
+
       scoredJobs.sort((a, b) => b.matchScore - a.matchScore)
       setMatchedJobsWithScore(scoredJobs)
     }
-  
+
     fetchJobs()
   }, [])
+
   // -------------------------
-  // FETCH STUDENT
+  // FETCH STUDENT + RECOMMENDATION
   // -------------------------
   useEffect(() => {
     const fetchStudent = async () => {
@@ -212,16 +201,20 @@ export default function StudentDashboard() {
       const rawGpa = studentData?.gpa
       const parsedGpa = rawGpa !== null && rawGpa !== undefined ? Number(rawGpa) : null
       setGpa(isNaN(parsedGpa as number) ? null : parsedGpa)
-      setGpaStatus(studentData?.gpa_verification_status || "none")
       setName(studentData?.name || "")
+
+      // Check recommendation
+      const { data: rec } = await supabase
+        .from("recommendations")
+        .select("id, submitted")
+        .eq("student_user_id", user.id)
+        .eq("submitted", true)
+        .maybeSingle()
+
+      setHasRecommendation(!!rec)
     }
 
     fetchStudent()
-  }, [])
-
-  useEffect(() => {
-    const savedInterests = localStorage.getItem("interests")
-    if (savedInterests) setInterests(JSON.parse(savedInterests))
   }, [])
 
   useEffect(() => {
@@ -234,8 +227,6 @@ export default function StudentDashboard() {
       }))
       setAvailability(parsed)
     }
-    const savedJobs = localStorage.getItem("preferredJobs")
-    if (savedJobs) setPreferredJobs(JSON.parse(savedJobs))
   }, [])
 
   return (
@@ -247,91 +238,78 @@ export default function StudentDashboard() {
         <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
 
-            {/* LEFT */}
             <Link href="/" className="flex items-center gap-2 min-w-0">
-            <div className="flex h-9 w-9 items-center justify-center">
-          <Image
-  src="/icon-192x192.png"
-  alt="SimplyApply logo"
-  width={28}
-  height={28}
-  className="object-contain"
-/>
-</div>
+              <div className="flex h-9 w-9 items-center justify-center">
+                <Image src="/icon-192x192.png" alt="SimplyApply logo" width={28} height={28} className="object-contain" />
+              </div>
               <span className="text-lg font-bold text-foreground truncate">SimplyApply</span>
             </Link>
 
-            {/* CENTER NAV */}
             <div className="hidden items-center gap-6 md:flex">
               <Link href="/student" className="text-base font-semibold text-foreground">Dashboard</Link>
               <Link href="/matching/student" className="text-sm font-medium text-muted-foreground hover:text-foreground">Jobs near you</Link>
             </div>
 
-            {/* RIGHT */}
             <DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" className="flex items-center gap-2 shrink-0 px-2">
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
-        {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
-      </div>
-      <div className="hidden md:flex flex-col items-start">
-        <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{name}</span>
-        <span className="text-xs text-muted-foreground">Student</span>
-      </div>
-      <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent align="end" className="w-56">
-    {/* ACCOUNT INFO */}
-    <div className="px-3 py-2.5 border-b border-border">
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-          {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate">{name}</p>
-          <p className="text-xs text-muted-foreground">Student Account</p>
-        </div>
-      </div>
-    </div>
-
-    {/* MENU ITEMS */}
-    <div className="py-1">
-      <DropdownMenuItem asChild>
-        <Link href="/student/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-          <User className="h-4 w-4 text-muted-foreground" />
-          My Profile
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href="/matching/student" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-          <Briefcase className="h-4 w-4 text-muted-foreground" />
-          Jobs Near You
-        </Link>
-      </DropdownMenuItem>
-    </div>
-
-    <DropdownMenuSeparator />
-
-    <div className="py-1">
-      <DropdownMenuItem
-        onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
-        className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-      >
-        <LogOut className="h-4 w-4" />
-        Log out
-      </DropdownMenuItem>
-    </div>
-  </DropdownMenuContent>
-</DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 shrink-0 px-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
+                    {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+                  </div>
+                  <div className="hidden md:flex flex-col items-start">
+                    <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{name}</span>
+                    <span className="text-xs text-muted-foreground">Student</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-3 py-2.5 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                      {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+                      <p className="text-xs text-muted-foreground">Student Account</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="py-1">
+                  <DropdownMenuItem asChild>
+                    <Link href="/student/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      My Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/matching/student" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      Jobs Near You
+                    </Link>
+                  </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator />
+                <div className="py-1">
+                  <DropdownMenuItem
+                    onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
           </div>
         </header>
 
         <main className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+
           {/* WELCOME */}
           <div className="mb-6 hidden sm:block">
-                        <h1 className="text-xl font-bold text-foreground sm:text-3xl">Ready to land your first job?</h1>
+            <h1 className="text-xl font-bold text-foreground sm:text-3xl">Ready to land your first job?</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {name ? `Welcome back, ${name}! ` : "Welcome! "}
               You have {newJobsCount} new job matches.
@@ -340,11 +318,10 @@ export default function StudentDashboard() {
 
           {/* STATS CARDS */}
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Card
-  className="hidden sm:block border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
-  onClick={() => router.push("/student/profile")}
->
-
+            <Card
+              className="hidden sm:block border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
+              onClick={() => router.push("/student/profile")}
+            >
               <CardContent className="flex items-center gap-3 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-4/10">
                   <Star className="h-5 w-5 text-chart-4" />
@@ -354,16 +331,16 @@ export default function StudentDashboard() {
                     {gpa !== null ? `${gpa.toFixed(1)}/4.0` : "--/4.0"}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {gpaStatus === "approved" ? "Verified GPA" : "Tap to verify"}
+                    {hasRecommendation ? "Recommended ⭐" : "Tap to add rec"}
                   </p>
                 </div>
               </CardContent>
             </Card>
 
             <Card
-  className="hidden sm:block border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
-  onClick={() => router.push("/matching/student")}
->
+              className="hidden sm:block border-border bg-card cursor-pointer hover:bg-secondary/30 transition-colors"
+              onClick={() => router.push("/matching/student")}
+            >
               <CardContent className="flex items-center gap-3 p-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-chart-2/10">
                   <span className="text-lg font-bold text-chart-2">{greatMatches}</span>
@@ -381,102 +358,65 @@ export default function StudentDashboard() {
 
             {/* MAIN */}
             <div className="lg:col-span-2 space-y-6">
-            <Card className="border-border bg-card sm:rounded-xl sm:border">
-                              <CardHeader>
-                <CardTitle className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-lg">
-
-{/* Hide title on mobile */}
-<span className="hidden sm:block">
-  Matches Near You
-</span>
-
-{/* Centered View All on mobile */}
-<Button
-  variant="ghost"
-  size="sm"
-  asChild
-  className="mx-auto sm:mx-0"
->
-  <Link href="/matching/student" className="gap-1 text-primary text-sm">
-    View All <ChevronRight className="h-4 w-4" />
-  </Link>
-</Button>
-
-</CardTitle>
+              <Card className="border-border bg-card sm:rounded-xl sm:border">
+                <CardHeader>
+                  <CardTitle className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-lg">
+                    <span className="hidden sm:block">Matches Near You</span>
+                    <Button variant="ghost" size="sm" asChild className="mx-auto sm:mx-0">
+                      <Link href="/matching/student" className="gap-1 text-primary text-sm">
+                        View All <ChevronRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 sm:p-6 sm:space-y-3 space-y-6">                                                        {matchedJobsWithScore.length === 0 ? (
-    <div className="text-center py-10 text-muted-foreground">
-      <MapPin className="mx-auto h-6 w-6 mb-2 opacity-60" />
-      <p className="text-sm font-medium">
-        No employers in your zip range yet
-      </p>
-      <p className="text-xs mt-1">
-        Check back soon — new jobs are added regularly.
-      </p>
-    </div>
-  ) : (
-    matchedJobsWithScore.map(job => (
-<Link
-  key={job.id}
-  href={`/matching/student/${job.id}`}
-  className="block mb-3 sm:mb-0"
-  ><div className="w-full rounded-3xl border border-border/60 bg-secondary/30 px-5 py-8 sm:px-6 sm:py-5 transition-colors hover:bg-secondary/50 min-h-[32vh] sm:min-h-0">         
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-1">
-              <h3 className="font-semibold text-foreground text-xl sm:text-lg">
-                  {job.title}
-</h3>                {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
-                {job.status === "applied" && <Badge variant="secondary" className="text-xs">Applied</Badge>}
-              </div>
-              <p className="text-base sm:text-sm text-muted-foreground mt-1">
-                  {job.company}
-</p>
-            </div>
-            <Badge className="bg-primary/10 text-primary shrink-0 text-sm px-3 py-1">
-  {job.matchScore}%
-</Badge>
-          </div>
-
-          {/* BOTTOM ROW */}
-         {/* BOTTOM ROW */}
-         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm sm:text-xs">  
-  <div className="flex items-center gap-4 text-muted-foreground">
-    
-    <span className="flex items-center gap-1">
-      <MapPin className="h-4 w-4" />
-      {job.distance}
-    </span>
-
-    <span className="font-semibold text-primary">
-      {job.pay}
-    </span>
-
-  </div>
-
-  <div className="flex items-center gap-2 flex-wrap">
-    {job.tips ? (
-      <Badge className="bg-green-500/10 text-green-600 border border-green-500/20 text-xs px-2 py-1">
-        + Tips
-      </Badge>
-    ) : (
-      <Badge variant="outline" className="text-xs px-2 py-1">
-        No Tips
-      </Badge>
-    )}
-
-    <Badge variant="outline" className="text-xs px-2 py-1 capitalize">
-      {job.shiftPreference}
-    </Badge>
-  </div>
-
-</div>
-
-        </div>
-      </Link>
-    ))
-  )}
-</CardContent>
+                <CardContent className="p-0 sm:p-6 sm:space-y-3 space-y-6">
+                  {matchedJobsWithScore.length === 0 ? (
+                    <div className="text-center py-10 text-muted-foreground">
+                      <MapPin className="mx-auto h-6 w-6 mb-2 opacity-60" />
+                      <p className="text-sm font-medium">No employers in your zip range yet</p>
+                      <p className="text-xs mt-1">Check back soon — new jobs are added regularly.</p>
+                    </div>
+                  ) : (
+                    matchedJobsWithScore.map(job => (
+                      <Link key={job.id} href={`/matching/student/${job.id}`} className="block mb-3 sm:mb-0">
+                        <div className="w-full rounded-3xl border border-border/60 bg-secondary/30 px-5 py-8 sm:px-6 sm:py-5 transition-colors hover:bg-secondary/50 min-h-[32vh] sm:min-h-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1">
+                                <h3 className="font-semibold text-foreground text-xl sm:text-lg">{job.title}</h3>
+                                {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
+                                {job.status === "applied" && <Badge variant="secondary" className="text-xs">Applied</Badge>}
+                              </div>
+                              <p className="text-base sm:text-sm text-muted-foreground mt-1">{job.company}</p>
+                            </div>
+                            <Badge className="bg-primary/10 text-primary shrink-0 text-sm px-3 py-1">
+                              {job.matchScore}%
+                            </Badge>
+                          </div>
+                          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm sm:text-xs">
+                            <div className="flex items-center gap-4 text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-4 w-4" />
+                                {job.distance}
+                              </span>
+                              <span className="font-semibold text-primary">{job.pay}</span>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {job.tips ? (
+                                <Badge className="bg-green-500/10 text-green-600 border border-green-500/20 text-xs px-2 py-1">+ Tips</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs px-2 py-1">No Tips</Badge>
+                              )}
+                              <Badge variant="outline" className="text-xs px-2 py-1 capitalize">
+                                {job.shiftPreference}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </CardContent>
               </Card>
             </div>
 
@@ -484,32 +424,28 @@ export default function StudentDashboard() {
             <div className="space-y-6">
               <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
                 <CardContent className="p-5">
-                  {gpaStatus === "approved" ? (
+                  {hasRecommendation ? (
                     <div>
                       <div className="flex items-center gap-3">
                         <CheckCircle2 className="h-6 w-6 text-primary shrink-0" />
                         <div>
-                          <h3 className="font-semibold">Verified Student</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {gpa ? `${gpa.toFixed(1)} / 4.0` : "-- / 4.0"}
-                          </p>
+                          <h3 className="font-semibold">Recommended ⭐</h3>
+                          <p className="text-sm text-muted-foreground">You have a recommendation</p>
                         </div>
                       </div>
                       <p className="mt-3 text-sm text-muted-foreground">
-                        Your GPA has been verified. Employers trust verified students more!
+                        Employers can see your recommendation on your profile. This builds trust and sets you apart!
                       </p>
                     </div>
-                  ) : gpaStatus === "pending" ? (
-                    <p className="text-sm text-yellow-600">⏳ Your GPA is under review</p>
                   ) : (
                     <div className="space-y-3">
                       <Button className="w-full" onClick={() => router.push("/student/profile")}>
-                        Verify GPA
+                        Get a Recommendation
                       </Button>
                       <div className="space-y-2 text-sm text-muted-foreground">
-                        <p className="font-medium text-foreground">How GPA verification works</p>
-                        <p>Upload a screenshot showing your <span className="font-semibold text-foreground">full name</span> and <span className="font-semibold text-foreground">unweighted GPA</span>.</p>
-                        <p>Verified students get higher trust and better match results.</p>
+                        <p className="font-medium text-foreground">How recommendations work</p>
+                        <p>Ask a <span className="font-semibold text-foreground">teacher, coach, or employer</span> to recommend you.</p>
+                        <p>Their recommendation shows up on your profile and helps you stand out to local employers.</p>
                       </div>
                     </div>
                   )}

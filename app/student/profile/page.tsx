@@ -344,90 +344,47 @@ export default function ProfilePage() {
       <Card className="border-border bg-card mb-4">
         <CardHeader><CardTitle>Profile Info</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-          <input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Full Name" />
-          <input type="text" ref={ageRef} value={age}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === "") { setAge(""); return }
-              if (!/^\d+$/.test(value)) return
-              if (value.length > 2) return
-              if (parseInt(value) > 21) return
-              setAge(value)
-            }}
-            onBlur={() => {
-              const num = parseInt(age)
-              if (isNaN(num)) { setAge(""); return }
-              if (num < 14) setAge("14")
-              if (num > 21) setAge("21")
-            }}
-            className="w-full border rounded px-3 py-2 text-sm" placeholder="Age"
-          />
-          <input ref={locationRef} value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Street Address" />
-          <input
-            ref={zipRef} value={zipCode}
-            onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 5) setZipCode(value) }}
-            className="w-full border rounded px-3 py-2 text-sm" placeholder="Zip Code (5 digits)" maxLength={5}
-          />
-          <input ref={emailRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Email" />
-          <input type="tel" ref={phoneRef} value={phone}
-            onChange={(e) => { const value = e.target.value; if (value === "") { setPhone(""); return }; if (/^\d{0,10}$/.test(value)) setPhone(value) }}
-            className="w-full border rounded px-3 py-2 text-sm" placeholder="Phone Number"
-          />
-          <input ref={schoolRef} value={school} onChange={(e) => setSchool(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="School" />
-          <input type="number" step="0.01" min="0" max="4" ref={gpaRef} value={gpa} disabled={isGpaLocked}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === "") { setGpa(""); return }
-              if (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 4) setGpa(value)
-            }}
-            className={`w-full border rounded px-3 py-2 text-sm ${isGpaLocked ? "bg-gray-100 opacity-70 cursor-not-allowed" : ""}`}
-            placeholder="GPA (Unweighted)"
-          />
-          {gpa.trim() === "" && !isGpaLocked && (
-            <p className="text-xs text-muted-foreground mt-1">Enter your GPA before uploading proof.</p>
-          )}
-          {showUpload && !isGpaLocked && gpa.trim() !== "" && (
-            <label className="flex w-full items-center justify-center rounded border px-3 py-2 text-sm hover:bg-muted cursor-pointer">
-              Upload GPA Image
-              <input type="file" accept="image/*" className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) return
-                  const { data: { session } } = await supabase.auth.getSession()
-                  const user = session?.user
-                  if (!user) return
-                  const filePath = `${user.id}/${Date.now()}-${file.name}`
-                  const { error: uploadError } = await supabase.storage.from("gpa-proofs").upload(filePath, file)
-                  if (uploadError) { toast.error(uploadError.message); return }
-                  const { data } = supabase.storage.from("gpa-proofs").getPublicUrl(filePath)
-                  await supabase.from("Students").update({
-                    gpa_proof_url: data.publicUrl,
-                    gpa_proof_path: filePath,
-                    gpa_verification_status: "pending",
-                    is_gpa_verified: false,
-                  }).eq("user_id", user.id)
-                  const { data: updatedProfile } = await supabase
-                    .from("Students")
-                    .select("gpa_proof_url, gpa_verification_status")
-                    .eq("user_id", user.id)
-                    .maybeSingle()
-                  setGpaProofUrl(updatedProfile?.gpa_proof_url || null)
-                  setGpaStatus(updatedProfile?.gpa_verification_status || "none")
-                  toast.success("Submitted for review")
-                }}
-              />
-            </label>
-          )}
-          <div className="mt-3 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground space-y-2">
-            <p className="font-medium text-foreground text-sm">Tips for a successful upload</p>
-            <ul className="list-disc pl-4 space-y-1">
-              <li>Make sure your full name is visible</li>
-              <li>Include your unweighted GPA clearly</li>
-              <li>Do not crop or blur the image</li>
-              <li>A full screenshot of your school portal works best</li>
-            </ul>
-          </div>
-        </CardContent>
+  <input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Full Name" />
+  <input type="text" ref={ageRef} value={age}
+    onChange={(e) => {
+      const value = e.target.value
+      if (value === "") { setAge(""); return }
+      if (!/^\d+$/.test(value)) return
+      if (value.length > 2) return
+      if (parseInt(value) > 21) return
+      setAge(value)
+    }}
+    onBlur={() => {
+      const num = parseInt(age)
+      if (isNaN(num)) { setAge(""); return }
+      if (num < 14) setAge("14")
+      if (num > 21) setAge("21")
+    }}
+    className="w-full border rounded px-3 py-2 text-sm" placeholder="Age"
+  />
+  <input ref={locationRef} value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Street Address" />
+  <input
+    ref={zipRef} value={zipCode}
+    onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 5) setZipCode(value) }}
+    className="w-full border rounded px-3 py-2 text-sm" placeholder="Zip Code (5 digits)" maxLength={5}
+  />
+  <input ref={emailRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Email" />
+  <input type="tel" ref={phoneRef} value={phone}
+    onChange={(e) => { const value = e.target.value; if (value === "") { setPhone(""); return }; if (/^\d{0,10}$/.test(value)) setPhone(value) }}
+    className="w-full border rounded px-3 py-2 text-sm" placeholder="Phone Number"
+  />
+  <input ref={schoolRef} value={school} onChange={(e) => setSchool(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="School" />
+  <input
+    type="number" step="0.01" min="0" max="4" ref={gpaRef} value={gpa}
+    onChange={(e) => {
+      const value = e.target.value
+      if (value === "") { setGpa(""); return }
+      if (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 4) setGpa(value)
+    }}
+    className="w-full border rounded px-3 py-2 text-sm"
+    placeholder="GPA (Unweighted)"
+  />
+</CardContent>
       </Card>
 
       {/* PREFERRED JOBS */}
