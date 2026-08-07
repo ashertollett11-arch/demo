@@ -144,6 +144,36 @@ export default function EmployerDashboard() {
   }, [userId])
 
   useEffect(() => {
+    if (!userId || students.length === 0 || statuses.length > 0 || !employerZip) return
+  
+    const seedStatuses = async () => {
+      const rows = students
+        .filter((s) => s.profile_complete && s.zip_code)
+        .filter((s) => {
+          if (zipMatchPrecision === 5) return s.zip_code === employerZip
+          return s.zip_code?.slice(0, 3) === employerZip?.slice(0, 3)
+        })
+        .map((s) => ({ employer_id: userId, student_id: s.id, status: "new" }))
+  
+      if (rows.length === 0) return
+  
+      await supabase
+        .from("student_statuses")
+        .upsert(rows, { onConflict: "employer_id,student_id", ignoreDuplicates: true })
+  
+      const { data } = await supabase
+        .from("student_statuses")
+        .select("*")
+        .eq("employer_id", userId)
+  
+      setStatuses(data || [])
+    }
+  
+    seedStatuses()
+  }, [userId, students, statuses, employerZip, zipMatchPrecision])
+
+
+  useEffect(() => {
     if (!userId) return
     const loadStatuses = async () => {
       const { data, error } = await supabase
