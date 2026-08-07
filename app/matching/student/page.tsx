@@ -240,8 +240,7 @@ useEffect(() => {
               Jobs Near You
             </Link>
           </div>
-          <div className="flex items-center gap-2">
-  {/* BELL */}
+          <div className="flex items-center gap-2 ml-auto">  {/* BELL */}
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" size="icon" className="relative">

@@ -268,8 +268,8 @@ export default function StudentDashboard() {
               <Link href="/matching/student" className="text-sm font-medium text-muted-foreground hover:text-foreground">Jobs near you</Link>
             </div>
 
-            <div className="flex items-center gap-2">
-  {/* BELL */}
+            <div className="flex items-center gap-2 ml-auto">
+                {/* BELL */}
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" size="icon" className="relative">
