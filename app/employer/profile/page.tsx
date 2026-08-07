@@ -29,7 +29,7 @@ type Location = {
 
 export default function EmployerProfilePage() {
   const router = useRouter()
-
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [showSwitchDialog, setShowSwitchDialog] = useState(false)
   const [switching, setSwitching] = useState(false)
@@ -434,6 +434,62 @@ useEffect(() => {
           </div>
         </CardContent>
       </Card>
+
+{/* DELETE DIALOG */}
+<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+  <DialogContent className="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle className="flex items-center gap-2 text-red-600">
+        <AlertTriangle className="h-5 w-5" />
+        Delete Account?
+      </DialogTitle>
+      <DialogDescription className="pt-2 space-y-2">
+        <p>This will <span className="font-semibold text-foreground">permanently delete</span> your account and all associated data including:</p>
+        <ul className="list-disc pl-5 space-y-1 text-sm">
+          <li>Your company profile</li>
+          <li>All locations</li>
+          <li>Candidate pipeline and statuses</li>
+          <li>All notifications</li>
+        </ul>
+        <p className="font-medium text-foreground">This cannot be undone.</p>
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="flex gap-2 mt-4">
+      <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+      <Button variant="destructive" onClick={async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        await supabase.from("notifications").delete().eq("employer_id", user.id)
+        await supabase.from("student_statuses").delete().eq("employer_id", user.id)
+        await supabase.from("job").delete().eq("user_id", user.id)
+        await supabase.from("profiles").delete().eq("id", user.id)
+        await supabase.from("users").delete().eq("id", user.id)
+        await supabase.auth.signOut()
+        window.location.href = "/"
+      }}>
+        Yes, delete my account
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+{/* DELETE CARD */}
+<Card className="border-red-200 bg-red-50/20 mt-4">
+  <CardContent className="p-5">
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <p className="font-semibold text-red-700">Delete Account</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Permanently delete your account and all associated data. This cannot be undone.
+        </p>
+      </div>
+      <Button variant="destructive" className="shrink-0" onClick={() => setShowDeleteDialog(true)}>
+        Delete Account
+      </Button>
+    </div>
+  </CardContent>
+</Card>
+
 
     </div>
   )
