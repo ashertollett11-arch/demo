@@ -225,132 +225,136 @@ useEffect(() => {
       <div className="absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-3xl" />
 
       {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <Button variant="ghost" className="hidden sm:flex items-center gap-2" onClick={() => router.push("/student")}>
-            <ChevronLeft className="h-5 w-5" />
-            Back
+{/* HEADER */}
+<header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl" suppressHydrationWarning>
+  <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+
+    {/* LEFT */}
+    <div className="w-24">
+      <Button variant="ghost" className="hidden sm:flex items-center gap-2" onClick={() => router.push("/student")}>
+        <ChevronLeft className="h-5 w-5" />
+        Back
+      </Button>
+    </div>
+
+    {/* CENTER */}
+    <div className="hidden md:flex items-center gap-8">
+      <Link href="/student" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+        Dashboard
+      </Link>
+      <Link href="/matching/student" className="text-sm font-semibold text-primary">
+        Jobs Near You
+      </Link>
+    </div>
+
+    {/* RIGHT */}
+    <div className="flex items-center gap-2 w-24 justify-end">
+      {/* BELL */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            {studentNotifications.length > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white" suppressHydrationWarning>
+                {studentNotifications.length}
+              </span>
+            )}
           </Button>
-
-          <div className="hidden items-center gap-8 md:flex">
-            <Link href="/student" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-              Dashboard
-            </Link>
-            <Link href="/matching/student" className="text-sm font-semibold text-primary">
-              Jobs Near You
-            </Link>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-80">
+          <div className="flex items-center justify-between px-4 py-3 border-b">
+            <p className="font-semibold text-sm text-foreground">Notifications</p>
+            {studentNotifications.length > 0 && (
+              <Badge className="bg-red-100 text-red-600 text-xs">{studentNotifications.length} new</Badge>
+            )}
           </div>
-          <div className="flex items-center gap-2 ml-auto">  {/* BELL */}
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="ghost" size="icon" className="relative">
-        <Bell className="h-5 w-5" />
-        {studentNotifications.length > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-            {studentNotifications.length}
-          </span>
-        )}
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-80">
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <p className="font-semibold text-sm text-foreground">Notifications</p>
-        {studentNotifications.length > 0 && (
-          <Badge className="bg-red-100 text-red-600 text-xs">{studentNotifications.length} new</Badge>
-        )}
-      </div>
-      {studentNotifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-          <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
-          <p className="text-sm font-medium text-foreground">All caught up</p>
-          <p className="text-xs text-muted-foreground mt-1">No new notifications</p>
-        </div>
-      ) : (
-        <div className="max-h-80 overflow-y-auto divide-y divide-border">
-          {studentNotifications.map((n) => (
-            <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg">
-                📲
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-foreground leading-snug">{n.message}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {n.created_at
-                    ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-                    : "Just now"}
-                </p>
-              </div>
-              <button
-                onClick={async () => {
-                  setStudentNotifications(prev => prev.filter(x => x.id !== n.id))
-                  await supabase.from("student_notifications").update({ read: true }).eq("id", n.id)
-                }}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              >
-                Dismiss
-              </button>
+          {studentNotifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+              <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
+              <p className="text-sm font-medium text-foreground">All caught up</p>
+              <p className="text-xs text-muted-foreground mt-1">No new notifications</p>
             </div>
-          ))}
-        </div>
-      )}
-    </DropdownMenuContent>
-  </DropdownMenu>
+          ) : (
+            <div className="max-h-80 overflow-y-auto divide-y divide-border">
+              {studentNotifications.map((n) => (
+                <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg">📲</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground leading-snug">{n.message}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {n.created_at ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Just now"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      setStudentNotifications(prev => prev.filter(x => x.id !== n.id))
+                      await supabase.from("student_notifications").update({ read: true }).eq("id", n.id)
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-  {/* PROFILE */}
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="ghost" className="flex items-center gap-2 shrink-0 px-2">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
-          {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
-        </div>
-        <div className="hidden md:flex flex-col items-start">
-          <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{name}</span>
-          <span className="text-xs text-muted-foreground">Student</span>
-        </div>
-        <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-56">
-      <div className="px-3 py-2.5 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-            {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+      {/* PROFILE */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="flex items-center gap-1 shrink-0 px-1">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
+              {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+            </div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <div className="px-3 py-2.5 border-b border-border">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+                <p className="text-xs text-muted-foreground">Student Account</p>
+              </div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">{name}</p>
-            <p className="text-xs text-muted-foreground">Student Account</p>
+          <div className="py-1">
+            <DropdownMenuItem asChild>
+              <Link href="/student/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                <User className="h-4 w-4 text-muted-foreground" />
+                My Profile
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/matching/student" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                Jobs Near You
+              </Link>
+            </DropdownMenuItem>
           </div>
-        </div>
-      </div>
-      <div className="py-1">
-        <DropdownMenuItem asChild>
-          <Link href="/student/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-            <User className="h-4 w-4 text-muted-foreground" />
-            My Profile
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/matching/student" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-            Jobs Near You
-          </Link>
-        </DropdownMenuItem>
-      </div>
-      <DropdownMenuSeparator />
-      <div className="py-1">
-        <DropdownMenuItem
-          onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-        >
-          <LogOut className="h-4 w-4" />
-          Log out
-        </DropdownMenuItem>
-      </div>
-    </DropdownMenuContent>
-  </DropdownMenu>
-</div>
-        </div>
-      </header>
+          <DropdownMenuSeparator />
+          <div className="py-1">
+            <DropdownMenuItem
+              onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+              Log out
+            </DropdownMenuItem>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+
+  </div>
+</header>
+
+
+
 
       {/* PAGE CONTENT */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-8">
