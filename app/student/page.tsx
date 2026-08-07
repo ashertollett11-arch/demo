@@ -383,12 +383,12 @@ export default function StudentDashboard() {
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-1">
-                                <h3 className="font-semibold text-foreground text-xl sm:text-lg">{job.title}</h3>
-                                {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
+                              <h3 className="font-semibold text-foreground text-xl sm:text-lg">{job.company}</h3>
+                                                              {job.status === "new" && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
                                 {job.status === "applied" && <Badge variant="secondary" className="text-xs">Applied</Badge>}
                               </div>
-                              <p className="text-base sm:text-sm text-muted-foreground mt-1">{job.company}</p>
-                            </div>
+                              <p className="text-base sm:text-sm text-muted-foreground mt-1">{job.title}</p>
+                                                          </div>
                             <Badge className="bg-primary/10 text-primary shrink-0 text-sm px-3 py-1">
                               {job.matchScore}%
                             </Badge>

@@ -13,7 +13,7 @@ export default function JobPage() {
   const router = useRouter()
   const params = useParams()
   const jobId = params.id as string
-
+  const [studentShiftPreference, setStudentShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [job, setJob] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [hasApplied, setHasApplied] = useState(false)
@@ -50,13 +50,14 @@ export default function JobPage() {
       if (!user) return
 
       const { data, error } = await supabase
-        .from("Students")
-        .select("availability, shift_preference")
-        .eq("user_id", user.id)
-        .single()
-
-      if (error || !data) return
-      setAvailability(data.availability || [])
+      .from("Students")
+      .select("availability, shift_preference")
+      .eq("user_id", user.id)
+      .single()
+    
+    if (error || !data) return
+    setAvailability(data.availability || [])
+    setStudentShiftPreference(data.shift_preference || "flexible")
 
       const { data: existing } = await supabase
         .from("location_applications")
@@ -139,7 +140,7 @@ export default function JobPage() {
     )
 
     const score = calculateMatch(
-      { availability, shiftPreference: "flexible" },
+      { availability, shiftPreference: studentShiftPreference },
       { shifts: activeShifts.map((s: any) => s.day), shiftPreference: job.shift_preference || "flexible" }
     )
 
@@ -242,8 +243,8 @@ export default function JobPage() {
       <Card className="border-border bg-card">
         <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
           <div>
-            <CardTitle className="text-2xl">{job.title}</CardTitle>
-            <p className="text-muted-foreground mt-1">{job.company}</p>
+          <CardTitle className="text-2xl">{job.company}</CardTitle>
+          <p className="text-muted-foreground mt-1">{job.title}</p>
           </div>
           <Badge
             className={

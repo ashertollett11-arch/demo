@@ -351,10 +351,10 @@ export default function MatchesPage() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="group-hover:text-primary transition-colors">
-                          {job.title}
-                        </CardTitle>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{job.company}</p>
+                      <CardTitle className="group-hover:text-primary transition-colors">
+  {job.company}
+</CardTitle>
+<p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{job.title}</p>
                       </div>
                       <Badge className="bg-blue-500/10 text-blue-600 border border-blue-500/20 shrink-0">
                         {job.matchScore}% Match

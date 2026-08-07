@@ -70,7 +70,6 @@ export default function EmployerProfilePage() {
     details.trim() &&
     emailRegex.test(email) &&
     phoneRegex.test(phone) &&
-    preferredJobs.length > 0 &&
     locations.length > 0
 
   // -------------------------

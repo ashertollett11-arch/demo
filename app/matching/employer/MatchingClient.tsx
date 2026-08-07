@@ -334,17 +334,35 @@ export default function MatchingPage() {
     const loadJob = async () => {
       const { data: user } = await supabase.auth.getUser()
       if (!user?.user?.id) return
-      const { data } = await supabase
+  
+      const { data: jobData } = await supabase
         .from("job")
-        .select("available_shifts, shift_preference, zip_code, zip_match_precision, preferred_jobs")
+        .select("id, preferred_jobs, shift_preference")
         .eq("user_id", user.user.id)
         .single()
-      if (!data) return
-      setEmployerShifts(data.available_shifts ?? [])
-      setShiftPreference(data.shift_preference ?? "flexible")
-      setEmployerZip(data.zip_code ?? null)
-      setAreaRadius(data.zip_match_precision ?? "exact")
-      setPreferredJobs(data.preferred_jobs ?? [])
+  
+      if (!jobData) return
+      setPreferredJobs(jobData.preferred_jobs ?? [])
+      setShiftPreference(jobData.shift_preference ?? "flexible")
+  
+      // Everything location-specific comes from the first location
+      const { data: locationData } = await supabase
+        .from("locations")
+        .select("available_shifts, shift_preference, preferred_jobs, zip_code, zip_match_precision")
+        .eq("employer_id", jobData.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle()
+  
+      if (locationData) {
+        setEmployerShifts(locationData.available_shifts ?? [])
+        setShiftPreference(locationData.shift_preference ?? "flexible")
+        setEmployerZip(locationData.zip_code ?? null)
+        setAreaRadius(locationData.zip_match_precision ?? "exact")
+        if (locationData.preferred_jobs?.length > 0) {
+          setPreferredJobs(locationData.preferred_jobs)
+        }
+      }
     }
     loadJob()
   }, [])
@@ -439,6 +457,16 @@ export default function MatchingPage() {
   useEffect(() => {
     if (!students.length) return
     const results = students.map((candidate) => {
+  
+      console.log("--- CANDIDATE:", candidate.name)
+      console.log("JOB DAYS:", jobDays)
+      console.log("SHIFT PREF:", shiftPreference)
+      console.log("PREFERRED JOBS:", preferredJobs)
+      console.log("CANDIDATE AVAILABILITY:", candidate.availability)
+      console.log("CANDIDATE SHIFT PREF:", candidate.shift_preference)
+      console.log("CANDIDATE GPA:", candidate.gpa)
+      console.log("CANDIDATE PREFERRED JOBS:", candidate.preferred_jobs)
+  
       const matchScore = calculateEmployerMatch(
         { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
         candidate.availability,
@@ -450,7 +478,6 @@ export default function MatchingPage() {
     })
     setScoredCandidates(results)
   }, [students, employerShifts, shiftPreference, preferredJobs])
-
   useEffect(() => {
     if (statusParam === "new" || statusParam === "contacted" || statusParam === "hired") {
       setActiveStatus(statusParam)

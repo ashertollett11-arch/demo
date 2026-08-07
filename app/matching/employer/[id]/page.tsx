@@ -44,21 +44,38 @@ export default function StudentPage() {
       const userId = authData?.user?.id
 
       const { data: employerJob } = await supabase
-        .from("job")
-        .select("available_shifts, shift_preference, preferred_jobs, location, zip_code")
-        .eq("user_id", userId)
-        .single()
-
-      setEmployerShifts(employerJob?.available_shifts ?? [])
-      setShiftPreference(employerJob?.shift_preference ?? "flexible")
-      setPreferredJobs(employerJob?.preferred_jobs ?? [])
-
-      if (employerJob?.location && employerJob?.zip_code) {
-        setEmployerLocation({
-          address: employerJob.location,
-          zip: employerJob.zip_code,
-        })
+      .from("job")
+      .select("id, shift_preference, preferred_jobs")
+      .eq("user_id", userId)
+      .single()
+    
+    setShiftPreference(employerJob?.shift_preference ?? "flexible")
+    setPreferredJobs(employerJob?.preferred_jobs ?? [])
+    
+    // Get shifts + location from first location
+    if (employerJob?.id) {
+      const { data: locationData } = await supabase
+        .from("locations")
+        .select("available_shifts, shift_preference, preferred_jobs, address, zip_code")
+        .eq("employer_id", employerJob.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle()
+    
+      if (locationData) {
+        setEmployerShifts(locationData.available_shifts ?? [])
+        setShiftPreference(locationData.shift_preference ?? "flexible")
+        if (locationData.preferred_jobs?.length > 0) {
+          setPreferredJobs(locationData.preferred_jobs)
+        }
+        if (locationData.address && locationData.zip_code) {
+          setEmployerLocation({
+            address: locationData.address,
+            zip: locationData.zip_code,
+          })
+        }
       }
+    }
 
       if (!userId) {
         console.log("No employer user found")
