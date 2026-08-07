@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { supabase } from "@/lib/supabase"
 import Image from "next/image"
 import {
-  Briefcase,
   ChevronDown,
   ArrowRight,
   Sparkles,
@@ -27,7 +26,6 @@ import { calculateEmployerMatch } from "@/lib/employerMatchScore"
 
 export default function EmployerDashboard() {
   const router = useRouter()
-  const [zipMatchPrecision, setZipMatchPrecision] = useState(5)
   const [userId, setUserId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("Your Company")
   const [notifications, setNotifications] = useState<any[]>([])
@@ -36,66 +34,43 @@ export default function EmployerDashboard() {
   const [statuses, setStatuses] = useState<any[]>([])
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
+  const [employerZip, setEmployerZip] = useState<string | null>(null)
+  const [zipMatchPrecision, setZipMatchPrecision] = useState<number>(5)
 
-  // -------------------------
-  // AUTH + ACCESS CHECK
-  // -------------------------
   useEffect(() => {
     const checkAccess = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-  
-        if (!user) {
-          router.replace("/login")
-          return
-        }
-  
+        if (!user) { router.replace("/login"); return }
         const { data: profile, error } = await supabase
           .from("profiles")
           .select("subscription_status")
           .eq("id", user.id)
           .maybeSingle()
-  
-        console.log("PROFILE CHECK:", profile)
-  
         const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
-        if (error || !profile || !isSubscribed) {          router.replace("/pricing/mobile")
-          return
-        }
-  
+        if (error || !profile || !isSubscribed) { router.replace("/pricing/mobile"); return }
         setUserId(user.id)
       } catch (err) {
-        console.error("ACCESS CHECK ERROR:", err)
         router.replace("/pricing/mobile")
       }
     }
-  
     checkAccess()
   }, [router])
 
-  // -------------------------
-  // LOAD COMPANY
-  // -------------------------
   useEffect(() => {
     if (!userId) return
-
     const loadCompany = async () => {
       const { data } = await supabase
         .from("job")
         .select("company, owner_name")
         .eq("user_id", userId)
         .single()
-
       if (!data) return
       setCompanyName(data.company || "Your Company")
     }
-
     loadCompany()
   }, [userId])
 
-  // -------------------------
-  // LOAD STUDENTS
-  // -------------------------
   useEffect(() => {
     if (!userId) return
     const loadStudents = async () => {
@@ -105,38 +80,41 @@ export default function EmployerDashboard() {
         .eq("profile_complete", true)
       setStudents(data || [])
     }
-
     loadStudents()
   }, [userId])
 
-  // -------------------------
-  // LOAD JOB SETTINGS
-  // -------------------------
   useEffect(() => {
     if (!userId) return
-
     const loadJob = async () => {
-      const { data } = await supabase
+      const { data: jobData } = await supabase
         .from("job")
-        .select("available_shifts, shift_preference, preferred_jobs")
+        .select("shift_preference, preferred_jobs, id")
         .eq("user_id", userId)
         .single()
+      if (!jobData) return
+      setShiftPreference(jobData.shift_preference || "flexible")
+      setPreferredJobs(jobData.preferred_jobs || [])
 
-      if (!data) return
-      setEmployerShifts(data.available_shifts || [])
-      setShiftPreference(data.shift_preference || "flexible")
-      setPreferredJobs(data.preferred_jobs || [])
+      const { data: locationData } = await supabase
+        .from("locations")
+        .select("available_shifts, shift_preference, zip_code, zip_match_precision")
+        .eq("employer_id", jobData.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+      if (locationData) {
+        setEmployerShifts(locationData.available_shifts || [])
+        setShiftPreference(locationData.shift_preference || "flexible")
+        setEmployerZip(locationData.zip_code || null)
+        setZipMatchPrecision(locationData.zip_match_precision ?? 5)
+      }
     }
-
     loadJob()
   }, [userId])
 
-  // -------------------------
-  // NOTIFICATIONS
-  // -------------------------
   useEffect(() => {
     if (!userId) return
-
     const loadNotifications = async () => {
       const { data } = await supabase
         .from("notifications")
@@ -144,251 +122,183 @@ export default function EmployerDashboard() {
         .eq("employer_id", userId)
         .eq("read", false)
         .order("created_at", { ascending: false })
-
       setNotifications(data || [])
     }
-
     loadNotifications()
   }, [userId])
 
-  // realtime notifications
   useEffect(() => {
     if (!userId) return
-
     const channel = supabase
       .channel("notifications-dashboard")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `employer_id=eq.${userId}`,
-        },
-        (payload) => {
-          setNotifications((prev) => [payload.new, ...prev])
-        }
-      )
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `employer_id=eq.${userId}`,
+      }, (payload) => {
+        setNotifications((prev) => [payload.new, ...prev])
+      })
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [userId])
 
-  // -------------------------
-  // SEED + LOAD STATUSES
-  // -------------------------
   useEffect(() => {
     if (!userId) return
-  
     const loadStatuses = async () => {
       const { data, error } = await supabase
         .from("student_statuses")
         .select("*")
         .eq("employer_id", userId)
-  
-      if (error) {
-        console.error(error)
-        return
-      }
-  
+      if (error) { console.error(error); return }
       setStatuses(data || [])
     }
-  
     loadStatuses()
   }, [userId])
 
-  // -------------------------
-  // DISMISS NOTIFICATION
-  // -------------------------
   const dismissNotification = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
     await supabase.from("notifications").update({ read: true }).eq("id", id)
   }
 
-  // -------------------------
-  // MATCH SCORES
-  // -------------------------
   const candidatesWithScores = useMemo(() => {
     const activeShifts = employerShifts.filter(
       (s) => s.active === true || s.active === "true" || s.active === 1
     )
     const jobDays = activeShifts.map((s) => s.day)
+    return students
+      .filter((s) => {
+        if (!employerZip || !s.zip_code) return true
+        if (zipMatchPrecision === 5) return s.zip_code === employerZip
+        return s.zip_code.slice(0, 3) === employerZip.slice(0, 3)
+      })
+      .map((s) => {
+        const score = calculateEmployerMatch(
+          { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
+          s.availability,
+          s.shift_preference,
+          s.gpa,
+          s.preferred_jobs
+        )
+        return { ...s, matchScore: Math.round(score) }
+      })
+  }, [students, employerShifts, shiftPreference, preferredJobs, employerZip, zipMatchPrecision])
 
-    return students.map((s) => {
-      const score = calculateEmployerMatch(
-        { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
-        s.availability,
-        s.shiftPreference,
-        s.gpa,
-        s.preferredJobs
-      )
-      return { ...s, matchScore: Math.round(score) }
-    })
-  }, [students, employerShifts, shiftPreference])
-
-  // -------------------------
-  // METRICS
-  // -------------------------
   const greatCandidates = candidatesWithScores.filter((c) => c.matchScore >= 75).length
   const perfectMatches = candidatesWithScores.filter((c) => c.matchScore === 100).length
   const topMatch = Math.max(0, ...candidatesWithScores.map((c) => c.matchScore || 0))
   const recentActivity = notifications.slice(0, 4)
 
-  // -------------------------
-  // UI
-  // -------------------------
   return (
     <div className="min-h-screen bg-background">
-
-      {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-
           <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center">
-          <Image
-  src="/icon-192x192.png"
-  alt="SimplyApply logo"
-  width={28}
-  height={28}
-  className="object-contain"
-/>
-</div>
+            <div className="flex h-9 w-9 items-center justify-center">
+              <Image src="/icon-192x192.png" alt="SimplyApply logo" width={28} height={28} className="object-contain" />
+            </div>
             <span className="text-xl font-bold text-foreground">SimplyApply</span>
           </Link>
-
           <div className="hidden items-center gap-6 md:flex">
-            <Link href="/employer" className="text-sm font-medium text-foreground">
-              Dashboard
-            </Link>
-            <Link href="/matching/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Find Candidates
-            </Link>
-            <Link href="/pricing/mobile" className="text-sm font-medium text-muted-foreground hover:text-foreground">
-              Billing
-            </Link>
+            <Link href="/employer" className="text-sm font-medium text-foreground">Dashboard</Link>
+            <Link href="/matching/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">Find Candidates</Link>
+            <Link href="/pricing/mobile" className="text-sm font-medium text-muted-foreground hover:text-foreground">Billing</Link>
           </div>
-
           <DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <button className="flex items-center gap-2 px-2">
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
-        {companyName?.[0]?.toUpperCase() || "?"}
-      </div>
-      <div className="hidden md:flex flex-col items-start">
-        <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{companyName}</span>
-        <span className="text-xs text-muted-foreground">Employer</span>
-      </div>
-      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-    </button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent align="end" className="w-56">
-    {/* ACCOUNT INFO */}
-    <div className="px-3 py-2.5 border-b border-border">
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-          {companyName?.[0]?.toUpperCase() || "?"}
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
-          <p className="text-xs text-muted-foreground">Employer Account</p>
-        </div>
-      </div>
-    </div>
-
-    {/* MENU ITEMS */}
-    <div className="py-1">
-      <DropdownMenuItem asChild>
-        <Link href="/employer/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-          Company Profile
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href="/employer/locations" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
-          Locations
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href="/pricing/mobile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-          <CreditCard className="h-4 w-4 text-muted-foreground" />
-          Billing
-        </Link>
-      </DropdownMenuItem>
-    </div>
-
-    <DropdownMenuSeparator />
-
-    <div className="py-1">
-      <DropdownMenuItem
-        onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
-        className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-      >
-        <LogOut className="h-4 w-4" />
-        Log out
-      </DropdownMenuItem>
-    </div>
-  </DropdownMenuContent>
-</DropdownMenu>
-
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 px-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
+                  {companyName?.[0]?.toUpperCase() || "?"}
+                </div>
+                <div className="hidden md:flex flex-col items-start">
+                  <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{companyName}</span>
+                  <span className="text-xs text-muted-foreground">Employer</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-3 py-2.5 border-b border-border">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                    {companyName?.[0]?.toUpperCase() || "?"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
+                    <p className="text-xs text-muted-foreground">Employer Account</p>
+                  </div>
+                </div>
+              </div>
+              <div className="py-1">
+                <DropdownMenuItem asChild>
+                  <Link href="/employer/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    Company Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/employer/locations" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    Locations
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/pricing/mobile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    Billing
+                  </Link>
+                </DropdownMenuItem>
+              </div>
+              <DropdownMenuSeparator />
+              <div className="py-1">
+                <DropdownMenuItem
+                  onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 space-y-8">
-
-        {/* WELCOME */}
         <div>
           <h1 className="text-3xl font-bold">Welcome, {companyName}</h1>
           <p className="text-muted-foreground">Here's your hiring overview</p>
         </div>
 
-        {/* PIPELINE */}
         <Card>
-          <CardHeader>
-            <CardTitle>Hiring Pipeline</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Hiring Pipeline</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-3 gap-4">
             <Link href="/matching/employer?status=new">
               <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
                 <p className="text-sm text-muted-foreground">New</p>
-                <p className="mt-2 text-3xl font-bold">
-                  {statuses.filter((s) => s.status === "new").length}
-                </p>
+                <p className="mt-2 text-3xl font-bold">{statuses.filter((s) => s.status === "new").length}</p>
               </div>
             </Link>
             <Link href="/matching/employer?status=contacted">
               <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
                 <p className="text-sm text-muted-foreground">Contacted</p>
-                <p className="mt-2 text-3xl font-bold">
-                  {statuses.filter((s) => s.status === "contacted").length}
-                </p>
+                <p className="mt-2 text-3xl font-bold">{statuses.filter((s) => s.status === "contacted").length}</p>
               </div>
             </Link>
             <Link href="/matching/employer?status=hired">
               <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
                 <p className="text-sm text-muted-foreground">Hired</p>
-                <p className="mt-2 text-3xl font-bold">
-                  {statuses.filter((s) => s.status === "hired").length}
-                </p>
+                <p className="mt-2 text-3xl font-bold">{statuses.filter((s) => s.status === "hired").length}</p>
               </div>
             </Link>
           </CardContent>
         </Card>
 
-        {/* INSIGHT */}
-        <Card
-          className="cursor-pointer hover:bg-muted/40 transition"
-          onClick={() => (window.location.href = "/matching/employer")}
-        >
+        <Card className="cursor-pointer hover:bg-muted/40 transition" onClick={() => window.location.href = "/matching/employer"}>
           <CardContent className="p-6 flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-primary" />
             <div className="flex flex-col gap-1">
-              <p>
-                You have <b>{greatCandidates}</b> strong candidates (75%+ match) ready to review.
-              </p>
+              <p>You have <b>{greatCandidates}</b> strong candidates (75%+ match) ready to review.</p>
               <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                 <span>Top Match: <b>{topMatch}%</b></span>
                 <span>•</span>
@@ -400,43 +310,26 @@ export default function EmployerDashboard() {
           </CardContent>
         </Card>
 
-        {/* RECENT ACTIVITY */}
         <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Recent Activity</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {recentActivity.length === 0 ? (
               <p className="text-sm text-muted-foreground">No recent activity</p>
             ) : (
               recentActivity.map((n) => {
-                const studentName =
-                  n.student_name || n.message?.split(" applied to ")[0]?.trim()
-
+                const studentName = n.student_name || n.message?.split(" applied to ")[0]?.trim()
                 return (
-                  <div
-                    key={n.id}
-                    className="flex justify-between items-center text-sm border-b pb-2"
-                  >
+                  <div key={n.id} className="flex justify-between items-center text-sm border-b pb-2">
                     <span>{n.message}</span>
                     <div className="flex items-center gap-2">
                       {studentName && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            window.location.href = `/matching/employer?search=${encodeURIComponent(studentName)}`
-                          }}
+                        <Button size="sm" variant="outline"
+                          onClick={() => { window.location.href = `/matching/employer?search=${encodeURIComponent(studentName)}` }}
                         >
                           View Profile
                         </Button>
                       )}
-                      <button
-                        onClick={() => dismissNotification(n.id)}
-                        className="text-muted-foreground"
-                      >
-                        ✕
-                      </button>
+                      <button onClick={() => dismissNotification(n.id)} className="text-muted-foreground">✕</button>
                     </div>
                   </div>
                 )
@@ -445,11 +338,8 @@ export default function EmployerDashboard() {
           </CardContent>
         </Card>
 
-        {/* BILLING SNAPSHOT */}
         <Card>
-          <CardHeader>
-            <CardTitle>Billing Overview</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Billing Overview</CardTitle></CardHeader>
           <CardContent className="space-y-2">
             <p>Current Plan: Employer Plan</p>
             <Button asChild>
@@ -458,7 +348,6 @@ export default function EmployerDashboard() {
           </CardContent>
         </Card>
 
-        {/* CTA */}
         <Card className="bg-primary text-white">
           <CardContent className="p-6 flex justify-between items-center">
             <div>
@@ -472,7 +361,6 @@ export default function EmployerDashboard() {
             </Button>
           </CardContent>
         </Card>
-
       </main>
     </div>
   )
