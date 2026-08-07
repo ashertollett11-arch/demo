@@ -37,7 +37,8 @@ export default function EmployerProfilePage() {
   const [loading, setLoading] = useState(false)
   const [locations, setLocations] = useState<Location[]>([])
   const [loadingLocations, setLoadingLocations] = useState(false)
-
+  const [autoSaving, setAutoSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
   // Profile fields
   const [companyName, setCompanyName] = useState("")
   const [ownerName, setOwnerName] = useState("")
@@ -83,7 +84,47 @@ export default function EmployerProfilePage() {
     }
     checkAuth()
   }, [router])
+// AUTOSAVE
+useEffect(() => {
+  if (!companyName.trim()) return // don't autosave empty form
 
+  const timer = setTimeout(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    setAutoSaving(true)
+
+    await supabase
+      .from("job")
+      .upsert(
+        {
+          id: jobId || undefined,
+          user_id: user.id,
+          title: companyName || "Untitled Job",
+          company: companyName || "Unknown Company",
+          owner_name: ownerName || null,
+          business_type: businessType || null,
+          email: email || null,
+          phone: phone || null,
+          details: details || "No description",
+          preferred_jobs: preferredJobs,
+          status: "new",
+          distance: "0",
+        },
+        { onConflict: "user_id" }
+      )
+      .select()
+      .single()
+      .then(({ data }) => {
+        if (data?.id) setJobId(data.id)
+      })
+
+    setAutoSaving(false)
+    setLastSaved(new Date())
+  }, 2000)
+
+  return () => clearTimeout(timer)
+}, [companyName, ownerName, businessType, email, phone, details, preferredJobs])
   useEffect(() => {
     const missing = window.location.search.includes("missing=true")
     if (missing) setTimeout(() => { toast.error("Please complete your profile") }, 300)
@@ -144,7 +185,6 @@ export default function EmployerProfilePage() {
     if (!phoneRegex.test(phone)) { toast.error("Invalid phone number"); scrollToField(phoneRef); return false }
     if (!businessType.trim()) { toast.error("Missing business type"); return false }
     if (!details.trim()) { toast.error("Missing description"); scrollToField(detailsRef); return false }
-    if (preferredJobs.length === 0) { toast.error("Select at least one Hiring Role"); return false }
     if (locations.length === 0) {
       toast.error("Add at least one location before saving.", {
         description: "Use the Locations section below to add your first location.",
@@ -308,29 +348,7 @@ export default function EmployerProfilePage() {
       </Card>
 
       {/* HIRING ROLE */}
-      <Card className="mb-4">
-        <CardHeader><CardTitle>Hiring Role</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {["Cashier","Server","Busser","Barista","Cook","Dishwasher","Host","Sales Associate","Stock Associate","Customer Service","Store Associate"].map((role) => (
-              <button
-                key={role}
-                onClick={() => {
-                  setPreferredJobs((prev) => {
-                    if (prev.includes(role)) return prev.filter((r) => r !== role)
-                    if (prev.length >= 3) { toast.error("You can only select up to 3 hiring roles"); return prev }
-                    return [...prev, role]
-                  })
-                }}
-                className={`px-3 py-1 text-xs rounded-full border transition-all ${preferredJobs.includes(role) ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm" : "bg-gray-100 text-gray-600 border-gray-200"}`}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
+   
       {/* LOCATIONS */}
       <Card className="mb-4">
         <CardHeader>
