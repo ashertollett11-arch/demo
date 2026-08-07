@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, User, Bell, MapPin } from "lucide-react"
+import { ChevronDown, User, Bell, MapPin, Building2, CreditCard, LogOut } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   CheckCircle2,
@@ -300,10 +300,10 @@ export default function MatchingPage() {
           .eq("id", user.id)
           .maybeSingle()
         const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
-        if (error || !profile || !isSubscribed) { router.replace("/billing"); return }
+        if (error || !profile || !isSubscribed) { router.replace("/pricing/mobile"); return }
         setUserId(user.id)
       } catch (err) {
-        router.replace("/billing")
+        router.replace("/pricing/mobile")
       }
     }
     checkAccess()
@@ -568,7 +568,7 @@ export default function MatchingPage() {
           <div className="hidden items-center gap-6 md:flex">
             <Link href="/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">Dashboard</Link>
             <Link href="/matching/employer" className="text-sm font-medium text-foreground">Find Candidates</Link>
-            <Link href="/billing" className="text-sm font-medium text-muted-foreground hover:text-foreground">Billing</Link>
+            <Link href="/pricing/mobile" className="text-sm font-medium text-muted-foreground hover:text-foreground">Billing</Link>
           </div>
           <div className="flex items-center gap-4">
             <DropdownMenu>
@@ -582,48 +582,127 @@ export default function MatchingPage() {
                   )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80">
-                <div className="p-2 text-sm font-medium border-b">Notifications</div>
-                {notifications.length === 0 ? (
-                  <div className="p-4 text-sm text-muted-foreground">No new notifications</div>
-                ) : (
-                  <div className="max-h-72 overflow-y-auto">
-                    {notifications.map((n) => (
-                      <div key={n.id} className="flex items-start justify-between gap-2 p-3">
-                        <div className="text-sm">{n.message ?? "New notification"}</div>
-                        <div className="flex flex-col gap-2">
-                          <Button size="sm" variant="secondary" className="h-8 gap-2 text-xs"
-                            onClick={() => {
-                              const name = n.student_name || n.message?.split(" applied to ")[0]?.trim()
-                              if (name) { setSearchQuery(name); setActiveStatus("new") }
-                            }}
-                          >
-                            <User className="h-3.5 w-3.5" />
-                            View
-                          </Button>
-                          <button onClick={() => dismissNotification(n.id)} className="text-xs text-muted-foreground hover:text-foreground">X</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </DropdownMenuContent>
+              <DropdownMenuContent align="end" className="w-96">
+  <div className="flex items-center justify-between px-4 py-3 border-b">
+    <p className="font-semibold text-sm text-foreground">Notifications</p>
+    {notifications.length > 0 && (
+      <Badge className="bg-red-100 text-red-600 text-xs">{notifications.length} new</Badge>
+    )}
+  </div>
+
+  {notifications.length === 0 ? (
+    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+      <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
+      <p className="text-sm font-medium text-foreground">All caught up</p>
+      <p className="text-xs text-muted-foreground mt-1">No new notifications</p>
+    </div>
+  ) : (
+    <div className="max-h-80 overflow-y-auto divide-y divide-border">
+      {notifications.map((n) => (
+        <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
+          {/* AVATAR */}
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+            {n.message?.split(" applied")[0]?.trim().split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || "?"}
+          </div>
+
+          {/* CONTENT */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-foreground leading-snug">
+              {n.message ?? "New notification"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {n.created_at
+                ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                : "Just now"}
+            </p>
+          </div>
+
+          {/* ACTIONS */}
+          <div className="flex flex-col gap-1.5 shrink-0">
+            <button
+              onClick={() => {
+                const studentName = n.message?.split(" applied to ")[0]?.trim()
+                if (studentName) { setSearchQuery(studentName); setActiveStatus("new") }
+              }}
+              className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              View
+            </button>
+            <button
+              onClick={() => dismissNotification(n.id)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</DropdownMenuContent>
             </DropdownMenu>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold">
-                    {name?.[0]?.toUpperCase() || "?"}
-                  </div>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem asChild><Link href="/employer/profile">Company Profile</Link></DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild><Link href="/">Log out</Link></DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" className="flex items-center gap-2 px-2">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
+        {name?.[0]?.toUpperCase() || "?"}
+      </div>
+      <div className="hidden md:flex flex-col items-start">
+        <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{name}</span>
+        <span className="text-xs text-muted-foreground">Employer</span>
+      </div>
+      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-56">
+    {/* ACCOUNT INFO */}
+    <div className="px-3 py-2.5 border-b border-border">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+          {name?.[0]?.toUpperCase() || "?"}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+          <p className="text-xs text-muted-foreground">Employer Account</p>
+        </div>
+      </div>
+    </div>
+
+    {/* MENU ITEMS */}
+    <div className="py-1">
+      <DropdownMenuItem asChild>
+        <Link href="/employer/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+          Company Profile
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/employer/locations" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <MapPin className="h-4 w-4 text-muted-foreground" />
+          Locations
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/pricing/mobile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <CreditCard className="h-4 w-4 text-muted-foreground" />
+          Billing
+        </Link>
+      </DropdownMenuItem>
+    </div>
+
+    <DropdownMenuSeparator />
+
+    <div className="py-1">
+      <DropdownMenuItem
+        onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+        className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+      >
+        <LogOut className="h-4 w-4" />
+        Log out
+      </DropdownMenuItem>
+    </div>
+  </DropdownMenuContent>
+</DropdownMenu>
           </div>
         </div>
       </header>

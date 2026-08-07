@@ -16,6 +16,9 @@ import {
   CheckCircle2,
   Star,
   ChevronRight,
+  ChevronDown,
+  User,
+  LogOut,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -266,29 +269,61 @@ export default function StudentDashboard() {
 
             {/* RIGHT */}
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 shrink-0 px-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                    {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
-                  </div>
-                  <span className="hidden text-sm font-medium sm:block max-w-[100px] truncate">{name}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem asChild>
-                  <Link href="/student/profile">Profile</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-  onClick={async () => {
-    await supabase.auth.signOut()
-    window.location.href = "/"
-  }}
->
-  Log out
-</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" className="flex items-center gap-2 shrink-0 px-2">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
+        {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+      </div>
+      <div className="hidden md:flex flex-col items-start">
+        <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{name}</span>
+        <span className="text-xs text-muted-foreground">Student</span>
+      </div>
+      <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-56">
+    {/* ACCOUNT INFO */}
+    <div className="px-3 py-2.5 border-b border-border">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+          {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+          <p className="text-xs text-muted-foreground">Student Account</p>
+        </div>
+      </div>
+    </div>
+
+    {/* MENU ITEMS */}
+    <div className="py-1">
+      <DropdownMenuItem asChild>
+        <Link href="/student/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <User className="h-4 w-4 text-muted-foreground" />
+          My Profile
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/matching/student" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <Briefcase className="h-4 w-4 text-muted-foreground" />
+          Jobs Near You
+        </Link>
+      </DropdownMenuItem>
+    </div>
+
+    <DropdownMenuSeparator />
+
+    <div className="py-1">
+      <DropdownMenuItem
+        onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+        className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+      >
+        <LogOut className="h-4 w-4" />
+        Log out
+      </DropdownMenuItem>
+    </div>
+  </DropdownMenuContent>
+</DropdownMenu>
 
           </div>
         </header>

@@ -11,6 +11,10 @@ import {
   ChevronDown,
   ArrowRight,
   Sparkles,
+  Building2,
+  MapPin,
+  CreditCard,
+  LogOut,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -268,29 +272,67 @@ export default function EmployerDashboard() {
           </div>
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-sm font-semibold">
-                  {companyName?.[0] || "?"}
-                </div>
-                <ChevronDown className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem asChild>
-                <Link href="/employer/profile">Company Profile</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-  onClick={async () => {
-    await supabase.auth.signOut()
-    window.location.href = "/"
-  }}
->
-  Log out
-</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <button className="flex items-center gap-2 px-2">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
+        {companyName?.[0]?.toUpperCase() || "?"}
+      </div>
+      <div className="hidden md:flex flex-col items-start">
+        <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{companyName}</span>
+        <span className="text-xs text-muted-foreground">Employer</span>
+      </div>
+      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+    </button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-56">
+    {/* ACCOUNT INFO */}
+    <div className="px-3 py-2.5 border-b border-border">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+          {companyName?.[0]?.toUpperCase() || "?"}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{companyName}</p>
+          <p className="text-xs text-muted-foreground">Employer Account</p>
+        </div>
+      </div>
+    </div>
+
+    {/* MENU ITEMS */}
+    <div className="py-1">
+      <DropdownMenuItem asChild>
+        <Link href="/employer/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+          Company Profile
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/employer/locations" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <MapPin className="h-4 w-4 text-muted-foreground" />
+          Locations
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/pricing/mobile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <CreditCard className="h-4 w-4 text-muted-foreground" />
+          Billing
+        </Link>
+      </DropdownMenuItem>
+    </div>
+
+    <DropdownMenuSeparator />
+
+    <div className="py-1">
+      <DropdownMenuItem
+        onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+        className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+      >
+        <LogOut className="h-4 w-4" />
+        Log out
+      </DropdownMenuItem>
+    </div>
+  </DropdownMenuContent>
+</DropdownMenu>
 
         </div>
       </header>

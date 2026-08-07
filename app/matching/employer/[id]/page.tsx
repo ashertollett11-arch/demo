@@ -21,7 +21,7 @@ export default function StudentPage() {
   const router = useRouter()
   const params = useParams()
   const studentId = params.id as string
-
+  const [recommendation, setRecommendation] = useState<any>(null)
   const [student, setStudent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [savedStatus, setSavedStatus] = useState<string | null>(null)
@@ -94,6 +94,15 @@ export default function StudentPage() {
       }
 
       setStudent(finalStudent)
+      
+      const { data: rec } = await supabase
+  .from("recommendations")
+  .select("*")
+  .eq("student_user_id", data.user_id)
+  .eq("submitted", true)
+  .maybeSingle()
+if (rec) setRecommendation(rec)
+
       setLoading(false)
     }
 
@@ -282,6 +291,35 @@ export default function StudentPage() {
               {student.shift_preference}
             </p>
           </div>
+
+
+{/* RECOMMENDATION */}
+{recommendation && (
+  <div>
+    <h2 className="font-semibold text-lg mb-2 flex items-center gap-2">
+      ⭐ Recommendation
+      <Badge className="bg-primary/10 text-primary text-xs">Verified</Badge>
+    </h2>
+    <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 space-y-3">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="font-medium text-foreground">{recommendation.recommender_name}</span>
+        <span className="text-muted-foreground">·</span>
+        <span className="text-muted-foreground">{recommendation.recommender_relationship}</span>
+      </div>
+      <div className="rounded-lg border border-border bg-background p-3">
+        <p className="text-sm text-foreground italic leading-relaxed">
+          "{recommendation.description}"
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+        <span>Known for: <strong className="text-foreground">{recommendation.how_long_known}</strong></span>
+        <span>·</span>
+        <span>Would recommend: <strong className="text-foreground">{recommendation.would_recommend}</strong></span>
+      </div>
+    </div>
+  </div>
+)}
+
 
           {/* CONTACT STUDENT */}
           <div className="mt-6">

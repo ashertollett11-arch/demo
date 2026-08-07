@@ -9,8 +9,11 @@ import {
   TrendingUp,
   CheckCircle2,
   ChevronLeft,
+  ChevronDown,
   ArrowRight,
   Sparkles,
+  User,
+  LogOut,
 } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
@@ -222,27 +225,61 @@ export default function MatchesPage() {
           </div>
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 shrink-0 px-2">
-                <div className="flex h-11 w-11 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-primary/10 text-base sm:text-sm font-semibold text-primary">
-                  {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
-                </div>
-                <span className="hidden sm:block text-sm font-medium max-w-[100px] truncate">{name}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64 sm:w-48">
-              <DropdownMenuItem asChild>
-                <Link href="/student/profile" className="text-base sm:text-sm py-3 sm:py-2">Profile</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
-                className="text-base sm:text-sm py-3 sm:py-2"
-              >
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="ghost" className="flex items-center gap-2 shrink-0 px-2">
+      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
+        {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+      </div>
+      <div className="hidden md:flex flex-col items-start">
+        <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{name}</span>
+        <span className="text-xs text-muted-foreground">Student</span>
+      </div>
+      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-56">
+    {/* ACCOUNT INFO */}
+    <div className="px-3 py-2.5 border-b border-border">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+          {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+          <p className="text-xs text-muted-foreground">Student Account</p>
+        </div>
+      </div>
+    </div>
+
+    {/* MENU ITEMS */}
+    <div className="py-1">
+      <DropdownMenuItem asChild>
+        <Link href="/student/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <User className="h-4 w-4 text-muted-foreground" />
+          My Profile
+        </Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/student" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+          <Briefcase className="h-4 w-4 text-muted-foreground" />
+          Dashboard
+        </Link>
+      </DropdownMenuItem>
+    </div>
+
+    <DropdownMenuSeparator />
+
+    <div className="py-1">
+      <DropdownMenuItem
+        onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+        className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+      >
+        <LogOut className="h-4 w-4" />
+        Log out
+      </DropdownMenuItem>
+    </div>
+  </DropdownMenuContent>
+</DropdownMenu>
         </div>
       </header>
 
@@ -317,7 +354,7 @@ export default function MatchesPage() {
                         <CardTitle className="group-hover:text-primary transition-colors">
                           {job.title}
                         </CardTitle>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{job.details || job.company}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{job.company}</p>
                       </div>
                       <Badge className="bg-blue-500/10 text-blue-600 border border-blue-500/20 shrink-0">
                         {job.matchScore}% Match

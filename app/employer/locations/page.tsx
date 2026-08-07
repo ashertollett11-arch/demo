@@ -284,7 +284,7 @@ export default function LocationsPage() {
 
               {/* NAME */}
               <div>
-                <label className="text-sm font-medium block mb-1">Location Name</label>
+                <label className="text-sm font-medium block mb-1">Location Name(Visable to Students)</label>
                 <input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
