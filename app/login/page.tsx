@@ -53,6 +53,7 @@ export default function LoginPage() {
       if (!mounted) return
   
       if (error || !roleData?.role) {
+        router.replace("/choose-role")
         setCheckingSession(false)
         return
       }

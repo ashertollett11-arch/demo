@@ -20,6 +20,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [showSwitchDialog, setShowSwitchDialog] = useState(false)
   const [switching, setSwitching] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     const missing = window.location.search.includes("missing=true")
@@ -33,6 +34,7 @@ export default function ProfilePage() {
     }
     checkAuth()
   }, [router])
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [saving, setSaving] = useState(false)
@@ -52,7 +54,6 @@ export default function ProfilePage() {
   const [gpaStatus, setGpaStatus] = useState("none")
   const [isGpaVerified, setIsGpaVerified] = useState(false)
 
-  // Recommendation state
   const [recommenderName, setRecommenderName] = useState("")
   const [recommenderEmail, setRecommenderEmail] = useState("")
   const [recommenderRelationship, setRecommenderRelationship] = useState("")
@@ -60,7 +61,6 @@ export default function ProfilePage() {
   const [sendingRec, setSendingRec] = useState(false)
 
   const JOB_OPTIONS = ["Cashier","Server","Busser","Barista","Cook","Dishwasher","Host","Sales Associate","Stock Associate","Customer Service","Store Associate"]
-
   const showUpload = gpaStatus === "none" || gpaStatus === "rejected" || !gpaProofUrl
   const isGpaLocked = gpaStatus === "pending" || gpaStatus === "approved" || !!gpaProofUrl
 
@@ -135,8 +135,7 @@ export default function ProfilePage() {
         .eq("user_id", authUser.id)
         .single()
 
-      if (error) { console.log(error); setLoading(false); return }
-
+      if (error) { setLoading(false); return }
       if (profileData) {
         setGpaProofUrl(profileData.gpa_proof_url || null)
         setName(profileData.name || "")
@@ -150,18 +149,17 @@ export default function ProfilePage() {
         setPreferredJobs(profileData.preferred_jobs || [])
         setInterests(profileData.interests || [])
         setGpaStatus(profileData.gpa_verification_status || "none")
-        const safeAvailability = Array.isArray(profileData.availability) && profileData.availability.length === 7 ? profileData.availability : DEFAULT_AVAILABILITY
+        const safeAvailability = Array.isArray(profileData.availability) && profileData.availability.length === 7
+          ? profileData.availability : DEFAULT_AVAILABILITY
         setAvailability(safeAvailability)
         setShiftPreference(profileData.shift_preference || "flexible")
       }
 
-      // Load recommendation
       const { data: rec } = await supabase
         .from("recommendations")
         .select("*")
         .eq("student_user_id", authUser.id)
         .maybeSingle()
-
       if (rec) {
         setRecommendation(rec)
         setRecommenderName(rec.recommender_name || "")
@@ -181,7 +179,6 @@ export default function ProfilePage() {
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
     if (!user) { toast.error("Not logged in"); return false }
-
     const { error } = await supabase
       .from("Students")
       .upsert(
@@ -196,8 +193,7 @@ export default function ProfilePage() {
         },
         { onConflict: "user_id" }
       )
-
-    if (error) { console.log(error); toast.error(error.message); return false }
+    if (error) { toast.error(error.message); return false }
     return true
   }
 
@@ -208,12 +204,9 @@ export default function ProfilePage() {
     if (!recommenderName.trim()) { toast.error("Enter recommender name"); return }
     if (!recommenderEmail.trim()) { toast.error("Enter recommender email"); return }
     if (!recommenderRelationship) { toast.error("Select relationship"); return }
-
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-
     setSendingRec(true)
-
     const res = await fetch("/api/send-recommendation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -225,26 +218,47 @@ export default function ProfilePage() {
         relationship: recommenderRelationship,
       }),
     })
-
     const data = await res.json()
-
     if (!res.ok) {
       toast.error(data.error || "Failed to send request.")
       setSendingRec(false)
       return
     }
-
     toast.success(`Recommendation request sent to ${recommenderName}!`)
-
-    // Reload recommendation
     const { data: rec } = await supabase
       .from("recommendations")
       .select("*")
       .eq("student_user_id", user.id)
       .maybeSingle()
     if (rec) setRecommendation(rec)
-
     setSendingRec(false)
+  }
+
+  // -------------------------
+  // DELETE ACCOUNT
+  // -------------------------
+  const handleDeleteAccount = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    setDeleting(true)
+    try {
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || "Failed to delete account.")
+        setDeleting(false)
+        return
+      }
+      await supabase.auth.signOut()
+      window.location.href = "/login"
+    } catch (err) {
+      toast.error("Something went wrong. Please try again.")
+      setDeleting(false)
+    }
   }
 
   // -------------------------
@@ -276,7 +290,6 @@ export default function ProfilePage() {
     )
   }
 
-
   return (
     <div className="min-h-screen bg-background p-4 overflow-x-hidden">
 
@@ -288,21 +301,51 @@ export default function ProfilePage() {
               <AlertTriangle className="h-5 w-5" />
               Switch to Employer Role?
             </DialogTitle>
-            <DialogDescription className="pt-2 space-y-2">
-              <p>This will <span className="font-semibold text-foreground">permanently delete</span> your student account and all associated data including:</p>
-              <ul className="list-disc pl-5 space-y-1 text-sm">
-                <li>Your student profile</li>
-                <li>GPA verification</li>
-                <li>Job applications and matches</li>
-                <li>All availability and preferences</li>
-              </ul>
-              <p className="font-medium text-foreground">This cannot be undone.</p>
-            </DialogDescription>
+           {/* SWITCH ROLE DIALOG */}
+<DialogDescription className="pt-2 space-y-2">
+  <span className="block">This will <span className="font-semibold text-foreground">permanently delete</span> your student account and all associated data including:</span>
+  <ul className="list-disc pl-5 space-y-1 text-sm mt-2">
+    <li>Your student profile</li>
+    <li>GPA verification</li>
+    <li>Job applications and matches</li>
+    <li>All availability and preferences</li>
+  </ul>
+  <span className="block font-medium text-foreground mt-2">This cannot be undone.</span>
+</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 mt-4">
             <Button variant="outline" onClick={() => setShowSwitchDialog(false)} disabled={switching}>Cancel</Button>
             <Button variant="destructive" onClick={handleSwitchRole} disabled={switching}>
               {switching ? "Deleting account..." : "Yes, delete my account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DELETE DIALOG */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Account?
+            </DialogTitle>
+          {/* DELETE DIALOG */}
+<DialogDescription className="pt-2 space-y-2">
+  <span className="block">This will <span className="font-semibold text-foreground">permanently delete</span> your account and all associated data including:</span>
+  <ul className="list-disc pl-5 space-y-1 text-sm mt-2">
+    <li>Your student profile</li>
+    <li>All job applications</li>
+    <li>Your recommendation</li>
+    <li>All availability and preferences</li>
+  </ul>
+  <span className="block font-medium text-foreground mt-2">This cannot be undone.</span>
+</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleting}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
+              {deleting ? "Deleting..." : "Yes, delete my account"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -358,47 +401,47 @@ export default function ProfilePage() {
       <Card className="border-border bg-card mb-4">
         <CardHeader><CardTitle>Profile Info</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-  <input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Full Name" />
-  <input type="text" ref={ageRef} value={age}
-    onChange={(e) => {
-      const value = e.target.value
-      if (value === "") { setAge(""); return }
-      if (!/^\d+$/.test(value)) return
-      if (value.length > 2) return
-      if (parseInt(value) > 21) return
-      setAge(value)
-    }}
-    onBlur={() => {
-      const num = parseInt(age)
-      if (isNaN(num)) { setAge(""); return }
-      if (num < 14) setAge("14")
-      if (num > 21) setAge("21")
-    }}
-    className="w-full border rounded px-3 py-2 text-sm" placeholder="Age"
-  />
-  <input ref={locationRef} value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Street Address" />
-  <input
-    ref={zipRef} value={zipCode}
-    onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 5) setZipCode(value) }}
-    className="w-full border rounded px-3 py-2 text-sm" placeholder="Zip Code (5 digits)" maxLength={5}
-  />
-  <input ref={emailRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Email" />
-  <input type="tel" ref={phoneRef} value={phone}
-    onChange={(e) => { const value = e.target.value; if (value === "") { setPhone(""); return }; if (/^\d{0,10}$/.test(value)) setPhone(value) }}
-    className="w-full border rounded px-3 py-2 text-sm" placeholder="Phone Number"
-  />
-  <input ref={schoolRef} value={school} onChange={(e) => setSchool(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="School" />
-  <input
-    type="number" step="0.01" min="0" max="4" ref={gpaRef} value={gpa}
-    onChange={(e) => {
-      const value = e.target.value
-      if (value === "") { setGpa(""); return }
-      if (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 4) setGpa(value)
-    }}
-    className="w-full border rounded px-3 py-2 text-sm"
-    placeholder="GPA (Unweighted)"
-  />
-</CardContent>
+          <input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Full Name" />
+          <input type="text" ref={ageRef} value={age}
+            onChange={(e) => {
+              const value = e.target.value
+              if (value === "") { setAge(""); return }
+              if (!/^\d+$/.test(value)) return
+              if (value.length > 2) return
+              if (parseInt(value) > 21) return
+              setAge(value)
+            }}
+            onBlur={() => {
+              const num = parseInt(age)
+              if (isNaN(num)) { setAge(""); return }
+              if (num < 14) setAge("14")
+              if (num > 21) setAge("21")
+            }}
+            className="w-full border rounded px-3 py-2 text-sm" placeholder="Age"
+          />
+          <input ref={locationRef} value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Street Address" />
+          <input
+            ref={zipRef} value={zipCode}
+            onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 5) setZipCode(value) }}
+            className="w-full border rounded px-3 py-2 text-sm" placeholder="Zip Code (5 digits)" maxLength={5}
+          />
+          <input ref={emailRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Email" />
+          <input type="tel" ref={phoneRef} value={phone}
+            onChange={(e) => { const value = e.target.value; if (value === "") { setPhone(""); return }; if (/^\d{0,10}$/.test(value)) setPhone(value) }}
+            className="w-full border rounded px-3 py-2 text-sm" placeholder="Phone Number"
+          />
+          <input ref={schoolRef} value={school} onChange={(e) => setSchool(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="School" />
+          <input
+            type="number" step="0.01" min="0" max="4" ref={gpaRef} value={gpa}
+            onChange={(e) => {
+              const value = e.target.value
+              if (value === "") { setGpa(""); return }
+              if (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 4) setGpa(value)
+            }}
+            className="w-full border rounded px-3 py-2 text-sm"
+            placeholder="GPA (Unweighted)"
+          />
+        </CardContent>
       </Card>
 
       {/* PREFERRED JOBS */}
@@ -545,24 +588,15 @@ export default function ProfilePage() {
                 From: <strong>{recommendation.recommender_name}</strong> ({recommendation.recommender_relationship})
               </p>
               <p className="text-sm text-muted-foreground italic">"{recommendation.description}"</p>
-              <p className="text-xs text-muted-foreground">
-                Would recommend: {recommendation.would_recommend}
-              </p>
+              <p className="text-xs text-muted-foreground">Would recommend: {recommendation.would_recommend}</p>
             </div>
           ) : recommendation && !recommendation.submitted ? (
             <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 space-y-2">
               <p className="text-sm font-medium text-yellow-700">
                 ⏳ Waiting for {recommendation.recommender_name} to submit their recommendation.
               </p>
-              <p className="text-xs text-muted-foreground">
-                Sent to: {recommendation.recommender_email}
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={sendRecommendationRequest}
-                disabled={sendingRec}
-              >
+              <p className="text-xs text-muted-foreground">Sent to: {recommendation.recommender_email}</p>
+              <Button size="sm" variant="outline" onClick={sendRecommendationRequest} disabled={sendingRec}>
                 {sendingRec ? "Resending..." : "Resend Email"}
               </Button>
             </div>
@@ -571,24 +605,9 @@ export default function ProfilePage() {
               <p className="text-sm text-muted-foreground">
                 Ask a teacher, coach, or employer to recommend you. This shows up on your profile and means a lot to local employers.
               </p>
-              <input
-                value={recommenderName}
-                onChange={(e) => setRecommenderName(e.target.value)}
-                placeholder="Recommender's full name"
-                className="w-full border rounded px-3 py-2 text-sm"
-              />
-              <input
-                type="email"
-                value={recommenderEmail}
-                onChange={(e) => setRecommenderEmail(e.target.value)}
-                placeholder="Recommender's email"
-                className="w-full border rounded px-3 py-2 text-sm"
-              />
-              <select
-                value={recommenderRelationship}
-                onChange={(e) => setRecommenderRelationship(e.target.value)}
-                className="w-full border rounded px-3 py-2 text-sm bg-background"
-              >
+              <input value={recommenderName} onChange={(e) => setRecommenderName(e.target.value)} placeholder="Recommender's full name" className="w-full border rounded px-3 py-2 text-sm" />
+              <input type="email" value={recommenderEmail} onChange={(e) => setRecommenderEmail(e.target.value)} placeholder="Recommender's email" className="w-full border rounded px-3 py-2 text-sm" />
+              <select value={recommenderRelationship} onChange={(e) => setRecommenderRelationship(e.target.value)} className="w-full border rounded px-3 py-2 text-sm bg-background">
                 <option value="">Select relationship...</option>
                 <option value="Teacher">Teacher</option>
                 <option value="Coach">Coach</option>
@@ -597,11 +616,7 @@ export default function ProfilePage() {
                 <option value="Mentor">Mentor</option>
                 <option value="Other">Other</option>
               </select>
-              <Button
-                className="w-full"
-                onClick={sendRecommendationRequest}
-                disabled={sendingRec}
-              >
+              <Button className="w-full" onClick={sendRecommendationRequest} disabled={sendingRec}>
                 {sendingRec ? "Sending..." : "Send Recommendation Request"}
               </Button>
             </div>
@@ -619,72 +634,30 @@ export default function ProfilePage() {
                 Want to hire students instead? Switch your account to an employer. This will permanently delete all your student data.
               </p>
             </div>
-            <Button
-              variant="outline"
-              className="shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={() => setShowSwitchDialog(true)}
-            >
+            <Button variant="outline" className="shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setShowSwitchDialog(true)}>
               Switch Role
             </Button>
           </div>
         </CardContent>
       </Card>
-{/* DELETE DIALOG */}
-<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-  <DialogContent className="sm:max-w-md">
-    <DialogHeader>
-      <DialogTitle className="flex items-center gap-2 text-red-600">
-        <AlertTriangle className="h-5 w-5" />
-        Delete Account?
-      </DialogTitle>
-      <DialogDescription className="pt-2 space-y-2">
-        <p>This will <span className="font-semibold text-foreground">permanently delete</span> your account and all associated data including:</p>
-        <ul className="list-disc pl-5 space-y-1 text-sm">
-          <li>Your student profile</li>
-          <li>All job applications</li>
-          <li>Your recommendation</li>
-          <li>All availability and preferences</li>
-        </ul>
-        <p className="font-medium text-foreground">This cannot be undone.</p>
-      </DialogDescription>
-    </DialogHeader>
-    <DialogFooter className="flex gap-2 mt-4">
-      <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
-      <Button variant="destructive" onClick={async () => {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  await supabase.from("recommendations").delete().eq("student_user_id", user.id)
-  await supabase.from("location_applications").delete().eq("student_user_id", user.id)
-  await supabase.from("student_notifications").delete().eq("student_user_id", user.id)
-  await supabase.from("student_statuses").delete().eq("student_id", user.id)
-  await supabase.from("Students").delete().eq("user_id", user.id)
-  await supabase.from("profiles").delete().eq("id", user.id)
-  await supabase.from("users").update({ role: null }).eq("id", user.id)
-  await supabase.auth.signOut()
-  window.location.href = "/choose-role"
-}}>
-        Yes, delete my account
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
 
-{/* DELETE CARD */}
-<Card className="border-red-200 bg-red-50/20 mt-4">
-  <CardContent className="p-5">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="font-semibold text-red-700">Delete Account</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Permanently delete your account and all associated data. This cannot be undone.
-        </p>
-      </div>
-      <Button variant="destructive" className="shrink-0" onClick={() => setShowDeleteDialog(true)}>
-        Delete Account
-      </Button>
-    </div>
-  </CardContent>
-</Card>
+      {/* DELETE CARD */}
+      <Card className="border-red-200 bg-red-50/20 mt-4">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-semibold text-red-700">Delete Account</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Permanently delete your account and all associated data. This cannot be undone.
+              </p>
+            </div>
+            <Button variant="destructive" className="shrink-0" onClick={() => setShowDeleteDialog(true)}>
+              Delete Account
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
     </div>
   )
 }

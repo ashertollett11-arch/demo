@@ -29,27 +29,29 @@ export default function ChooseRolePage() {
 
   const selectRole = async (role: "student" | "employer") => {
     setLoading(true)
-
+  
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       toast.error("Not logged in")
       setLoading(false)
       return
     }
-
-    const { error } = await supabase.from("users").insert({ id: user.id, role })
-
+  
+    const { error } = await supabase
+      .from("users")
+      .upsert({ id: user.id, role }, { onConflict: "id" })  // ← upsert, not insert
+  
     if (error) {
       toast.error(error.message)
       setLoading(false)
       return
     }
-
+  
     if (role === "student") {
       await supabase.from("Students").insert({ user_id: user.id })
       router.push("/student/onboarding")
     }
-
+  
     if (role === "employer") {
       router.push("/employer/profile")
     }
