@@ -43,7 +43,7 @@ export default function PrivacyPolicyPage() {
               <li><span className="font-medium text-foreground">Account info:</span> email address and password (stored securely via Supabase Auth)</li>
               <li><span className="font-medium text-foreground">Student profile:</span> name, age, school, GPA, availability, preferred job types, and interests</li>
               <li><span className="font-medium text-foreground">Employer profile:</span> company name, contact info, job details, and billing information</li>
-              <li><span className="font-medium text-foreground">GPA verification:</span> photos uploaded to verify GPA are stored securely and reviewed only for verification purposes</li>
+              <li><span className="font-medium text-foreground">Recommendations:</span> Recommendations are secured with a simple email link to a trusted adult, this is displayed to employers along with the students profile</li>
               <li><span className="font-medium text-foreground">Usage data:</span> pages visited and actions taken within the app, used to improve the platform</li>
               <li><span className="font-medium text-foreground">Payment info:</span> processed securely by Stripe — we never store your card details</li>
             </ul>
@@ -55,7 +55,7 @@ export default function PrivacyPolicyPage() {
             <ul className="mt-3 space-y-2 text-muted-foreground list-disc pl-6">
               <li>Match students with relevant job opportunities</li>
               <li>Allow employers to find and contact qualified student candidates</li>
-              <li>Verify student GPA for the verified badge</li>
+              <li>Use recommendations to boost a students chance of finding a job</li>
               <li>Process employer subscription payments</li>
               <li>Send account-related notifications and updates</li>
               <li>Improve and maintain the platform</li>
@@ -83,7 +83,7 @@ export default function PrivacyPolicyPage() {
               <span className="font-medium text-foreground">Students:</span> Your profile (name, school, address, GPA, age, preferred positions, availability, shift preference and contact information) is visible to employers who have an active SimplyApply subscription.
             </p>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              <span className="font-medium text-foreground">Employers:</span> Your company name, location, pay per hour and tips, your description, your available shifts, and shift prefrence are shown to students browsing available jobs, aswell as a preview of your job on the homepage of the app.
+              <span className="font-medium text-foreground">Employers:</span> Your company name, location, pay per hour and tips, your description, your available shifts, and shift preference are shown to students browsing available jobs, as well as a preview of your job on the homepage of the app.
             </p>
           </section>
 
@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-xl font-semibold">7. Data Retention</h2>
             <p className="mt-3 text-muted-foreground leading-relaxed">
-              We retain your data for as long as your account is active. If you delete your account, your personal information will be removed from our systems within 30 days. GPA verification photos are deleted after verification is complete.
+              We retain your data for as long as your account is active. If you delete your account, your personal information will be permanently removed from our systems immediately upon deletion. Recommendations are deleted along with the account.
             </p>
           </section>
 
@@ -122,6 +122,8 @@ export default function PrivacyPolicyPage() {
               <li><span className="font-medium text-foreground">Supabase</span> — database and authentication</li>
               <li><span className="font-medium text-foreground">Stripe</span> — payment processing</li>
               <li><span className="font-medium text-foreground">Vercel</span> — hosting and deployment</li>
+              <li><span className="font-medium text-foreground">Resend</span> — transactional email delivery (recommendation requests)</li>
+
             </ul>
             <p className="mt-3 text-muted-foreground leading-relaxed">
               Each of these services has their own privacy policy and security practices.
