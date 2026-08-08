@@ -59,12 +59,12 @@ const getStatusBadge = (status: string) => {
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 const ALL_AGES = [14, 15, 16, 17, 18, 19, 20, 21]
+
 function FilterContent({
   minGpa, setMinGpa,
   selectedDays, setSelectedDays,
   verifiedOnly, setVerifiedOnly,
   areaRadius, employerZip,
-  // age filters
   ageMode, setAgeMode,
   ageMin, setAgeMin,
   ageMax, setAgeMax,
@@ -75,8 +75,6 @@ function FilterContent({
 }: any) {
   return (
     <div className="space-y-6">
-
-      {/* LOCATION */}
       {employerZip && (
         <div className="rounded-lg border border-border bg-secondary/30 p-3">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -90,11 +88,9 @@ function FilterContent({
               {areaRadius === "exact" ? "Same zip" : areaRadius === "broad" ? "Broader region" : "All areas"}
             </span>
           </p>
-          <p className="text-[11px] text-muted-foreground mt-1">Change in your company profile.</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Changes with selected location.</p>
         </div>
       )}
-
-      {/* MIN GPA */}
       <div>
         <Label className="text-sm font-medium">Minimum GPA</Label>
         <input
@@ -110,12 +106,8 @@ function FilterContent({
           className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
         />
       </div>
-
-      {/* AGE FILTER */}
       <div>
         <Label className="text-sm font-medium">Age Filter</Label>
-
-        {/* MODE TOGGLE */}
         <div className="flex gap-2 mt-2 mb-3">
           <button
             onClick={() => setAgeMode("range")}
@@ -138,8 +130,6 @@ function FilterContent({
             Specific Ages
           </button>
         </div>
-
-        {/* RANGE MODE */}
         {ageMode === "range" && (
           <div className="flex items-center gap-2">
             <div className="flex-1">
@@ -149,9 +139,7 @@ function FilterContent({
                 onChange={(e) => setAgeMin(Number(e.target.value))}
                 className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
               >
-                {ALL_AGES.map(a => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
+                {ALL_AGES.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
             <span className="text-muted-foreground mt-4">—</span>
@@ -162,15 +150,11 @@ function FilterContent({
                 onChange={(e) => setAgeMax(Number(e.target.value))}
                 className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
               >
-                {ALL_AGES.map(a => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
+                {ALL_AGES.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
             </div>
           </div>
         )}
-
-        {/* SPECIFIC MODE */}
         {ageMode === "specific" && (
           <div className="flex flex-wrap gap-2">
             {ALL_AGES.map((age) => (
@@ -178,9 +162,7 @@ function FilterContent({
                 key={age}
                 onClick={() => {
                   setSpecificAges((prev: number[]) =>
-                    prev.includes(age)
-                      ? prev.filter((a) => a !== age)
-                      : [...prev, age]
+                    prev.includes(age) ? prev.filter((a) => a !== age) : [...prev, age]
                   )
                 }}
                 className={`px-3 py-1 text-xs rounded-full border transition-all ${
@@ -195,8 +177,6 @@ function FilterContent({
           </div>
         )}
       </div>
-
-      {/* AVAILABILITY */}
       <div>
         <Label className="mb-3 block text-sm font-medium">Availability</Label>
         <div className="flex flex-wrap gap-2">
@@ -218,8 +198,6 @@ function FilterContent({
           ))}
         </div>
       </div>
-
-      {/* VERIFIED ONLY */}
       <div className="flex items-center space-x-2">
         <Checkbox
           checked={verifiedOnly}
@@ -227,7 +205,6 @@ function FilterContent({
         />
         <label className="text-sm">Verified students only</label>
       </div>
-
       {activeFiltersCount > 0 && (
         <Button variant="outline" className="w-full" onClick={clearFilters}>
           Clear all filters
@@ -239,7 +216,6 @@ function FilterContent({
 
 export default function MatchingPage() {
   const router = useRouter()
-
   const [name, setName] = useState("Employer")
   const [employerZip, setEmployerZip] = useState<string | null>(null)
   const [areaRadius, setAreaRadius] = useState<"exact" | "broad" | "all">("exact")
@@ -249,7 +225,7 @@ export default function MatchingPage() {
   const [sortBy, setSortBy] = useState<"matchScore" | "gpa" | "age">("matchScore")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
-  // AGE FILTER STATE
+
   const [ageMode, setAgeMode] = useState<"range" | "specific">("range")
   const [ageMin, setAgeMin] = useState(14)
   const [ageMax, setAgeMax] = useState(21)
@@ -257,6 +233,7 @@ export default function MatchingPage() {
 
   const searchParams = useSearchParams()
   const statusParam = searchParams.get("status")
+
   const [employerShifts, setEmployerShifts] = useState<any[]>([])
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [scoredCandidates, setScoredCandidates] = useState<any[]>([])
@@ -270,7 +247,10 @@ export default function MatchingPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
 
-  // ZIP FILTER
+  // MULTI-LOCATION
+  const [allLocations, setAllLocations] = useState<any[]>([])
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+
   const matchesZip = (studentZip: string | null): boolean => {
     if (!employerZip || areaRadius === "all") return true
     if (!studentZip) return false
@@ -279,7 +259,6 @@ export default function MatchingPage() {
     return true
   }
 
-  // AGE FILTER
   const matchesAge = (age: number | null): boolean => {
     if (!age) return true
     if (ageMode === "range") return age >= ageMin && age <= ageMax
@@ -293,16 +272,38 @@ export default function MatchingPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.replace("/login"); return }
-        const { data: profile, error } = await supabase
+
+        const { data: roleData } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle()
+
+        if (!roleData?.role) { router.replace("/choose-role"); return }
+        if (roleData.role !== "employer") { router.replace("/login"); return }
+
+        const { data: profile } = await supabase
           .from("profiles")
           .select("subscription_status")
           .eq("id", user.id)
           .maybeSingle()
-        const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
-        if (error || !profile || !isSubscribed) { router.replace("/pricing/mobile"); return }
+
+        const isSubscribed =
+          profile?.subscription_status === "active" ||
+          profile?.subscription_status === "freeactive"
+        if (!isSubscribed) { router.replace("/pricing/mobile"); return }
+
+        const { data: jobData } = await supabase
+          .from("job")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle()
+
+        if (!jobData) { router.replace("/employer/profile"); return }
+
         setUserId(user.id)
       } catch (err) {
-        router.replace("/pricing/mobile")
+        router.replace("/login")
       }
     }
     checkAccess()
@@ -342,43 +343,51 @@ export default function MatchingPage() {
     loadRecommendations()
   }, [students])
 
-  // LOAD JOB + ZIP
+  // LOAD ALL LOCATIONS
   useEffect(() => {
     const loadJob = async () => {
       const { data: user } = await supabase.auth.getUser()
       if (!user?.user?.id) return
-  
+
       const { data: jobData } = await supabase
         .from("job")
         .select("id, preferred_jobs, shift_preference")
         .eq("user_id", user.user.id)
         .single()
-  
+
       if (!jobData) return
       setPreferredJobs(jobData.preferred_jobs ?? [])
-      setShiftPreference(jobData.shift_preference ?? "flexible")
-  
-      // Everything location-specific comes from the first location
-      const { data: locationData } = await supabase
+
+      const { data: locations } = await supabase
         .from("locations")
-        .select("available_shifts, shift_preference, preferred_jobs, zip_code, zip_match_precision")
+        .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, zip_match_precision")
         .eq("employer_id", jobData.id)
         .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle()
-  
-      if (locationData) {
-        setEmployerShifts(locationData.available_shifts ?? [])
-        setShiftPreference(locationData.shift_preference ?? "flexible")
-        setEmployerZip(locationData.zip_code ?? null)
-        setAreaRadius(locationData.zip_match_precision ?? "exact")
-        if (locationData.preferred_jobs?.length > 0) {
-          setPreferredJobs(locationData.preferred_jobs)
-        }
+
+      if (locations?.length) {
+        setAllLocations(locations)
+        setSelectedLocationId(locations[0].id)
+        const first = locations[0]
+        setEmployerShifts(first.available_shifts ?? [])
+        setShiftPreference(first.shift_preference ?? "flexible")
+        setEmployerZip(first.zip_code ?? null)
+        setAreaRadius(first.zip_match_precision === 3 ? "broad" : "exact")
+        if (first.preferred_jobs?.length > 0) setPreferredJobs(first.preferred_jobs)
       }
     }
     loadJob()
   }, [])
+
+  const handleLocationChange = (locationId: string) => {
+    const loc = allLocations.find(l => l.id === locationId)
+    if (!loc) return
+    setSelectedLocationId(locationId)
+    setEmployerShifts(loc.available_shifts ?? [])
+    setShiftPreference(loc.shift_preference ?? "flexible")
+    setEmployerZip(loc.zip_code ?? null)
+    setAreaRadius(loc.zip_match_precision === 3 ? "broad" : "exact")
+    if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
+  }
 
   const activeShifts = useMemo(() => {
     return Array.isArray(employerShifts)
@@ -388,7 +397,6 @@ export default function MatchingPage() {
 
   const jobDays = useMemo(() => activeShifts.map((s) => s.day), [activeShifts])
 
-  // LOAD EMPLOYER ID
   useEffect(() => {
     const loadEmployer = async () => {
       const { data } = await supabase.auth.getUser()
@@ -398,7 +406,6 @@ export default function MatchingPage() {
     loadEmployer()
   }, [])
 
-  // LOAD STATUSES
   useEffect(() => {
     if (!employerId) return
     const loadStatuses = async () => {
@@ -406,13 +413,12 @@ export default function MatchingPage() {
         .from("student_statuses")
         .select("*")
         .eq("employer_id", employerId)
-      if (error) return 
+      if (error) return
       setStatuses(data || [])
     }
     loadStatuses()
   }, [employerId])
 
-  // SEED STATUSES
   useEffect(() => {
     if (!employerId || students.length === 0 || !employerZip) return
     const seedStatuses = async () => {
@@ -423,7 +429,7 @@ export default function MatchingPage() {
       const { error } = await supabase
         .from("student_statuses")
         .upsert(rows, { onConflict: "employer_id,student_id", ignoreDuplicates: true })
-      if (error) return 
+      if (error) return
       const { data } = await supabase
         .from("student_statuses")
         .select("*")
@@ -433,7 +439,6 @@ export default function MatchingPage() {
     seedStatuses()
   }, [employerId, students, employerZip, areaRadius])
 
-  // NOTIFICATIONS
   useEffect(() => {
     if (!userId) return
     const loadNotifications = async () => {
@@ -466,12 +471,9 @@ export default function MatchingPage() {
     await supabase.from("notifications").update({ read: true }).eq("id", id)
   }
 
-  // SCORE CANDIDATES
   useEffect(() => {
     if (!students.length) return
     const results = students.map((candidate) => {
-  
-  
       const matchScore = calculateEmployerMatch(
         { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
         candidate.availability,
@@ -483,6 +485,7 @@ export default function MatchingPage() {
     })
     setScoredCandidates(results)
   }, [students, employerShifts, shiftPreference, preferredJobs])
+
   useEffect(() => {
     if (statusParam === "new" || statusParam === "contacted" || statusParam === "hired") {
       setActiveStatus(statusParam)
@@ -516,7 +519,6 @@ export default function MatchingPage() {
     router.replace("/matching/employer")
   }, [searchParams, router])
 
-  // FILTER + SORT
   const statusPriority: Record<string, number> = { new: 0, contacted: 1, hired: 2 }
 
   const filteredCandidates = scoredCandidates
@@ -615,126 +617,113 @@ export default function MatchingPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-96">
-  <div className="flex items-center justify-between px-4 py-3 border-b">
-    <p className="font-semibold text-sm text-foreground">Notifications</p>
-    {notifications.length > 0 && (
-      <Badge className="bg-red-100 text-red-600 text-xs">{notifications.length} new</Badge>
-    )}
-  </div>
-
-  {notifications.length === 0 ? (
-    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-      <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
-      <p className="text-sm font-medium text-foreground">All caught up</p>
-      <p className="text-xs text-muted-foreground mt-1">No new notifications</p>
-    </div>
-  ) : (
-    <div className="max-h-80 overflow-y-auto divide-y divide-border">
-      {notifications.map((n) => (
-        <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
-          {/* AVATAR */}
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-            {n.message?.split(" applied")[0]?.trim().split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || "?"}
-          </div>
-
-          {/* CONTENT */}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-foreground leading-snug">
-              {n.message ?? "New notification"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {n.created_at
-                ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
-                : "Just now"}
-            </p>
-          </div>
-
-          {/* ACTIONS */}
-          <div className="flex flex-col gap-1.5 shrink-0">
-            <button
-              onClick={() => {
-                const studentName = n.message?.split(" applied to ")[0]?.trim()
-                if (studentName) { setSearchQuery(studentName); setActiveStatus("new") }
-              }}
-              className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              View
-            </button>
-            <button
-              onClick={() => dismissNotification(n.id)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</DropdownMenuContent>
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <p className="font-semibold text-sm text-foreground">Notifications</p>
+                  {notifications.length > 0 && (
+                    <Badge className="bg-red-100 text-red-600 text-xs">{notifications.length} new</Badge>
+                  )}
+                </div>
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                    <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                    <p className="text-sm font-medium text-foreground">All caught up</p>
+                    <p className="text-xs text-muted-foreground mt-1">No new notifications</p>
+                  </div>
+                ) : (
+                  <div className="max-h-80 overflow-y-auto divide-y divide-border">
+                    {notifications.map((n) => (
+                      <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                          {n.message?.split(" applied")[0]?.trim().split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase() || "?"}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground leading-snug">{n.message ?? "New notification"}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {n.created_at
+                              ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                              : "Just now"}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          <button
+                            onClick={() => {
+                              const studentName = n.message?.split(" applied to ")[0]?.trim()
+                              if (studentName) { setSearchQuery(studentName); setActiveStatus("new") }
+                            }}
+                            className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={() => dismissNotification(n.id)}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DropdownMenuContent>
             </DropdownMenu>
             <DropdownMenu>
-  <DropdownMenuTrigger asChild>
-    <Button variant="ghost" className="flex items-center gap-2 px-2">
-      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
-        {name?.[0]?.toUpperCase() || "?"}
-      </div>
-      <div className="hidden md:flex flex-col items-start">
-        <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{name}</span>
-        <span className="text-xs text-muted-foreground">Employer</span>
-      </div>
-      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-    </Button>
-  </DropdownMenuTrigger>
-  <DropdownMenuContent align="end" className="w-56">
-    {/* ACCOUNT INFO */}
-    <div className="px-3 py-2.5 border-b border-border">
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-          {name?.[0]?.toUpperCase() || "?"}
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate">{name}</p>
-          <p className="text-xs text-muted-foreground">Employer Account</p>
-        </div>
-      </div>
-    </div>
-
-    {/* MENU ITEMS */}
-    <div className="py-1">
-      <DropdownMenuItem asChild>
-        <Link href="/employer/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-          Company Profile
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href="/employer/locations" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
-          Locations
-        </Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href="/pricing/mobile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-          <CreditCard className="h-4 w-4 text-muted-foreground" />
-          Billing
-        </Link>
-      </DropdownMenuItem>
-    </div>
-
-    <DropdownMenuSeparator />
-
-    <div className="py-1">
-      <DropdownMenuItem
-        onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
-        className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-      >
-        <LogOut className="h-4 w-4" />
-        Log out
-      </DropdownMenuItem>
-    </div>
-  </DropdownMenuContent>
-</DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 px-2">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
+                    {name?.[0]?.toUpperCase() || "?"}
+                  </div>
+                  <div className="hidden md:flex flex-col items-start">
+                    <span className="text-sm font-medium text-foreground max-w-[120px] truncate">{name}</span>
+                    <span className="text-xs text-muted-foreground">Employer</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-3 py-2.5 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                      {name?.[0]?.toUpperCase() || "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+                      <p className="text-xs text-muted-foreground">Employer Account</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="py-1">
+                  <DropdownMenuItem asChild>
+                    <Link href="/employer/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      Company Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/employer/locations" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      Locations
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/pricing/mobile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                      <CreditCard className="h-4 w-4 text-muted-foreground" />
+                      Billing
+                    </Link>
+                  </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator />
+                <div className="py-1">
+                  <DropdownMenuItem
+                    onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -751,10 +740,34 @@ export default function MatchingPage() {
                 {areaRadius === "exact" ? `zip code ${employerZip}` :
                  areaRadius === "broad" ? `region ${employerZip.slice(0, 3)}xx` : "all areas"}
               </span>
-              <Link href="/employer/profile" className="text-xs text-primary hover:underline ml-1">Change</Link>
             </div>
           )}
         </div>
+
+        {/* LOCATION SELECTOR */}
+        {allLocations.length > 1 && (
+          <div className="mb-6 rounded-xl border border-border bg-card p-4">
+            <p className="text-sm font-medium text-foreground mb-3">Scoring match % for location:</p>
+            <div className="flex flex-wrap gap-2">
+              {allLocations.map((loc) => (
+                <button
+                  key={loc.id}
+                  onClick={() => handleLocationChange(loc.id)}
+                  className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
+                    selectedLocationId === loc.id
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border text-muted-foreground hover:border-primary/50"
+                  }`}
+                >
+                  {loc.name}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Switch locations to see match scores and zip filtering based on each location's shifts and zip code.
+            </p>
+          </div>
+        )}
 
         <Card className="mb-8 border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
           <CardContent className="p-6">
@@ -844,7 +857,6 @@ export default function MatchingPage() {
                   </div>
                 </SheetContent>
               </Sheet>
-
               <div className="flex items-center gap-2">
                 <span className="hidden text-sm text-muted-foreground sm:block">{filteredCandidates.length} candidates</span>
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
@@ -924,10 +936,10 @@ export default function MatchingPage() {
                             <Star className="h-4 w-4" />
                             <span>GPA: {candidate.gpa}</span>
                             {recommendations[candidate.user_id] && (
-  <Badge variant="outline" className="gap-1 text-[10px] text-yellow-600 border-yellow-300 bg-yellow-50">
-    Recommended
-  </Badge>
-)}
+                              <Badge variant="outline" className="gap-1 text-[10px] text-yellow-600 border-yellow-300 bg-yellow-50">
+                                Recommended
+                              </Badge>
+                            )}
                           </div>
                           {candidate.age && (
                             <p className="text-xs text-muted-foreground mt-0.5">Age: {candidate.age}</p>
@@ -937,7 +949,6 @@ export default function MatchingPage() {
                       </div>
                       <Badge className="bg-primary/10 text-primary">{candidate.matchScore}% match</Badge>
                     </div>
-
                     <div className="mt-4 text-sm text-muted-foreground">
                       Available:{" "}
                       {(candidate.availability ?? [])
@@ -945,7 +956,6 @@ export default function MatchingPage() {
                         .map((a: any) => a?.day)
                         .join(", ") || "None"}
                     </div>
-
                     <div className="mt-5 flex gap-2">
                       <Button variant="outline" className="flex-1" size="sm"
                         onClick={(e) => { e.stopPropagation(); router.push(`/matching/employer/${candidate.id}`) }}
@@ -988,11 +998,11 @@ export default function MatchingPage() {
             </div>
 
             {loading ? (
-  <div className="flex flex-col items-center justify-center py-16 gap-4">
-    <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-    <p className="text-muted-foreground text-sm">Loading candidates...</p>
-  </div>
-) : students.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <p className="text-muted-foreground text-sm">Loading candidates...</p>
+              </div>
+            ) : students.length === 0 ? (
               <Card className="border-dashed"><CardContent className="py-12 text-center"><p className="font-medium">No students in database</p></CardContent></Card>
             ) : filteredCandidates.length === 0 ? (
               <Card className="border-dashed">

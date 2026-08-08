@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
       {/* CONTENT */}
       <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-foreground">Privacy Policy</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Last updated: May 2026</p>
+        <p className="mt-2 text-sm text-muted-foreground">Last updated: Aug 2026</p>
 
         <div className="mt-10 space-y-10 text-foreground">
 
@@ -123,7 +123,6 @@ export default function PrivacyPolicyPage() {
               <li><span className="font-medium text-foreground">Stripe</span> — payment processing</li>
               <li><span className="font-medium text-foreground">Vercel</span> — hosting and deployment</li>
               <li><span className="font-medium text-foreground">Resend</span> — transactional email delivery (recommendation requests)</li>
-
             </ul>
             <p className="mt-3 text-muted-foreground leading-relaxed">
               Each of these services has their own privacy policy and security practices.

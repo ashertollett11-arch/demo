@@ -323,33 +323,39 @@ const { data, error } = await supabase
           </div>
 
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-2">
-          {featuredJobs.slice(0, 2).map((job, index) => (              <Card key={index} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-foreground">{job.title}</h3>
-                      <p className="text-sm text-muted-foreground">{job.company}</p>
-                    </div>
-                    <Badge variant="secondary" className="text-xs">New</Badge>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {job.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {job.shift_preference || "Flexible"}
-                                          </span>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="font-semibold text-primary">{job.pay}</span>
-                    <Button size="sm" variant="ghost" className="text-xs">
-                    <Link href="/login">View Details</Link>                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          {featuredJobs.slice(0, 2).map((loc, index) => (
+  <Card key={index} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg">
+    <CardContent className="p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="font-semibold text-foreground">
+            {Array.isArray(loc.job) ? loc.job[0]?.company : loc.job?.company}
+          </h3>
+          <p className="text-sm text-muted-foreground">{loc.address}</p>
+        </div>
+        <Badge variant="secondary" className="text-xs">Now Hiring</Badge>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <MapPin className="h-3.5 w-3.5" />
+          {loc.address}
+        </span>
+        <span className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" />
+          {loc.shift_preference || "Flexible"}
+        </span>
+      </div>
+      <div className="mt-4 flex items-center justify-between">
+        <span className="font-semibold text-primary">
+          {loc.hourly_pay ? `$${loc.hourly_pay}/hr${loc.has_tips ? " + tips" : ""}` : "Competitive pay"}
+        </span>
+        <Button size="sm" variant="ghost" className="text-xs" asChild>
+          <Link href="/login">View Details</Link>
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+))}
           </div>
 
           <div className="mt-10 text-center">

@@ -21,109 +21,18 @@ export default function StudentPage() {
   const router = useRouter()
   const params = useParams()
   const studentId = params.id as string
+
   const [recommendation, setRecommendation] = useState<any>(null)
   const [student, setStudent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [savedStatus, setSavedStatus] = useState<string | null>(null)
   const [employerShifts, setEmployerShifts] = useState<any[]>([])
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [distance, setDistance] = useState<{ distance: string; duration: string } | null>(null)
   const [loadingDistance, setLoadingDistance] = useState(false)
   const [employerLocation, setEmployerLocation] = useState<{ address: string; zip: string } | null>(null)
-
-  // Load employer data + student
-  useEffect(() => {
-    if (!studentId) return
-
-    const loadStudent = async () => {
-      setLoading(true)
-
-      // GET AUTH USER FIRST
-      const { data: authData } = await supabase.auth.getUser()
-      const userId = authData?.user?.id
-
-      const { data: employerJob } = await supabase
-      .from("job")
-      .select("id, shift_preference, preferred_jobs")
-      .eq("user_id", userId)
-      .single()
-    
-    setShiftPreference(employerJob?.shift_preference ?? "flexible")
-    setPreferredJobs(employerJob?.preferred_jobs ?? [])
-    
-    // Get shifts + location from first location
-    if (employerJob?.id) {
-      const { data: locationData } = await supabase
-        .from("locations")
-        .select("available_shifts, shift_preference, preferred_jobs, address, zip_code")
-        .eq("employer_id", employerJob.id)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle()
-    
-      if (locationData) {
-        setEmployerShifts(locationData.available_shifts ?? [])
-        setShiftPreference(locationData.shift_preference ?? "flexible")
-        if (locationData.preferred_jobs?.length > 0) {
-          setPreferredJobs(locationData.preferred_jobs)
-        }
-        if (locationData.address && locationData.zip_code) {
-          setEmployerLocation({
-            address: locationData.address,
-            zip: locationData.zip_code,
-          })
-        }
-      }
-    }
-
-      if (!userId) {
-        setLoading(false)
-        return
-      }
-
-      // LOAD STUDENT
-      const { data, error } = await supabase
-        .from("Students")
-        .select("*")
-        .eq("id", studentId)
-        .single()
-
-      if (error || !data) {
-        setLoading(false)
-        return
-      }
-
-      // LOAD STATUS
-      const { data: statusRow } = await supabase
-        .from("student_statuses")
-        .select("status")
-        .eq("student_id", studentId)
-        .eq("employer_id", userId)
-        .single()
-
-      // FINAL OBJECT
-      const finalStudent = {
-        ...data,
-        status: statusRow?.status || "new",
-      }
-
-      setStudent(finalStudent)
-      
-      const { data: rec } = await supabase
-  .from("recommendations")
-  .select("*")
-  .eq("student_user_id", data.user_id)
-  .eq("submitted", true)
-  .maybeSingle()
-if (rec) setRecommendation(rec)
-
-      setLoading(false)
-    }
-
-    loadStudent()
-  }, [studentId, router])
-
+  const [allLocations, setAllLocations] = useState<any[]>([])
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!studentId) return
@@ -131,102 +40,111 @@ if (rec) setRecommendation(rec)
       setLoading(true)
       const { data: authData } = await supabase.auth.getUser()
       const userId = authData?.user?.id
-  
+
       if (!userId) { router.replace("/login"); return }
-  
+
       // Check role
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
         .eq("id", userId)
         .maybeSingle()
-  
+
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "employer") { router.replace("/login"); return }
-  
+
       // Check subscription
       const { data: profile } = await supabase
         .from("profiles")
         .select("subscription_status")
         .eq("id", userId)
         .maybeSingle()
-  
+
       const isSubscribed =
         profile?.subscription_status === "active" ||
         profile?.subscription_status === "freeactive"
       if (!isSubscribed) { router.replace("/pricing/mobile"); return }
-  
-      // Check job profile exists
+
+      // Load employer job
       const { data: employerJob } = await supabase
         .from("job")
         .select("id, shift_preference, preferred_jobs")
         .eq("user_id", userId)
         .single()
-  
+
       if (!employerJob) { router.replace("/employer/profile"); return }
-  
+
       setShiftPreference(employerJob?.shift_preference ?? "flexible")
       setPreferredJobs(employerJob?.preferred_jobs ?? [])
-  
-      // Get shifts + location from first location
+
+      // Load ALL locations
       if (employerJob?.id) {
-        const { data: locationData } = await supabase
+        const { data: locations } = await supabase
           .from("locations")
-          .select("available_shifts, shift_preference, preferred_jobs, address, zip_code")
+          .select("id, name, available_shifts, shift_preference, preferred_jobs, address, zip_code")
           .eq("employer_id", employerJob.id)
           .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle()
-  
-        if (locationData) {
-          setEmployerShifts(locationData.available_shifts ?? [])
-          setShiftPreference(locationData.shift_preference ?? "flexible")
-          if (locationData.preferred_jobs?.length > 0) {
-            setPreferredJobs(locationData.preferred_jobs)
-          }
-          if (locationData.address && locationData.zip_code) {
-            setEmployerLocation({ address: locationData.address, zip: locationData.zip_code })
+
+        if (locations?.length) {
+          setAllLocations(locations)
+          setSelectedLocationId(locations[0].id)
+          const first = locations[0]
+          setEmployerShifts(first.available_shifts ?? [])
+          setShiftPreference(first.shift_preference ?? "flexible")
+          if (first.preferred_jobs?.length > 0) setPreferredJobs(first.preferred_jobs)
+          if (first.address && first.zip_code) {
+            setEmployerLocation({ address: first.address, zip: first.zip_code })
           }
         }
       }
-  
-      // LOAD STUDENT
+
+      // Load student
       const { data, error } = await supabase
         .from("Students")
         .select("*")
         .eq("id", studentId)
         .single()
-  
+
       if (error || !data) { setLoading(false); return }
-  
+
       const { data: statusRow } = await supabase
         .from("student_statuses")
         .select("status")
         .eq("student_id", studentId)
         .eq("employer_id", userId)
-        .single()
-  
+        .maybeSingle()
+
       setStudent({ ...data, status: statusRow?.status || "new" })
-  
+
       const { data: rec } = await supabase
         .from("recommendations")
         .select("*")
         .eq("student_user_id", data.user_id)
         .eq("submitted", true)
         .maybeSingle()
-  
+
       if (rec) setRecommendation(rec)
       setLoading(false)
     }
     loadStudent()
   }, [studentId, router])
 
+  const handleLocationChange = (locationId: string) => {
+    const loc = allLocations.find(l => l.id === locationId)
+    if (!loc) return
+    setSelectedLocationId(locationId)
+    setEmployerShifts(loc.available_shifts ?? [])
+    setShiftPreference(loc.shift_preference ?? "flexible")
+    if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
+    if (loc.address && loc.zip_code) {
+      setEmployerLocation({ address: loc.address, zip: loc.zip_code })
+    }
+  }
 
-  // FETCH DISTANCE once student + employer location are loaded
+  // Refetch distance when employer location changes
   useEffect(() => {
     if (!student || !employerLocation) return
     if (!student.location || !student.zip_code) return
-
     const fetchDistance = async () => {
       setLoadingDistance(true)
       const result = await getDistance(
@@ -238,28 +156,19 @@ if (rec) setRecommendation(rec)
       setDistance(result)
       setLoadingDistance(false)
     }
-
     fetchDistance()
   }, [student, employerLocation])
 
   const matchScore = useMemo(() => {
     if (!student) return 0
     if (!employerShifts.length) return 22
-
     const activeShifts = employerShifts.filter(
       (s) => s.active === true || s.active === "true" || s.active === 1
     )
-
     const jobDays = activeShifts.map((s) => s.day)
-
     if (!jobDays.length) return 22
-
     return calculateEmployerMatch(
-      {
-        shifts: jobDays,
-        shiftPreference,
-        preferred_jobs: preferredJobs,
-      },
+      { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
       student.availability,
       student.shift_preference,
       student.gpa,
@@ -268,33 +177,16 @@ if (rec) setRecommendation(rec)
   }, [student, employerShifts, shiftPreference, preferredJobs])
 
   const updateStatus = async (newStatus: "new" | "contacted" | "hired") => {
-    setStudent((prev: any) => ({
-      ...prev,
-      status: newStatus,
-    }))
-
-
+    setStudent((prev: any) => ({ ...prev, status: newStatus }))
     const { data: userData } = await supabase.auth.getUser()
     const employerId = userData?.user?.id
-
     if (!employerId) return
-
-    const { data, error } = await supabase
+    await supabase
       .from("student_statuses")
       .upsert(
-        {
-          student_id: studentId,
-          employer_id: employerId,
-          status: newStatus,
-        },
-        {
-          onConflict: "student_id,employer_id",
-        }
+        { student_id: studentId, employer_id: employerId, status: newStatus },
+        { onConflict: "student_id,employer_id" }
       )
-
-    if (error) {
-    } else {
-    }
   }
 
   if (loading) {
@@ -307,6 +199,7 @@ if (rec) setRecommendation(rec)
       </div>
     )
   }
+
   if (!student) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -320,7 +213,6 @@ if (rec) setRecommendation(rec)
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
-      {/* BACK BUTTON */}
       <Button
         variant="ghost"
         className="flex items-center gap-2 mb-6"
@@ -330,15 +222,36 @@ if (rec) setRecommendation(rec)
       </Button>
 
       <Card className="border-border bg-card">
-        {/* HEADER */}
-        <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+        <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
           <div>
             <CardTitle className="text-2xl">{student.name}</CardTitle>
             <p className="text-muted-foreground">{student.school}</p>
           </div>
-          <Badge className="mt-2 sm:mt-0 bg-primary text-primary-foreground">
-            {matchScore}% Match
-          </Badge>
+          <div className="flex flex-col items-start sm:items-end gap-2">
+            <Badge className="bg-primary text-primary-foreground text-base px-3 py-1">
+              {matchScore}% Match
+            </Badge>
+            {allLocations.length > 1 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Scoring for location:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {allLocations.map((loc) => (
+                    <button
+                      key={loc.id}
+                      onClick={() => handleLocationChange(loc.id)}
+                      className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
+                        selectedLocationId === loc.id
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border text-muted-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      {loc.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -347,8 +260,6 @@ if (rec) setRecommendation(rec)
             <span className="flex items-center gap-1">
               <MapPin className="h-4 w-4" /> {student.location}
             </span>
-
-            {/* DISTANCE */}
             <span className="flex items-center gap-1">
               {loadingDistance ? (
                 <span>Calculating distance...</span>
@@ -359,20 +270,18 @@ if (rec) setRecommendation(rec)
                 </>
               ) : null}
             </span>
-
             <div className="flex items-center gap-2">
               <span>GPA: {student.gpa}</span>
               {recommendation && (
-  <Badge variant="outline" className="gap-1 border-primary/30 text-[10px] text-yellow-600 border-yellow-300 bg-yellow-50">
-     Recommended
-  </Badge>
-)}
+                <Badge variant="outline" className="gap-1 border-primary/30 text-[10px] text-yellow-600 border-yellow-300 bg-yellow-50">
+                  Recommended
+                </Badge>
+              )}
             </div>
-
             <span>Age {student.age}</span>
           </div>
 
-          {/* JOB INTERESTS */}
+          {/* PREFERRED POSITIONS */}
           <div>
             <h2 className="font-semibold text-lg mb-2">Preferred Positions</h2>
             <div className="flex flex-wrap gap-2">
@@ -398,44 +307,38 @@ if (rec) setRecommendation(rec)
             </div>
           </div>
 
-          {/* SHIFT PREF */}
+          {/* SHIFT PREFERENCE */}
           <div>
             <h2 className="font-semibold text-lg mb-1">Shift Preference</h2>
-            <p className="text-sm text-muted-foreground capitalize">
-              {student.shift_preference}
-            </p>
+            <p className="text-sm text-muted-foreground capitalize">{student.shift_preference}</p>
           </div>
 
+          {/* RECOMMENDATION */}
+          {recommendation && (
+            <div>
+              <h2 className="font-semibold text-lg mb-2">Recommendation</h2>
+              <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium text-foreground">{recommendation.recommender_name}</span>
+                  <span className="text-muted-foreground">·</span>
+                  <span className="text-muted-foreground">{recommendation.recommender_relationship}</span>
+                </div>
+                <div className="rounded-lg border border-border bg-background p-3">
+                  <p className="text-sm text-foreground italic leading-relaxed">
+                    "{recommendation.description}"
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  <span>Known for: <strong className="text-foreground">{recommendation.how_long_known}</strong></span>
+                  <span>·</span>
+                  <span>Would recommend: <strong className="text-foreground">{recommendation.would_recommend}</strong></span>
+                </div>
+              </div>
+            </div>
+          )}
 
-{/* RECOMMENDATION */}
-{recommendation && (
-  <div>
-    <h2 className="font-semibold text-lg mb-2 flex items-center gap-2">
-       Recommendation
-    </h2>
-    <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 space-y-3">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="font-medium text-foreground">{recommendation.recommender_name}</span>
-        <span className="text-muted-foreground">·</span>
-        <span className="text-muted-foreground">{recommendation.recommender_relationship}</span>
-      </div>
-      <div className="rounded-lg border border-border bg-background p-3">
-        <p className="text-sm text-foreground italic leading-relaxed">
-          "{recommendation.description}"
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-        <span>Known for: <strong className="text-foreground">{recommendation.how_long_known}</strong></span>
-        <span>·</span>
-        <span>Would recommend: <strong className="text-foreground">{recommendation.would_recommend}</strong></span>
-      </div>
-    </div>
-  </div>
-)}
-
-
-         {/* CONTACT STUDENT */}
-         <div className="mt-6">
+          {/* CONTACT STUDENT */}
+          <div className="mt-6">
             <h2 className="font-semibold text-lg mb-2">Contact Student</h2>
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between rounded-lg border p-3 bg-secondary/30">
@@ -448,45 +351,45 @@ if (rec) setRecommendation(rec)
               </div>
             </div>
 
-         {/* NOTIFY BUTTON */}
-<div className="mt-4 rounded-xl border border-border bg-secondary/20 p-4 space-y-3">
-  <div>
-    <h3 className="font-semibold text-base text-foreground">Already reached out?</h3>
-    <p className="text-sm text-muted-foreground mt-1">
-      After you've contacted this student by phone or email, send them an in-app nudge so they know to check for your message and take it seriously.
-    </p>
-  </div>
-  <Button
-    className="w-full"
-    variant="outline"
-    onClick={async () => {
-      const { data: userData } = await supabase.auth.getUser()
-      const employerId = userData?.user?.id
-      if (!employerId) return
-      const { data: jobData } = await supabase
-        .from("job")
-        .select("company")
-        .eq("user_id", employerId)
-        .single()
-      const companyName = jobData?.company || "An employer"
-      const { error } = await supabase
-        .from("student_notifications")
-        .insert({
-          student_user_id: student.user_id,
-          employer_id: employerId,
-          message: `Check your phone and email — ${companyName} is interested in hiring you!`,
-          read: false,
-        })
-      if (error) {
-        toast.error("Failed to send notification.")
-      } else {
-        toast.success("Student notified!")
-      }
-    }}
-  >
-    📲 Send In-App Notification
-  </Button>
-</div>
+            {/* NOTIFY BUTTON */}
+            <div className="mt-4 rounded-xl border border-border bg-secondary/20 p-4 space-y-3">
+              <div>
+                <h3 className="font-semibold text-base text-foreground">Already reached out?</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  After you've contacted this student by phone or email, send them an in-app nudge so they know to check for your message and take it seriously.
+                </p>
+              </div>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={async () => {
+                  const { data: userData } = await supabase.auth.getUser()
+                  const employerId = userData?.user?.id
+                  if (!employerId) return
+                  const { data: jobData } = await supabase
+                    .from("job")
+                    .select("company")
+                    .eq("user_id", employerId)
+                    .single()
+                  const companyName = jobData?.company || "An employer"
+                  const { error } = await supabase
+                    .from("student_notifications")
+                    .insert({
+                      student_user_id: student.user_id,
+                      employer_id: employerId,
+                      message: `Check your phone and email — ${companyName} is interested in hiring you!`,
+                      read: false,
+                    })
+                  if (error) {
+                    toast.error("Failed to send notification.")
+                  } else {
+                    toast.success("Student notified!")
+                  }
+                }}
+              >
+                📲 Send In-App Notification
+              </Button>
+            </div>
 
             {/* STATUS */}
             <div className="mt-6">
