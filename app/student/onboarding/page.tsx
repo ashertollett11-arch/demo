@@ -36,6 +36,18 @@ export default function StudentOnboarding() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
+  
+      // Check role
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle()
+  
+      if (!roleData?.role) { router.replace("/choose-role"); return }
+      if (roleData.role !== "student") { router.replace("/login"); return }
+  
+      // Auto-fill from auth
       if (user.email) setEmail(user.email)
       if (user.user_metadata?.full_name) setName(user.user_metadata.full_name)
     }
@@ -108,7 +120,7 @@ export default function StudentOnboarding() {
       )
 
     if (error) {
-      console.error(error)
+     
       toast.error("Failed to save. Please try again.")
       setSaving(false)
       return

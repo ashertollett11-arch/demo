@@ -30,7 +30,17 @@ export default function ProfilePage() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data } = await supabase.auth.getUser()
-      if (!data.user) router.replace("/login")
+      const user = data?.user
+      if (!user) { router.replace("/login"); return }
+  
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle()
+  
+      if (!roleData?.role) { router.replace("/choose-role"); return }
+      if (roleData.role !== "student") { router.replace("/login"); return }
     }
     checkAuth()
   }, [router])

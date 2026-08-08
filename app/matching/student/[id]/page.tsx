@@ -29,13 +29,27 @@ export default function JobPage() {
       const { data } = await supabase.auth.getUser()
       const user = data?.user
       if (!user?.id) { router.replace("/login"); return }
+  
+      // Check role
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle()
+  
+      if (!roleData?.role) { router.replace("/choose-role"); return }
+      if (roleData.role !== "student") { router.replace("/login"); return }
+  
+      // Check student profile is complete
       const { data: profile } = await supabase
         .from("Students")
         .select("profile_complete")
         .eq("user_id", user.id)
         .maybeSingle()
+  
       if (!profile?.profile_complete) {
         router.replace("/student/profile?missing=true")
+        return
       }
     }
     run()
@@ -218,7 +232,6 @@ export default function JobPage() {
   })
 
     if (notifError) {
-      console.error("Notification error:", notifError)
     }
 
     toast.success(`Applied to ${job.title} at ${job.company}!`)
