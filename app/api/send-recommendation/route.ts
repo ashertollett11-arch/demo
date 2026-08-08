@@ -14,11 +14,22 @@ export async function POST(req: Request) {
     const { studentUserId, studentName, recommenderName, recommenderEmail, relationship } = await req.json()
 
     if (!studentUserId || !studentName || !recommenderName || !recommenderEmail || !relationship) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
-
-    // Check if recommendation already exists and is submitted
-    const { data: existing } = await supabase
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      }
+      
+      // Validate student exists
+      const { data: student } = await supabase
+        .from("Students")
+        .select("user_id")
+        .eq("user_id", studentUserId)
+        .maybeSingle()
+      
+      if (!student) {
+        return NextResponse.json({ error: "Student not found" }, { status: 404 })
+      }
+      
+      // Check if recommendation already exists and is submitted
+      const { data: existing } = await supabase
       .from("recommendations")
       .select("id, submitted, token")
       .eq("student_user_id", studentUserId)
@@ -76,7 +87,7 @@ export async function POST(req: Request) {
           
           <p style="color: #444; font-size: 16px;">
             <strong>${studentName}</strong> listed you as a reference on SimplyApply — 
-            a job matching platform for students ages 14–18.
+            a job matching platform for students ages 14–21.
           </p>
 
           <p style="color: #444; font-size: 16px;">
@@ -108,7 +119,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
-    console.error("SEND RECOMMENDATION ERROR:", err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

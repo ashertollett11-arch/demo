@@ -60,6 +60,12 @@ export default function RecommendPage() {
   }, [token])
 
   const handleSubmit = async () => {
+    if (recommendation?.submitted) {
+      toast.error("This recommendation has already been submitted.")
+      setSubmitted(true)
+      return
+    }
+    if (!howLongKnown.trim()) { toast.error("Please fill in how long you've known them"); return }    
     if (!howLongKnown.trim()) { toast.error("Please fill in how long you've known them"); return }
     if (!wouldRecommend) { toast.error("Please select whether you'd recommend them"); return }
     if (!description.trim()) { toast.error("Please write a short description"); return }
@@ -90,11 +96,13 @@ export default function RecommendPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading...</p>
+        </div>
       </div>
     )
   }
-
   if (!recommendation && !submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">

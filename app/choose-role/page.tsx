@@ -22,7 +22,36 @@ export default function ChooseRolePage() {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) router.replace("/login")
+      if (!user) { router.replace("/login"); return }
+  
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle()
+  
+      if (!roleData?.role) return // no role yet, stay on this page
+  
+      // Already has a role — redirect to their dashboard
+      if (roleData.role === "student") {
+        const { data: profile } = await supabase
+          .from("Students")
+          .select("profile_complete")
+          .eq("user_id", user.id)
+          .maybeSingle()
+  
+        if (!profile?.profile_complete) {
+          router.replace("/student/onboarding")
+        } else {
+          router.replace("/student")
+        }
+        return
+      }
+  
+      if (roleData.role === "employer") {
+        router.replace("/employer")
+        return
+      }
     }
     checkAuth()
   }, [router])
