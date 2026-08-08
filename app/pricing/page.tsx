@@ -54,7 +54,7 @@ export default function PricingPage() {
                 <Users className="h-6 w-6 text-chart-2" />
               </div>
               <h2 className="text-xl font-bold text-foreground">For Students</h2>
-              <p className="text-muted-foreground text-sm mt-1">Ages 14–18 looking for their first job</p>
+              <p className="text-muted-foreground text-sm mt-1">Ages 14–21 looking for their first job</p>
               <div className="mt-6 mb-6">
                 <span className="text-4xl font-bold text-foreground">Free</span>
                 <span className="text-muted-foreground ml-2 text-sm">always</span>
@@ -64,7 +64,7 @@ export default function PricingPage() {
                   "Create a full student profile",
                   "Browse jobs near you",
                   "Get matched to local employers",
-                  "GPA verification badge",
+                  "Recommendation badge",
                   "Apply with one tap",
                   "No resume needed",
                 ].map((item) => (
@@ -104,7 +104,7 @@ export default function PricingPage() {
                   "Full access to student profiles",
                   "Smart availability matching",
                   "Hiring pipeline tools",
-                  "GPA verified candidates",
+                  "Candidates with recommendations",
                   "Location-based filtering",
                   "Unlimited candidate browsing",
                 ].map((item) => (
@@ -153,8 +153,8 @@ export default function PricingPage() {
               },
               {
                 icon: Star,
-                title: "GPA Verification",
-                description: "Students can verify their GPA with a simple photo upload, building trust with employers instantly.",
+                title: "Student recommendations",
+                description: "Students can get recommended using a simple email link, building trust with employers instantly.",
               },
             ].map((feature) => (
               <Card key={feature.title} className="border-border bg-card">

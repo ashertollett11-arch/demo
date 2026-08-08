@@ -210,7 +210,7 @@ const { data, error } = await supabase
               {
                 step: "1",
                 title: "Create Your Profile",
-                description: "No resume needed. Just share your availability, interests, and let us verify your GPA.",
+                description: "No resume needed. Just share your availability, interests, and have a trusted adult sned in a recommendation.",
                 icon: Users,
               },
               {
@@ -258,7 +258,7 @@ const { data, error } = await supabase
                 <ul className="mt-6 space-y-4">
                   {[
                     "No resume or cover letter required",
-                    "Verified GPA badge builds trust",
+                    "Verified recommendation badge builds trust",
                     "Match with jobs that fit your schedule",
                     "Local opportunities near you",
                   ].map((item) => (

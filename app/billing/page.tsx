@@ -1,3 +1,5 @@
+
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -453,7 +455,7 @@ export default function BillingPage() {
                   {
                     icon: Star,
                     title: "Verified Student Badges",
-                    description: "Students with verified GPAs are flagged so you can hire with confidence.",
+                    description: "Students with recommendations are marked so you can hire with confidence.",
                   },
                   {
                     icon: Briefcase,
