@@ -268,15 +268,24 @@ export default function ProfilePage() {
     setSwitching(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSwitching(false); return }
-    await supabase.from("recommendations").delete().eq("student_user_id", user.id)
-    await supabase.from("location_applications").delete().eq("student_user_id", user.id)
-    await supabase.from("student_notifications").delete().eq("student_user_id", user.id)
-    await supabase.from("student_statuses").delete().eq("student_id", user.id)
-    await supabase.from("Students").delete().eq("user_id", user.id)
-    await supabase.from("profiles").delete().eq("id", user.id)
-    await supabase.from("users").update({ role: null }).eq("id", user.id)
-    await supabase.auth.signOut()
-    window.location.href = "/choose-role"
+    try {
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || "Failed to switch role.")
+        setSwitching(false)
+        return
+      }
+      await supabase.auth.signOut()
+      window.location.href = "/choose-role"
+    } catch (err) {
+      toast.error("Something went wrong. Please try again.")
+      setSwitching(false)
+    }
   }
 
   if (loading) {
