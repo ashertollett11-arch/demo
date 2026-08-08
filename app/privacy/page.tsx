@@ -32,7 +32,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-xl font-semibold">1. Who We Are</h2>
             <p className="mt-3 text-muted-foreground leading-relaxed">
-              SimplyApply is a job matching platform that connects students ages 14–18 with local employers. We are committed to protecting the privacy of everyone who uses our platform, especially minors.
+              SimplyApply is a job matching platform that connects students ages 14–21 with local employers. We are committed to protecting the privacy of everyone who uses our platform, especially minors.
             </p>
           </section>
 
@@ -80,10 +80,10 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-xl font-semibold">5. Who Can See Your Information</h2>
             <p className="mt-3 text-muted-foreground leading-relaxed">
-              <span className="font-medium text-foreground">Students:</span> Your profile (name, school, adress, GPA, age, preferred positions, availability, shiftprefrence and contact information) is visible to employers who have an active SimplyApply subscription.
+              <span className="font-medium text-foreground">Students:</span> Your profile (name, school, address, GPA, age, preferred positions, availability, shift preference and contact information) is visible to employers who have an active SimplyApply subscription.
             </p>
             <p className="mt-4 text-muted-foreground leading-relaxed">
-              <span className="font-medium text-foreground">Employers:</span> Your company name, location, pay per hour and tips, your description, your avaliable shifts, and shift prefrence are shown to students browsing available jobs, aswell as a preview of your job on the homepage of the app.
+              <span className="font-medium text-foreground">Employers:</span> Your company name, location, pay per hour and tips, your description, your available shifts, and shift prefrence are shown to students browsing available jobs, aswell as a preview of your job on the homepage of the app.
             </p>
           </section>
 

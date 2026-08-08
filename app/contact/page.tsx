@@ -39,33 +39,33 @@ export default function ContactPage() {
   const faqs = [
     {
       icon: CreditCard,
-      question: "I'm having trouble with my subscription or billing.",
+      question: "I'm having trouble with billing or access.",
       answer:
-        "For billing issues, you can manage your subscription directly through the billing portal in your account dashboard. If you're still having trouble, email us and include your account email so we can look into it quickly.",
+        "Billing is handled through your employer dashboard under the Billing section. During early access, all employer accounts are free — just activate your account from the billing page. If you're still having trouble, email us with your account email.",
     },
     {
       icon: Users,
       question: "I'm an employer and can't access the dashboard.",
       answer:
-        "Make sure your profile is complete and your subscription is active. After subscribing, you'll be redirected to your dashboard automatically. If you're still locked out, email us with your account email.",
+        "Make sure your company profile is complete and you've activated your free early access from the billing page. You also need at least one location added before your profile is considered complete. If you're still locked out, email us.",
     },
     {
       icon: HelpCircle,
       question: "I'm a student and my profile isn't showing up for employers.",
       answer:
-        "Your profile needs to be fully complete before it becomes visible to employers. Make sure all required fields are filled in and your profile is saved. GPA verification is optional but increases your visibility.",
-    },
-    {
-      icon: CreditCard,
-      question: "How do I cancel my subscription?",
-      answer:
-        "You can cancel anytime directly from your billing page — no need to contact us. Your access continues until the end of your current billing period.",
+        "Your profile needs to be fully complete before it's visible to employers. Make sure all required fields are filled in — including your zip code, availability, preferred positions, and interests. Getting a recommendation from a teacher or coach also helps you stand out.",
     },
     {
       icon: HelpCircle,
-      question: "I submitted my GPA for verification. When will it be reviewed?",
+      question: "How do recommendations work?",
       answer:
-        "GPA verifications are typically reviewed within 1–2 business days. You'll see your verified badge appear on your profile once approved.",
+        "You can request a recommendation from a teacher, coach, or previous employer directly from your profile page. They'll receive an email with a link to fill out a short form — no account needed. Once submitted, your recommendation appears on your profile for employers to read.",
+    },
+    {
+      icon: HelpCircle,
+      question: "How do I delete my account?",
+      answer:
+        "You can delete your account at any time from your profile page. Scroll to the bottom and tap 'Delete Account'. This permanently removes all your data. You can also switch roles if you want to use SimplyApply as an employer instead.",
     },
   ]
 
