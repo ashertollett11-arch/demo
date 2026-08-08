@@ -115,7 +115,7 @@ export default function StudentOnboarding() {
     }
 
     toast.success("Welcome to SimplyApply! You can always change your information in the top right.")
-    router.push("/student")  }
+    router.push("/matching/student")  }
 
   const next = () => {
     if (!canProceed()) {
