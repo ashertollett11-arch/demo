@@ -35,27 +35,54 @@ export default function BillingPage() {
   // -------------------------
   const loadBilling = async () => {
     setLoading(true)
-
     const { data: userData } = await supabase.auth.getUser()
     const user = userData?.user
-
     if (!user) {
       router.replace("/login")
       return
     }
-
+  
+    // Check role
+    const { data: roleData } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle()
+  
+    if (!roleData?.role) {
+      router.replace("/choose-role")
+      return
+    }
+  
+    if (roleData.role !== "employer") {
+      router.replace("/login")
+      return
+    }
+  
+    // Check employer profile exists
+    const { data: jobData } = await supabase
+      .from("job")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle()
+  
+    if (!jobData) {
+      router.replace("/employer/profile")
+      return
+    }
+  
     setUserId(user.id)
-
+  
     const { data, error } = await supabase
       .from("profiles")
       .select("subscription_status")
       .eq("id", user.id)
       .single()
-
+  
     if (!error && data) {
       setSubscriptionStatus(data.subscription_status)
     }
-
+  
     setLoading(false)
   }
 
@@ -97,8 +124,11 @@ export default function BillingPage() {
   // -------------------------
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading...</p>
+        </div>
       </div>
     )
   }

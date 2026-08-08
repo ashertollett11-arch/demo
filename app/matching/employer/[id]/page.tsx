@@ -78,7 +78,6 @@ export default function StudentPage() {
     }
 
       if (!userId) {
-        console.log("No employer user found")
         setLoading(false)
         return
       }
@@ -91,7 +90,6 @@ export default function StudentPage() {
         .single()
 
       if (error || !data) {
-        console.log("STUDENT LOAD ERROR:", error)
         setLoading(false)
         return
       }
@@ -125,6 +123,104 @@ if (rec) setRecommendation(rec)
 
     loadStudent()
   }, [studentId, router])
+
+
+  useEffect(() => {
+    if (!studentId) return
+    const loadStudent = async () => {
+      setLoading(true)
+      const { data: authData } = await supabase.auth.getUser()
+      const userId = authData?.user?.id
+  
+      if (!userId) { router.replace("/login"); return }
+  
+      // Check role
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle()
+  
+      if (!roleData?.role) { router.replace("/choose-role"); return }
+      if (roleData.role !== "employer") { router.replace("/login"); return }
+  
+      // Check subscription
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("subscription_status")
+        .eq("id", userId)
+        .maybeSingle()
+  
+      const isSubscribed =
+        profile?.subscription_status === "active" ||
+        profile?.subscription_status === "freeactive"
+      if (!isSubscribed) { router.replace("/pricing/mobile"); return }
+  
+      // Check job profile exists
+      const { data: employerJob } = await supabase
+        .from("job")
+        .select("id, shift_preference, preferred_jobs")
+        .eq("user_id", userId)
+        .single()
+  
+      if (!employerJob) { router.replace("/employer/profile"); return }
+  
+      setShiftPreference(employerJob?.shift_preference ?? "flexible")
+      setPreferredJobs(employerJob?.preferred_jobs ?? [])
+  
+      // Get shifts + location from first location
+      if (employerJob?.id) {
+        const { data: locationData } = await supabase
+          .from("locations")
+          .select("available_shifts, shift_preference, preferred_jobs, address, zip_code")
+          .eq("employer_id", employerJob.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle()
+  
+        if (locationData) {
+          setEmployerShifts(locationData.available_shifts ?? [])
+          setShiftPreference(locationData.shift_preference ?? "flexible")
+          if (locationData.preferred_jobs?.length > 0) {
+            setPreferredJobs(locationData.preferred_jobs)
+          }
+          if (locationData.address && locationData.zip_code) {
+            setEmployerLocation({ address: locationData.address, zip: locationData.zip_code })
+          }
+        }
+      }
+  
+      // LOAD STUDENT
+      const { data, error } = await supabase
+        .from("Students")
+        .select("*")
+        .eq("id", studentId)
+        .single()
+  
+      if (error || !data) { setLoading(false); return }
+  
+      const { data: statusRow } = await supabase
+        .from("student_statuses")
+        .select("status")
+        .eq("student_id", studentId)
+        .eq("employer_id", userId)
+        .single()
+  
+      setStudent({ ...data, status: statusRow?.status || "new" })
+  
+      const { data: rec } = await supabase
+        .from("recommendations")
+        .select("*")
+        .eq("student_user_id", data.user_id)
+        .eq("submitted", true)
+        .maybeSingle()
+  
+      if (rec) setRecommendation(rec)
+      setLoading(false)
+    }
+    loadStudent()
+  }, [studentId, router])
+
 
   // FETCH DISTANCE once student + employer location are loaded
   useEffect(() => {
@@ -177,7 +273,6 @@ if (rec) setRecommendation(rec)
       status: newStatus,
     }))
 
-    console.log("studentId from URL:", studentId)
 
     const { data: userData } = await supabase.auth.getUser()
     const employerId = userData?.user?.id
@@ -198,9 +293,7 @@ if (rec) setRecommendation(rec)
       )
 
     if (error) {
-      console.error("❌ status update failed:", error)
     } else {
-      console.log("✅ status updated:", data)
     }
   }
 
@@ -386,7 +479,6 @@ if (rec) setRecommendation(rec)
         })
       if (error) {
         toast.error("Failed to send notification.")
-        console.error(error)
       } else {
         toast.success("Student notified!")
       }

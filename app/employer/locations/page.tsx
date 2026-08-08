@@ -102,7 +102,7 @@ export default function LocationsPage() {
       .select("*")
       .eq("employer_id", jId)
       .order("created_at", { ascending: true })
-    if (error) { console.error(error); return }
+    if (error) return 
     setLocations(data || [])
   }
 

@@ -406,7 +406,7 @@ export default function MatchingPage() {
         .from("student_statuses")
         .select("*")
         .eq("employer_id", employerId)
-      if (error) { console.error(error); return }
+      if (error) return 
       setStatuses(data || [])
     }
     loadStatuses()
@@ -423,7 +423,7 @@ export default function MatchingPage() {
       const { error } = await supabase
         .from("student_statuses")
         .upsert(rows, { onConflict: "employer_id,student_id", ignoreDuplicates: true })
-      if (error) { console.error("Error seeding statuses:", error.message); return }
+      if (error) return 
       const { data } = await supabase
         .from("student_statuses")
         .select("*")

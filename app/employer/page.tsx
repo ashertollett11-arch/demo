@@ -173,7 +173,7 @@ export default function EmployerDashboard() {
         .from("student_statuses")
         .select("*")
         .eq("employer_id", userId)
-      if (error) { console.error(error); return }
+      if (error) return 
       setStatuses(data || [])
     }
     loadStatuses()

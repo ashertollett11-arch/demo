@@ -72,14 +72,24 @@ export default function EmployerProfilePage() {
     phoneRegex.test(phone) &&
     locations.length > 0
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.replace("/login"); return }
-      setUserId(user.id)
-    }
-    checkAuth()
-  }, [router])
+    useEffect(() => {
+      const checkAuth = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { router.replace("/login"); return }
+    
+        const { data: roleData } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle()
+    
+        if (!roleData?.role) { router.replace("/choose-role"); return }
+        if (roleData.role !== "employer") { router.replace("/login"); return }
+    
+        setUserId(user.id)
+      }
+      checkAuth()
+    }, [router])
 
   useEffect(() => {
     if (!companyName.trim()) return
@@ -258,16 +268,20 @@ export default function EmployerProfilePage() {
     setSwitching(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSwitching(false); return }
-    await supabase.from("student_statuses").delete().eq("employer_id", user.id)
-    await supabase.from("notifications").delete().eq("employer_id", user.id)
-    await supabase.from("job").delete().eq("user_id", user.id)
-    await supabase.from("profiles").delete().eq("id", user.id)
-    await supabase.from("users").delete().eq("id", user.id)
-    await supabase.auth.signOut()
-    toast.success("Account removed. You can now sign up with a new role.")
-    router.replace("/")
+    try {
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      })
+      if (!res.ok) { toast.error("Failed to switch role."); setSwitching(false); return }
+      await supabase.auth.signOut()
+      window.location.href = "/choose-role"
+    } catch {
+      toast.error("Something went wrong.")
+      setSwitching(false)
+    }
   }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -332,16 +346,17 @@ export default function EmployerProfilePage() {
           <DialogFooter className="flex gap-2 mt-4">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
             <Button variant="destructive" onClick={async () => {
-              const { data: { user } } = await supabase.auth.getUser()
-              if (!user) return
-              await supabase.from("notifications").delete().eq("employer_id", user.id)
-              await supabase.from("student_statuses").delete().eq("employer_id", user.id)
-              await supabase.from("job").delete().eq("user_id", user.id)
-              await supabase.from("profiles").delete().eq("id", user.id)
-              await supabase.from("users").delete().eq("id", user.id)
-              await supabase.auth.signOut()
-              window.location.href = "/"
-            }}>
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const res = await fetch("/api/delete-account", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: user.id }),
+  })
+  if (!res.ok) { toast.error("Failed to delete account."); return }
+  await supabase.auth.signOut()
+  window.location.href = "/login"
+}}>
               Yes, delete my account
             </Button>
           </DialogFooter>
