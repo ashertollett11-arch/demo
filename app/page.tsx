@@ -22,11 +22,13 @@ export default function Home() {
         .eq("id", session.user.id)
         .single()
 
-      if (userData?.role === "student") {
-        window.location.replace("/matching/student")
-      } else {
-        window.location.replace("/employer")
-      }
+        if (userData?.role === "student") {
+          window.location.replace("/matching/student")
+        } else if (userData?.role === "employer") {
+          window.location.replace("/employer")
+        } else {
+          window.location.replace("/choose-role")
+        }
     }
 
     routeUser()

@@ -27,14 +27,27 @@ export default function LandingPage() {
   
   useEffect(() => {
     const loadFeaturedJobs = async () => {
-      const { data, error } = await supabase
-        .from("job")
-        .select("id, title, company, location, pay, has_tips, shift_preference")
-        .limit(6)
-        .order("created_at", { ascending: false })
-  
+     // Replace the query with:
+const { data, error } = await supabase
+.from("locations")
+.select(`
+  id,
+  address,
+  hourly_pay,
+  shift_preference,
+  has_tips,
+  job:employer_id (
+    company
+  )
+`)
+.limit(2)
+.order("created_at", { ascending: false })
+
+// Then update the card to use:
+// job.company instead of job.title/job.company
+// `$${loc.hourly_pay}/hr` instead of job.pay
+// loc.address instead of job.location
       if (error) {
-        console.log(error)
         return
       }
   
