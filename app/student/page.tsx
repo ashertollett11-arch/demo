@@ -1,6 +1,6 @@
 "use client"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { calculateMatch } from "@/lib/matchScore"
 import { useState, useEffect } from "react"
 import Link from "next/link"
@@ -62,6 +62,7 @@ export default function StudentDashboard() {
   const [gpa, setGpa] = useState<number | null>(null)
   const [hasRecommendation, setHasRecommendation] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
+  const pathname = usePathname()
   const [matchedJobsWithScore, setMatchedJobsWithScore] = useState<(Job & { matchScore: number })[]>([])
   const [availability, setAvailability] = useState<Availability[]>([
     { day: "Monday", available: true, start: "3:00 PM", end: "8:00 PM", hours: "5" },
@@ -277,12 +278,22 @@ if (pageLoading) {
 
     {/* CENTER */}
     <div className="hidden md:flex items-center gap-8">
-      <Link href="/student" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-        Dashboard
-      </Link>
-      <Link href="/matching/student" className="text-sm font-semibold text-primary">
-        Jobs Near You
-      </Link>
+    <Link
+  href="/student"
+  className={`text-sm font-medium transition-colors hover:text-foreground ${
+    pathname === "/student" ? "text-primary font-semibold" : "text-muted-foreground"
+  }`}
+>
+  Dashboard
+</Link>
+<Link
+  href="/matching/student"
+  className={`text-sm font-medium transition-colors hover:text-foreground ${
+    pathname === "/matching/student" ? "text-primary font-semibold" : "text-muted-foreground"
+  }`}
+>
+  Jobs Near You
+</Link>
     </div>
 
     {/* RIGHT */}

@@ -17,7 +17,7 @@ import {
   Bell,
 } from "lucide-react"
 import Link from "next/link"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, usePathname } from "next/navigation"
 import { calculateMatch } from "@/lib/matchScore"
 import { supabase } from "@/lib/supabase"
 import {
@@ -58,6 +58,7 @@ export default function MatchesPage() {
   const [filter, setFilter] = useState<"pay" | "tips" | "matchScore">("matchScore")
   const [name, setName] = useState("")
   const [shift_Preference, setShift_Preference] = useState<"morning" | "night" | "flexible">("flexible")
+  const pathname = usePathname()
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set())
   const [studentNotifications, setStudentNotifications] = useState<any[]>([])
   // -------------------------
@@ -251,12 +252,16 @@ useEffect(() => {
 
     {/* CENTER */}
     <div className="hidden md:flex items-center gap-8">
-      <Link href="/student" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-        Dashboard
-      </Link>
-      <Link href="/matching/student" className="text-sm font-semibold text-primary">
-        Jobs Near You
-      </Link>
+    <Link href="/student" className={`text-sm font-medium transition-colors hover:text-foreground ${
+  pathname === "/student" ? "text-primary font-semibold" : "text-muted-foreground"
+}`}>
+  Dashboard
+</Link>
+<Link href="/matching/student" className={`text-sm font-medium transition-colors hover:text-foreground ${
+  pathname === "/matching/student" ? "text-primary font-semibold" : "text-muted-foreground"
+}`}>
+  Jobs Near You
+</Link>
     </div>
 
     {/* RIGHT */}

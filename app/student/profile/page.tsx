@@ -254,13 +254,15 @@ export default function ProfilePage() {
     setSwitching(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSwitching(false); return }
-    await supabase.from("student_statuses").delete().eq("employer_id", user.id)
+    await supabase.from("recommendations").delete().eq("student_user_id", user.id)
+    await supabase.from("location_applications").delete().eq("student_user_id", user.id)
+    await supabase.from("student_notifications").delete().eq("student_user_id", user.id)
+    await supabase.from("student_statuses").delete().eq("student_id", user.id)
     await supabase.from("Students").delete().eq("user_id", user.id)
     await supabase.from("profiles").delete().eq("id", user.id)
-    await supabase.from("users").delete().eq("id", user.id)
+    await supabase.from("users").update({ role: null }).eq("id", user.id)
     await supabase.auth.signOut()
-    toast.success("Account removed. You can now sign up with a new role.")
-    router.replace("/")
+    window.location.href = "/choose-role"
   }
 
   if (loading) {
@@ -649,17 +651,18 @@ export default function ProfilePage() {
     <DialogFooter className="flex gap-2 mt-4">
       <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
       <Button variant="destructive" onClick={async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        await supabase.from("recommendations").delete().eq("student_user_id", user.id)
-        await supabase.from("location_applications").delete().eq("student_user_id", user.id)
-        await supabase.from("student_statuses").delete().eq("student_id", user.id)
-        await supabase.from("Students").delete().eq("user_id", user.id)
-        await supabase.from("profiles").delete().eq("id", user.id)
-        await supabase.from("users").delete().eq("id", user.id)
-        await supabase.auth.signOut()
-        window.location.href = "/"
-      }}>
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from("recommendations").delete().eq("student_user_id", user.id)
+  await supabase.from("location_applications").delete().eq("student_user_id", user.id)
+  await supabase.from("student_notifications").delete().eq("student_user_id", user.id)
+  await supabase.from("student_statuses").delete().eq("student_id", user.id)
+  await supabase.from("Students").delete().eq("user_id", user.id)
+  await supabase.from("profiles").delete().eq("id", user.id)
+  await supabase.from("users").update({ role: null }).eq("id", user.id)
+  await supabase.auth.signOut()
+  window.location.href = "/choose-role"
+}}>
         Yes, delete my account
       </Button>
     </DialogFooter>
