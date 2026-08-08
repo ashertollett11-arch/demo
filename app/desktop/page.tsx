@@ -210,7 +210,7 @@ const { data, error } = await supabase
               {
                 step: "1",
                 title: "Create Your Profile",
-                description: "No resume needed. Just share your availability, interests, and have a trusted adult sned in a recommendation.",
+                description: "No resume needed. Just share your availability, interests, and have a trusted adult send in a recommendation.",
                 icon: Users,
               },
               {
