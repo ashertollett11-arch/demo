@@ -355,43 +355,46 @@ if (rec) setRecommendation(rec)
               </div>
             </div>
 
-            {/* NOTIFY BUTTON */}
-            <div className="mt-3">
-              <Button
-                className="w-full"
-                variant="outline"
-                onClick={async () => {
-                  const { data: userData } = await supabase.auth.getUser()
-                  const employerId = userData?.user?.id
-                  if (!employerId) return
-                  const { data: jobData } = await supabase
-                    .from("job")
-                    .select("company")
-                    .eq("user_id", employerId)
-                    .single()
-                  const companyName = jobData?.company || "An employer"
-                  const { error } = await supabase
-                    .from("student_notifications")
-                    .insert({
-                      student_user_id: student.user_id,
-                      employer_id: employerId,
-                      message: `Check your phone and email — ${companyName} is interested in hiring you!`,
-                      read: false,
-                    })
-                  if (error) {
-                    toast.error("Failed to send notification.")
-                    console.error(error)
-                  } else {
-                    toast.success("Student notified!")
-                  }
-                }}
-              >
-                📲 Notify Student
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-1">
-                Sends the student an in-app alert to check their phone and email.
-              </p>
-            </div>
+         {/* NOTIFY BUTTON */}
+<div className="mt-4 rounded-xl border border-border bg-secondary/20 p-4 space-y-3">
+  <div>
+    <h3 className="font-semibold text-base text-foreground">Already reached out?</h3>
+    <p className="text-sm text-muted-foreground mt-1">
+      After you've contacted this student by phone or email, send them an in-app nudge so they know to check for your message and take it seriously.
+    </p>
+  </div>
+  <Button
+    className="w-full"
+    variant="outline"
+    onClick={async () => {
+      const { data: userData } = await supabase.auth.getUser()
+      const employerId = userData?.user?.id
+      if (!employerId) return
+      const { data: jobData } = await supabase
+        .from("job")
+        .select("company")
+        .eq("user_id", employerId)
+        .single()
+      const companyName = jobData?.company || "An employer"
+      const { error } = await supabase
+        .from("student_notifications")
+        .insert({
+          student_user_id: student.user_id,
+          employer_id: employerId,
+          message: `Check your phone and email — ${companyName} is interested in hiring you!`,
+          read: false,
+        })
+      if (error) {
+        toast.error("Failed to send notification.")
+        console.error(error)
+      } else {
+        toast.success("Student notified!")
+      }
+    }}
+  >
+    📲 Send In-App Notification
+  </Button>
+</div>
 
             {/* STATUS */}
             <div className="mt-6">
