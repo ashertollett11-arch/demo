@@ -206,16 +206,21 @@ if (rec) setRecommendation(rec)
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading student...
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading student profile...</p>
+        </div>
       </div>
     )
   }
-
   if (!student) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Student not found
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <p className="font-semibold text-foreground">Student not found</p>
+          <Button variant="outline" onClick={() => router.push("/matching/employer")}>Go back</Button>
+        </div>
       </div>
     )
   }

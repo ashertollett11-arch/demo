@@ -34,12 +34,12 @@ export default function EmployerProfilePage() {
   const [showSwitchDialog, setShowSwitchDialog] = useState(false)
   const [switching, setSwitching] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [locations, setLocations] = useState<Location[]>([])
   const [loadingLocations, setLoadingLocations] = useState(false)
   const [autoSaving, setAutoSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  // Profile fields
+
   const [companyName, setCompanyName] = useState("")
   const [ownerName, setOwnerName] = useState("")
   const [email, setEmail] = useState("")
@@ -72,9 +72,6 @@ export default function EmployerProfilePage() {
     phoneRegex.test(phone) &&
     locations.length > 0
 
-  // -------------------------
-  // AUTH
-  // -------------------------
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -83,55 +80,46 @@ export default function EmployerProfilePage() {
     }
     checkAuth()
   }, [router])
-// AUTOSAVE
-useEffect(() => {
-  if (!companyName.trim()) return // don't autosave empty form
 
-  const timer = setTimeout(async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  useEffect(() => {
+    if (!companyName.trim()) return
+    const timer = setTimeout(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      setAutoSaving(true)
+      await supabase
+        .from("job")
+        .upsert(
+          {
+            id: jobId || undefined,
+            user_id: user.id,
+            title: companyName || "Untitled Job",
+            company: companyName || "Unknown Company",
+            owner_name: ownerName || null,
+            business_type: businessType || null,
+            email: email || null,
+            phone: phone || null,
+            details: details || "No description",
+            preferred_jobs: preferredJobs,
+            status: "new",
+            distance: "0",
+          },
+          { onConflict: "user_id" }
+        )
+        .select()
+        .single()
+        .then(({ data }) => { if (data?.id) setJobId(data.id) })
+      setAutoSaving(false)
+      setLastSaved(new Date())
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [companyName, ownerName, businessType, email, phone, details, preferredJobs])
 
-    setAutoSaving(true)
-
-    await supabase
-      .from("job")
-      .upsert(
-        {
-          id: jobId || undefined,
-          user_id: user.id,
-          title: companyName || "Untitled Job",
-          company: companyName || "Unknown Company",
-          owner_name: ownerName || null,
-          business_type: businessType || null,
-          email: email || null,
-          phone: phone || null,
-          details: details || "No description",
-          preferred_jobs: preferredJobs,
-          status: "new",
-          distance: "0",
-        },
-        { onConflict: "user_id" }
-      )
-      .select()
-      .single()
-      .then(({ data }) => {
-        if (data?.id) setJobId(data.id)
-      })
-
-    setAutoSaving(false)
-    setLastSaved(new Date())
-  }, 2000)
-
-  return () => clearTimeout(timer)
-}, [companyName, ownerName, businessType, email, phone, details, preferredJobs])
   useEffect(() => {
     const missing = window.location.search.includes("missing=true")
     if (missing) setTimeout(() => { toast.error("Please complete your profile") }, 300)
   }, [])
 
-  // -------------------------
-  // LOAD EMPLOYER
-  // -------------------------
   useEffect(() => {
     const loadEmployer = async () => {
       setLoading(true)
@@ -145,7 +133,7 @@ useEffect(() => {
         .eq("user_id", user.id)
         .maybeSingle()
 
-      if (error && error.code !== "PGRST116") { console.log("Employer load error:", error); setLoading(false); return }
+      if (error && error.code !== "PGRST116") { setLoading(false); return }
       if (!data) { setLoading(false); return }
 
       setJobId(data.id ?? null)
@@ -157,7 +145,6 @@ useEffect(() => {
       setDetails(data.details ?? "")
       setPreferredJobs(data.preferred_jobs ?? [])
 
-      // Load locations
       if (data.id) {
         setLoadingLocations(true)
         const { data: locs } = await supabase
@@ -174,9 +161,6 @@ useEffect(() => {
     loadEmployer()
   }, [])
 
-  // -------------------------
-  // VALIDATE
-  // -------------------------
   const validateProfile = () => {
     if (!companyName.trim()) { toast.error("Missing company name"); scrollToField(companyRef); return false }
     if (!ownerName.trim()) { toast.error("Missing owner name"); scrollToField(ownerRef); return false }
@@ -185,22 +169,46 @@ useEffect(() => {
     if (!businessType.trim()) { toast.error("Missing business type"); return false }
     if (!details.trim()) { toast.error("Missing description"); scrollToField(detailsRef); return false }
     if (locations.length === 0) {
-      toast.error("Add at least one location before saving.", {
-        description: "Use the Locations section below to add your first location.",
-        duration: 5000,
-      })
+      toast.error("Add at least one location before saving.", { description: "Use the Locations section below to add your first location.", duration: 5000 })
       return false
     }
     return true
   }
 
-  // -------------------------
-  // SAVE
-  // -------------------------
+  const goToLocations = async () => {
+    if (companyName.trim()) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data } = await supabase
+          .from("job")
+          .upsert(
+            {
+              id: jobId || undefined,
+              user_id: user.id,
+              title: companyName || "Untitled Job",
+              company: companyName || "Unknown Company",
+              owner_name: ownerName || null,
+              business_type: businessType || null,
+              email: email || null,
+              phone: phone || null,
+              details: details || "No description",
+              preferred_jobs: preferredJobs,
+              status: "new",
+              distance: "0",
+            },
+            { onConflict: "user_id" }
+          )
+          .select()
+          .single()
+        if (data?.id) setJobId(data.id)
+      }
+    }
+    router.push("/employer/locations")
+  }
+
   const handleSave = async () => {
     const isValid = validateProfile()
     if (!isValid) return
-
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { toast.error("Not logged in"); return }
 
@@ -226,22 +234,18 @@ useEffect(() => {
       .select()
       .single()
 
-    if (error) { console.error(error); toast.error(error.message); return }
+    if (error) { toast.error(error.message); return }
     if (data?.id) setJobId(data.id)
 
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
-      .upsert(
-        { id: user.id, email: user.email, profile_complete: true },
-        { onConflict: "id" }
-      )
+      .upsert({ id: user.id, email: user.email, profile_complete: true }, { onConflict: "id" })
       .select("subscription_status")
       .single()
 
-    if (profileError) { console.error("PROFILE COMPLETE ERROR:", profileError); toast.error("Saved but failed to mark profile complete."); return }
+    if (profileError) { toast.error("Saved but failed to mark profile complete."); return }
 
     toast.success("Saved!")
-
     const status = profileData?.subscription_status
     if (status === "active" || status === "freeactive") {
       router.push("/employer")
@@ -250,9 +254,6 @@ useEffect(() => {
     }
   }
 
-  // -------------------------
-  // SWITCH ROLE
-  // -------------------------
   const handleSwitchRole = async () => {
     setSwitching(true)
     const { data: { user } } = await supabase.auth.getUser()
@@ -265,6 +266,17 @@ useEffect(() => {
     await supabase.auth.signOut()
     toast.success("Account removed. You can now sign up with a new role.")
     router.replace("/")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading your profile...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -298,6 +310,44 @@ useEffect(() => {
         </DialogContent>
       </Dialog>
 
+      {/* DELETE DIALOG */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Account?
+            </DialogTitle>
+            <DialogDescription className="pt-2 space-y-2">
+              <p>This will <span className="font-semibold text-foreground">permanently delete</span> your account and all associated data including:</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Your company profile</li>
+                <li>All locations</li>
+                <li>Candidate pipeline and statuses</li>
+                <li>All notifications</li>
+              </ul>
+              <p className="font-medium text-foreground">This cannot be undone.</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={async () => {
+              const { data: { user } } = await supabase.auth.getUser()
+              if (!user) return
+              await supabase.from("notifications").delete().eq("employer_id", user.id)
+              await supabase.from("student_statuses").delete().eq("employer_id", user.id)
+              await supabase.from("job").delete().eq("user_id", user.id)
+              await supabase.from("profiles").delete().eq("id", user.id)
+              await supabase.from("users").delete().eq("id", user.id)
+              await supabase.auth.signOut()
+              window.location.href = "/"
+            }}>
+              Yes, delete my account
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* STICKY SAVE HEADER */}
       <div className="sticky top-0 z-50 mb-6">
         <div className="mx-auto max-w-6xl">
@@ -307,6 +357,12 @@ useEffect(() => {
                 <div className="rounded-full bg-blue-600 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow">Employer</div>
                 {!isProfileComplete && (
                   <div className="rounded-full bg-yellow-100 px-2 py-1 text-[10px] font-semibold text-yellow-800 border border-yellow-200">Incomplete</div>
+                )}
+                {autoSaving && (
+                  <div className="rounded-full bg-blue-50 px-2 py-1 text-[10px] text-blue-600 border border-blue-200">Saving...</div>
+                )}
+                {!autoSaving && lastSaved && (
+                  <div className="rounded-full bg-green-50 px-2 py-1 text-[10px] text-green-600 border border-green-200">Saved ✓</div>
                 )}
               </div>
               <h2 className="mt-2 text-xl sm:text-2xl font-bold text-gray-900">Complete Your Hiring Profile</h2>
@@ -346,8 +402,6 @@ useEffect(() => {
         </CardContent>
       </Card>
 
-      {/* HIRING ROLE */}
-   
       {/* LOCATIONS */}
       <Card className="mb-4">
         <CardHeader>
@@ -359,7 +413,7 @@ useEffect(() => {
                 <span className="text-xs font-normal text-muted-foreground">({locations.length} {locations.length === 1 ? "location" : "locations"})</span>
               )}
             </div>
-            <Button size="sm" variant="outline" onClick={() => router.push("/employer/locations")} className="flex items-center gap-1">
+            <Button size="sm" variant="outline" onClick={goToLocations} className="flex items-center gap-1">
               <Plus className="h-3.5 w-3.5" />
               {locations.length === 0 ? "Add Location" : "Manage"}
             </Button>
@@ -373,7 +427,7 @@ useEffect(() => {
               <MapPin className="h-6 w-6 text-red-400 mx-auto mb-2" />
               <p className="text-sm font-medium text-red-700">No locations added yet</p>
               <p className="text-xs text-red-500 mt-1">You must add at least one location before saving your profile.</p>
-              <Button size="sm" className="mt-3" onClick={() => router.push("/employer/locations")}>
+              <Button size="sm" className="mt-3" onClick={goToLocations}>
                 <Plus className="h-3.5 w-3.5 mr-1" /> Add Your First Location
               </Button>
             </div>
@@ -397,12 +451,7 @@ useEffect(() => {
                       )}
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => router.push("/employer/locations")}
-                    className="shrink-0 flex items-center gap-1 text-xs"
-                  >
+                  <Button size="sm" variant="ghost" onClick={goToLocations} className="shrink-0 flex items-center gap-1 text-xs">
                     <Pencil className="h-3.5 w-3.5" />
                     Edit
                   </Button>
@@ -423,72 +472,29 @@ useEffect(() => {
                 Want to look for jobs instead? This will permanently delete all your employer data.
               </p>
             </div>
-            <Button
-              variant="outline"
-              className="shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={() => setShowSwitchDialog(true)}
-            >
+            <Button variant="outline" className="shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setShowSwitchDialog(true)}>
               Switch Role
             </Button>
           </div>
         </CardContent>
       </Card>
 
-{/* DELETE DIALOG */}
-<Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-  <DialogContent className="sm:max-w-md">
-    <DialogHeader>
-      <DialogTitle className="flex items-center gap-2 text-red-600">
-        <AlertTriangle className="h-5 w-5" />
-        Delete Account?
-      </DialogTitle>
-      <DialogDescription className="pt-2 space-y-2">
-        <p>This will <span className="font-semibold text-foreground">permanently delete</span> your account and all associated data including:</p>
-        <ul className="list-disc pl-5 space-y-1 text-sm">
-          <li>Your company profile</li>
-          <li>All locations</li>
-          <li>Candidate pipeline and statuses</li>
-          <li>All notifications</li>
-        </ul>
-        <p className="font-medium text-foreground">This cannot be undone.</p>
-      </DialogDescription>
-    </DialogHeader>
-    <DialogFooter className="flex gap-2 mt-4">
-      <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
-      <Button variant="destructive" onClick={async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        await supabase.from("notifications").delete().eq("employer_id", user.id)
-        await supabase.from("student_statuses").delete().eq("employer_id", user.id)
-        await supabase.from("job").delete().eq("user_id", user.id)
-        await supabase.from("profiles").delete().eq("id", user.id)
-        await supabase.from("users").delete().eq("id", user.id)
-        await supabase.auth.signOut()
-        window.location.href = "/"
-      }}>
-        Yes, delete my account
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-
-{/* DELETE CARD */}
-<Card className="border-red-200 bg-red-50/20 mt-4">
-  <CardContent className="p-5">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="font-semibold text-red-700">Delete Account</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Permanently delete your account and all associated data. This cannot be undone.
-        </p>
-      </div>
-      <Button variant="destructive" className="shrink-0" onClick={() => setShowDeleteDialog(true)}>
-        Delete Account
-      </Button>
-    </div>
-  </CardContent>
-</Card>
-
+      {/* DELETE CARD */}
+      <Card className="border-red-200 bg-red-50/20 mt-4">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-semibold text-red-700">Delete Account</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Permanently delete your account and all associated data. This cannot be undone.
+              </p>
+            </div>
+            <Button variant="destructive" className="shrink-0" onClick={() => setShowDeleteDialog(true)}>
+              Delete Account
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
     </div>
   )

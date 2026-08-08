@@ -27,7 +27,7 @@ import { calculateEmployerMatch } from "@/lib/employerMatchScore"
 export default function EmployerDashboard() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
-  const [companyName, setCompanyName] = useState("Your Company")
+  const [companyName, setCompanyName] = useState("")
   const [notifications, setNotifications] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [employerShifts, setEmployerShifts] = useState<any[]>([])
@@ -36,6 +36,7 @@ export default function EmployerDashboard() {
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [employerZip, setEmployerZip] = useState<string | null>(null)
   const [zipMatchPrecision, setZipMatchPrecision] = useState<number>(5)
+  const [pageLoading, setPageLoading] = useState(true)
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -65,8 +66,9 @@ export default function EmployerDashboard() {
         .select("company, owner_name")
         .eq("user_id", userId)
         .single()
-      if (!data) return
+      if (!data) { setPageLoading(false); return }
       setCompanyName(data.company || "Your Company")
+      setPageLoading(false)
     }
     loadCompany()
   }, [userId])
@@ -94,7 +96,6 @@ export default function EmployerDashboard() {
       if (!jobData) return
       setShiftPreference(jobData.shift_preference || "flexible")
       setPreferredJobs(jobData.preferred_jobs || [])
-
       const { data: locationData } = await supabase
         .from("locations")
         .select("available_shifts, shift_preference, zip_code, zip_match_precision")
@@ -102,7 +103,6 @@ export default function EmployerDashboard() {
         .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle()
-
       if (locationData) {
         setEmployerShifts(locationData.available_shifts || [])
         setShiftPreference(locationData.shift_preference || "flexible")
@@ -145,7 +145,6 @@ export default function EmployerDashboard() {
 
   useEffect(() => {
     if (!userId || students.length === 0 || statuses.length > 0 || !employerZip) return
-  
     const seedStatuses = async () => {
       const rows = students
         .filter((s) => s.profile_complete && s.zip_code)
@@ -154,24 +153,18 @@ export default function EmployerDashboard() {
           return s.zip_code?.slice(0, 3) === employerZip?.slice(0, 3)
         })
         .map((s) => ({ employer_id: userId, student_id: s.id, status: "new" }))
-  
       if (rows.length === 0) return
-  
       await supabase
         .from("student_statuses")
         .upsert(rows, { onConflict: "employer_id,student_id", ignoreDuplicates: true })
-  
       const { data } = await supabase
         .from("student_statuses")
         .select("*")
         .eq("employer_id", userId)
-  
       setStatuses(data || [])
     }
-  
     seedStatuses()
   }, [userId, students, statuses, employerZip, zipMatchPrecision])
-
 
   useEffect(() => {
     if (!userId) return
@@ -218,6 +211,17 @@ export default function EmployerDashboard() {
   const perfectMatches = candidatesWithScores.filter((c) => c.matchScore === 100).length
   const topMatch = Math.max(0, ...candidatesWithScores.map((c) => c.matchScore || 0))
   const recentActivity = notifications.slice(0, 4)
+
+  if (pageLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading your dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">

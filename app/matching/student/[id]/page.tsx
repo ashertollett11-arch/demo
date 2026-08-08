@@ -226,9 +226,27 @@ export default function JobPage() {
     setApplying(false)
   }
 
-  if (loading) return <div className="p-6">Loading job...</div>
-  if (!job) return <div className="p-6">Job not found</div>
-
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading job details...</p>
+        </div>
+      </div>
+    )
+  }
+  
+  if (!job) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <p className="font-semibold text-foreground">Job not found</p>
+          <Button variant="outline" onClick={() => router.push("/matching/student")}>Go back</Button>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <Button

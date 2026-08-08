@@ -471,14 +471,6 @@ export default function MatchingPage() {
     if (!students.length) return
     const results = students.map((candidate) => {
   
-      console.log("--- CANDIDATE:", candidate.name)
-      console.log("JOB DAYS:", jobDays)
-      console.log("SHIFT PREF:", shiftPreference)
-      console.log("PREFERRED JOBS:", preferredJobs)
-      console.log("CANDIDATE AVAILABILITY:", candidate.availability)
-      console.log("CANDIDATE SHIFT PREF:", candidate.shift_preference)
-      console.log("CANDIDATE GPA:", candidate.gpa)
-      console.log("CANDIDATE PREFERRED JOBS:", candidate.preferred_jobs)
   
       const matchScore = calculateEmployerMatch(
         { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
@@ -996,8 +988,11 @@ export default function MatchingPage() {
             </div>
 
             {loading ? (
-              <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Loading students...</p></CardContent></Card>
-            ) : students.length === 0 ? (
+  <div className="flex flex-col items-center justify-center py-16 gap-4">
+    <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    <p className="text-muted-foreground text-sm">Loading candidates...</p>
+  </div>
+) : students.length === 0 ? (
               <Card className="border-dashed"><CardContent className="py-12 text-center"><p className="font-medium">No students in database</p></CardContent></Card>
             ) : filteredCandidates.length === 0 ? (
               <Card className="border-dashed">

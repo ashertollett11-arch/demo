@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -50,7 +49,6 @@ const JOB_ROLES = ["Cashier","Server","Busser","Barista","Cook","Dishwasher","Ho
 
 export default function LocationsPage() {
   const router = useRouter()
-
   const [jobId, setJobId] = useState<string | null>(null)
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,7 +58,6 @@ export default function LocationsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
 
-  // Form state
   const [formName, setFormName] = useState("")
   const [formAddress, setFormAddress] = useState("")
   const [formZip, setFormZip] = useState("")
@@ -84,9 +81,13 @@ export default function LocationsPage() {
         .from("job")
         .select("id")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
-     
+      if (!job) {
+        toast.error("Please complete your company profile first.")
+        router.replace("/employer/profile")
+        return
+      }
 
       setJobId(job.id)
       await loadLocations(job.id)
@@ -101,13 +102,12 @@ export default function LocationsPage() {
       .select("*")
       .eq("employer_id", jId)
       .order("created_at", { ascending: true })
-
     if (error) { console.error(error); return }
     setLocations(data || [])
   }
 
   // -------------------------
-  // RESET FORM
+  // FORM HELPERS
   // -------------------------
   const resetForm = () => {
     setFormName("")
@@ -139,7 +139,6 @@ export default function LocationsPage() {
     setFormJobs(loc.preferred_jobs || [])
     setEditingId(loc.id)
     setShowForm(true)
-    // scroll to top of form
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
@@ -170,22 +169,15 @@ export default function LocationsPage() {
     }
 
     let error
-
     if (editingId) {
-      const { error: e } = await supabase
-        .from("locations")
-        .update(payload)
-        .eq("id", editingId)
+      const { error: e } = await supabase.from("locations").update(payload).eq("id", editingId)
       error = e
     } else {
-      const { error: e } = await supabase
-        .from("locations")
-        .insert(payload)
+      const { error: e } = await supabase.from("locations").insert(payload)
       error = e
     }
 
     if (error) {
-      console.error(error)
       toast.error("Failed to save location.")
       setSaving(false)
       return
@@ -208,29 +200,28 @@ export default function LocationsPage() {
 
   const deleteLocation = async () => {
     if (!deletingId || !jobId) return
-
-    const { error } = await supabase
-      .from("locations")
-      .delete()
-      .eq("id", deletingId)
-
+    const { error } = await supabase.from("locations").delete().eq("id", deletingId)
     if (error) { toast.error("Failed to delete location."); return }
-
     toast.success("Location deleted.")
     await loadLocations(jobId)
     setShowDeleteDialog(false)
     setDeletingId(null)
   }
 
+  // -------------------------
+  // LOADING STATE
+  // -------------------------
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Loading locations...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading locations...</p>
+        </div>
       </div>
     )
   }
 
-  // locations not being edited
   const otherLocations = locations.filter(loc => loc.id !== editingId)
 
   return (
@@ -280,7 +271,7 @@ export default function LocationsPage() {
 
               {/* NAME */}
               <div>
-                <label className="text-sm font-medium block mb-1">Location Name(Visable to Students)</label>
+                <label className="text-sm font-medium block mb-1">Location Name (Visible to Students)</label>
                 <input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
@@ -323,9 +314,7 @@ export default function LocationsPage() {
                     type="button"
                     onClick={() => setFormPrecision(5)}
                     className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
-                      formPrecision === 5
-                        ? "bg-blue-100 text-blue-700 border-blue-200"
-                        : "bg-gray-100 text-gray-600 border-gray-200"
+                      formPrecision === 5 ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"
                     }`}
                   >
                     Local (same zip)
@@ -334,9 +323,7 @@ export default function LocationsPage() {
                     type="button"
                     onClick={() => setFormPrecision(3)}
                     className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
-                      formPrecision === 3
-                        ? "bg-blue-100 text-blue-700 border-blue-200"
-                        : "bg-gray-100 text-gray-600 border-gray-200"
+                      formPrecision === 3 ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"
                     }`}
                   >
                     Regional (nearby zips)
@@ -353,7 +340,8 @@ export default function LocationsPage() {
               <div>
                 <label className="text-sm font-medium block mb-1">Pay Per Hour ($)</label>
                 <input
-                  type="number" step="0.01"
+                  type="number"
+                  step="0.01"
                   value={formPay}
                   onChange={(e) => setFormPay(e.target.value)}
                   placeholder="15.50"
@@ -489,7 +477,7 @@ export default function LocationsPage() {
           </Card>
         )}
 
-        {/* LOCATIONS LIST — hide the one being edited */}
+        {/* LOCATIONS LIST */}
         {otherLocations.length === 0 && !showForm ? (
           <Card className="border-dashed">
             <CardContent className="py-12 text-center">
@@ -544,14 +532,8 @@ export default function LocationsPage() {
                         </div>
                       )}
                     </div>
-
                     <div className="flex gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditForm(loc)}
-                        className="flex items-center gap-1"
-                      >
+                      <Button size="sm" variant="outline" onClick={() => openEditForm(loc)} className="flex items-center gap-1">
                         <Pencil className="h-3.5 w-3.5" />
                         Edit
                       </Button>

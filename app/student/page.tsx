@@ -61,6 +61,7 @@ export default function StudentDashboard() {
   const [name, setName] = useState("")
   const [gpa, setGpa] = useState<number | null>(null)
   const [hasRecommendation, setHasRecommendation] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
   const [matchedJobsWithScore, setMatchedJobsWithScore] = useState<(Job & { matchScore: number })[]>([])
   const [availability, setAvailability] = useState<Availability[]>([
     { day: "Monday", available: true, start: "3:00 PM", end: "8:00 PM", hours: "5" },
@@ -193,32 +194,26 @@ export default function StudentDashboard() {
     const fetchStudent = async () => {
       const { data: authData } = await supabase.auth.getUser()
       const user = authData?.user
-      if (!user) return
-
+      if (!user) { setPageLoading(false); return }
       const { data: studentData, error } = await supabase
         .from("Students")
         .select("gpa, name, gpa_verification_status")
         .eq("user_id", user.id)
         .single()
-
-      if (error) return
-
+      if (error) { setPageLoading(false); return }
       const rawGpa = studentData?.gpa
       const parsedGpa = rawGpa !== null && rawGpa !== undefined ? Number(rawGpa) : null
       setGpa(isNaN(parsedGpa as number) ? null : parsedGpa)
       setName(studentData?.name || "")
-
-      // Check recommendation
       const { data: rec } = await supabase
         .from("recommendations")
         .select("id, submitted")
         .eq("student_user_id", user.id)
         .eq("submitted", true)
         .maybeSingle()
-
       setHasRecommendation(!!rec)
+      setPageLoading(false)
     }
-
     fetchStudent()
   }, [])
 
@@ -250,6 +245,17 @@ export default function StudentDashboard() {
   loadStudentNotifications()
 }, [])
 
+
+if (pageLoading) {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-muted-foreground text-sm">Loading your dashboard...</p>
+      </div>
+    </div>
+  )
+}
 
   return (
     <>
