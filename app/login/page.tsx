@@ -256,6 +256,30 @@ export default function LoginPage() {
                 Create Account
               </Button>
 
+{/* NOT WORKING */}
+<div className="mt-6 border-t border-border pt-5">
+  <details className="group">
+    <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1">
+      <span className="text-primary underline underline-offset-2">Not working?</span>
+    </summary>
+    <div className="mt-3 space-y-2 text-sm text-muted-foreground leading-relaxed">
+      <p>
+        <span className="font-medium text-foreground">New here?</span> Hit "Create Account" above to get started — no existing account needed.
+      </p>
+      <p>
+        <span className="font-medium text-foreground">Just switched roles or deleted your account?</span> You'll need to create a new account. You can reuse the same email or a different one.
+      </p>
+      <p>
+        <span className="font-medium text-foreground">Still having trouble?</span> Email us at{" "}
+        <a href="mailto:simplyapplyapp@gmail.com" className="text-primary hover:underline">
+          simplyapplyapp@gmail.com
+        </a>{" "}
+        and we'll get you sorted.
+      </p>
+    </div>
+  </details>
+</div>
+
               {/* FOOTER */}
               <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
