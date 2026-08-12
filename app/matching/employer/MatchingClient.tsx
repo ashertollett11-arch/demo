@@ -1008,7 +1008,7 @@ export default function MatchingPage() {
               <Card className="border-dashed">
                 <CardContent className="py-12 text-center">
                   <p className="font-medium">No matches found</p>
-                  <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters</p>
+                  <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters and double check your Area Code</p>
                   <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear filters</Button>
                 </CardContent>
               </Card>

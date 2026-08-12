@@ -306,7 +306,7 @@ export default function StudentOnboarding() {
                     placeholder="e.g. 3.5"
                     className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">You can verify your GPA later with a photo upload.</p>
+                  <p className="text-xs text-muted-foreground mt-1">You can recive reccomendations with a simple email link.</p>
                 </div>
               </div>
             </div>

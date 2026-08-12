@@ -201,29 +201,11 @@ export default function LoginPage() {
           <Card className="w-full max-w-md border-border bg-card/95 shadow-2xl backdrop-blur">
             <CardContent className="p-10">
 
-              {/* MOBILE HEADER */}
-              <div className="mb-8 text-center lg:hidden">
-          
-
-                <h1 className="text-3xl font-bold text-foreground">
-                  Welcome back
-                </h1>
-
-                <p className="mt-2 text-muted-foreground">
-                  Login or create your account to continue.
-                </p>
-              </div>
-
-              {/* DESKTOP HEADER */}
-              <div className="mb-8 hidden lg:block text-center">
-                <h1 className="text-3xl font-bold text-foreground">
-                  Welcome back
-                </h1>
-
-                <p className="mt-2 text-muted-foreground">
-                  Login or create your account to continue.
-                </p>
-              </div>
+            
+<div className="mb-8 text-center">
+  <h1 className="text-3xl font-bold text-foreground">Welcome back</h1>
+  <p className="mt-2 text-muted-foreground">Login or create your account to continue.</p>
+</div>
 
               {/* EMAIL */}
               <div className="space-y-2">

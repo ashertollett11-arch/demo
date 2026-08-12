@@ -230,17 +230,7 @@ export default function StudentDashboard() {
     fetchStudent()
   }, [])
 
-  useEffect(() => {
-    const savedAvailability = localStorage.getItem("availability")
-    if (savedAvailability) {
-      const parsed: Availability[] = JSON.parse(savedAvailability).map((day: any) => ({
-        ...day,
-        start: day.start === "-" ? "9:00 AM" : day.start,
-        end: day.end === "-" ? "5:00 PM" : day.end,
-      }))
-      setAvailability(parsed)
-    }
-  }, [])
+
 
 
   useEffect(() => {

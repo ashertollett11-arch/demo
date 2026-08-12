@@ -88,7 +88,14 @@ export default function LocationsPage() {
         router.replace("/employer/profile")
         return
       }
+      const { data: roleData } = await supabase
+  .from("users")
+  .select("role")
+  .eq("id", user.id)
+  .maybeSingle()
 
+if (!roleData?.role) { router.replace("/choose-role"); return }
+if (roleData.role !== "employer") { router.replace("/login"); return }
       setJobId(job.id)
       await loadLocations(job.id)
       setLoading(false)

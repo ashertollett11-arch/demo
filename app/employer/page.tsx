@@ -38,26 +38,46 @@ export default function EmployerDashboard() {
   const [zipMatchPrecision, setZipMatchPrecision] = useState<number>(5)
   const [pageLoading, setPageLoading] = useState(true)
 
+  // MULTI-LOCATION
+  const [allLocations, setAllLocations] = useState<any[]>([])
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+
+  // AUTH
   useEffect(() => {
     const checkAccess = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.replace("/login"); return }
-        const { data: profile, error } = await supabase
+
+        const { data: roleData } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle()
+
+        if (!roleData?.role) { router.replace("/choose-role"); return }
+        if (roleData.role !== "employer") { router.replace("/login"); return }
+
+        const { data: profile } = await supabase
           .from("profiles")
           .select("subscription_status")
           .eq("id", user.id)
           .maybeSingle()
-        const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
-        if (error || !profile || !isSubscribed) { router.replace("/pricing/mobile"); return }
+
+        const isSubscribed =
+          profile?.subscription_status === "active" ||
+          profile?.subscription_status === "freeactive"
+        if (!isSubscribed) { router.replace("/pricing/mobile"); return }
+
         setUserId(user.id)
       } catch (err) {
-        router.replace("/pricing/mobile")
+        router.replace("/login")
       }
     }
     checkAccess()
   }, [router])
 
+  // LOAD COMPANY NAME
   useEffect(() => {
     if (!userId) return
     const loadCompany = async () => {
@@ -73,6 +93,7 @@ export default function EmployerDashboard() {
     loadCompany()
   }, [userId])
 
+  // LOAD STUDENTS
   useEffect(() => {
     if (!userId) return
     const loadStudents = async () => {
@@ -85,6 +106,7 @@ export default function EmployerDashboard() {
     loadStudents()
   }, [userId])
 
+  // LOAD ALL LOCATIONS
   useEffect(() => {
     if (!userId) return
     const loadJob = async () => {
@@ -94,25 +116,42 @@ export default function EmployerDashboard() {
         .eq("user_id", userId)
         .single()
       if (!jobData) return
+
       setShiftPreference(jobData.shift_preference || "flexible")
       setPreferredJobs(jobData.preferred_jobs || [])
-      const { data: locationData } = await supabase
+
+      const { data: locations } = await supabase
         .from("locations")
-        .select("available_shifts, shift_preference, zip_code, zip_match_precision")
+        .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, zip_match_precision")
         .eq("employer_id", jobData.id)
         .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle()
-      if (locationData) {
-        setEmployerShifts(locationData.available_shifts || [])
-        setShiftPreference(locationData.shift_preference || "flexible")
-        setEmployerZip(locationData.zip_code || null)
-        setZipMatchPrecision(locationData.zip_match_precision ?? 5)
+
+      if (locations?.length) {
+        setAllLocations(locations)
+        setSelectedLocationId(locations[0].id)
+        const first = locations[0]
+        setEmployerShifts(first.available_shifts ?? [])
+        setShiftPreference(first.shift_preference ?? "flexible")
+        setEmployerZip(first.zip_code ?? null)
+        setZipMatchPrecision(first.zip_match_precision ?? 5)
+        if (first.preferred_jobs?.length > 0) setPreferredJobs(first.preferred_jobs)
       }
     }
     loadJob()
   }, [userId])
 
+  const handleLocationChange = (locationId: string) => {
+    const loc = allLocations.find(l => l.id === locationId)
+    if (!loc) return
+    setSelectedLocationId(locationId)
+    setEmployerShifts(loc.available_shifts ?? [])
+    setShiftPreference(loc.shift_preference ?? "flexible")
+    setEmployerZip(loc.zip_code ?? null)
+    setZipMatchPrecision(loc.zip_match_precision ?? 5)
+    if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
+  }
+
+  // LOAD NOTIFICATIONS
   useEffect(() => {
     if (!userId) return
     const loadNotifications = async () => {
@@ -143,6 +182,7 @@ export default function EmployerDashboard() {
     return () => { supabase.removeChannel(channel) }
   }, [userId])
 
+  // SEED STATUSES
   useEffect(() => {
     if (!userId || students.length === 0 || statuses.length > 0 || !employerZip) return
     const seedStatuses = async () => {
@@ -166,6 +206,7 @@ export default function EmployerDashboard() {
     seedStatuses()
   }, [userId, students, statuses, employerZip, zipMatchPrecision])
 
+  // LOAD STATUSES
   useEffect(() => {
     if (!userId) return
     const loadStatuses = async () => {
@@ -173,7 +214,7 @@ export default function EmployerDashboard() {
         .from("student_statuses")
         .select("*")
         .eq("employer_id", userId)
-      if (error) return 
+      if (error) return
       setStatuses(data || [])
     }
     loadStatuses()
@@ -303,6 +344,33 @@ export default function EmployerDashboard() {
           <h1 className="text-3xl font-bold">Welcome, {companyName}</h1>
           <p className="text-muted-foreground">Here's your hiring overview</p>
         </div>
+
+        {/* LOCATION SELECTOR */}
+        {allLocations.length > 1 && (
+          <Card className="border-border bg-card">
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-foreground mb-3">Viewing stats for location:</p>
+              <div className="flex flex-wrap gap-2">
+                {allLocations.map((loc) => (
+                  <button
+                    key={loc.id}
+                    onClick={() => handleLocationChange(loc.id)}
+                    className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
+                      selectedLocationId === loc.id
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:border-primary/50"
+                    }`}
+                  >
+                    {loc.name}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Switch locations to see match scores and candidate counts filtered by each location.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader><CardTitle>Hiring Pipeline</CardTitle></CardHeader>

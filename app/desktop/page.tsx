@@ -43,10 +43,7 @@ const { data, error } = await supabase
 .limit(2)
 .order("created_at", { ascending: false })
 
-// Then update the card to use:
-// job.company instead of job.title/job.company
-// `$${loc.hourly_pay}/hr` instead of job.pay
-// loc.address instead of job.location
+
       if (error) {
         return
       }
@@ -447,7 +444,7 @@ const { data, error } = await supabase
 
   <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
     <li>
-      <Link href="about" className="hover:text-foreground">
+      <Link href="/about" className="hover:text-foreground">
         About
       </Link>
     </li>
