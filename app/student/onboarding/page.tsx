@@ -33,18 +33,38 @@ export default function StudentOnboarding() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
-
+  
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
         .eq("id", user.id)
         .maybeSingle()
-
+  
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "student") { router.replace("/login"); return }
-
-      if (user.email) setEmail(user.email)
-      if (user.user_metadata?.full_name) setName(user.user_metadata.full_name)
+  
+      // Load existing data if they've been here before
+      const { data: existing } = await supabase
+        .from("Students")
+        .select("name, age, gender, location, zip_code, school, gpa, email, phone")
+        .eq("user_id", user.id)
+        .maybeSingle()
+  
+      if (existing) {
+        if (existing.name) setName(existing.name)
+        if (existing.age) setAge(String(existing.age))
+        if (existing.gender) setGender(existing.gender)
+        if (existing.location) setAddress(existing.location)
+        if (existing.zip_code) setZipCode(existing.zip_code)
+        if (existing.school) setSchool(existing.school)
+        if (existing.gpa) setGpa(String(existing.gpa))
+        if (existing.phone) setPhone(existing.phone)
+        if (existing.email) setEmail(existing.email)
+      } else {
+        // Fall back to auth metadata if no DB record yet
+        if (user.email) setEmail(user.email)
+        if (user.user_metadata?.full_name) setName(user.user_metadata.full_name)
+      }
     }
     load()
   }, [router])
