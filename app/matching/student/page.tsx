@@ -88,8 +88,8 @@ export default function MatchesPage() {
         .maybeSingle()
   
       if (!profile || !profile.profile_complete) {
-        router.replace("/student/profile?missing=true")
-        return
+        router.replace("/student/onboarding")
+                return
       }
     }
     checkProfile()

@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -15,10 +14,10 @@ export default function StudentOnboarding() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
+  const [autoSaving, setAutoSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
-  // -------------------------
   // FORM STATE
-  // -------------------------
   const [name, setName] = useState("")
   const [age, setAge] = useState("")
   const [gender, setGender] = useState<"male" | "female" | "">("")
@@ -29,34 +28,67 @@ export default function StudentOnboarding() {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
 
-  // -------------------------
   // AUTH CHECK + AUTO FILL
-  // -------------------------
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
-  
-      // Check role
+
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
         .eq("id", user.id)
         .maybeSingle()
-  
+
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "student") { router.replace("/login"); return }
-  
-      // Auto-fill from auth
+
       if (user.email) setEmail(user.email)
       if (user.user_metadata?.full_name) setName(user.user_metadata.full_name)
     }
     load()
   }, [router])
 
-  // -------------------------
+  // SAVE PROGRESS (without profile_complete)
+  const saveProgress = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase
+      .from("Students")
+      .upsert(
+        {
+          user_id: user.id,
+          name: name || null,
+          age: age ? Number(age) : null,
+          gender: gender || null,
+          location: address || null,
+          zip_code: zipCode || null,
+          school: school || null,
+          gpa: gpa ? Number(gpa) : null,
+          email: email || null,
+          phone: phone || null,
+          profile_complete: false,
+        },
+        { onConflict: "user_id" }
+      )
+    setLastSaved(new Date())
+  }
+
+  // AUTOSAVE EVERY 2 SECONDS when any field changes
+  useEffect(() => {
+    // Don't autosave if nothing meaningful is filled in yet
+    if (!name && !age && !address && !zipCode && !school && !gpa && !phone) return
+
+    const timer = setTimeout(async () => {
+      setAutoSaving(true)
+      await saveProgress()
+      setAutoSaving(false)
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [name, age, gender, address, zipCode, school, gpa, email, phone])
+
   // VALIDATION PER STEP
-  // -------------------------
   const emailRegex = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|us|gov|io|co)$/i
   const zipRegex = /^\d{5}$/
 
@@ -76,13 +108,10 @@ export default function StudentOnboarding() {
     }
   }
 
-  // -------------------------
-  // SAVE + REDIRECT
-  // -------------------------
+  // FINAL SAVE + REDIRECT
   const handleFinish = async () => {
     if (!canProceed()) return
     setSaving(true)
-
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSaving(false); return }
 
@@ -114,22 +143,23 @@ export default function StudentOnboarding() {
           shift_preference: "flexible",
           interests: ["School", "Hanging out with friends"],
           preferred_jobs: ["Busser", "Customer Service", "Dishwasher"],
-                    profile_complete: true, // still need to finish on profile page
+          profile_complete: true,
         },
         { onConflict: "user_id" }
       )
 
     if (error) {
-     
       toast.error("Failed to save. Please try again.")
       setSaving(false)
       return
     }
 
     toast.success("Welcome to SimplyApply! You can always change your information in the top right.")
-    router.push("/matching/student")  }
+    router.push("/matching/student")
+  }
 
-  const next = () => {
+  // NEXT — save progress first then advance
+  const next = async () => {
     if (!canProceed()) {
       toast.error("Please fill out all fields before continuing.")
       return
@@ -137,23 +167,17 @@ export default function StudentOnboarding() {
     if (step === TOTAL_STEPS) {
       handleFinish()
     } else {
+      await saveProgress()
       setStep(s => s + 1)
     }
   }
 
   const back = () => setStep(s => s - 1)
 
-  // -------------------------
-  // PROGRESS BAR
-  // -------------------------
   const progress = (step / TOTAL_STEPS) * 100
 
-  // -------------------------
-  // UI
-  // -------------------------
   return (
     <div className="min-h-screen bg-background flex flex-col">
-
       {/* HEADER */}
       <header className="border-b border-border bg-background/95 backdrop-blur px-4 py-4">
         <div className="mx-auto flex max-w-lg items-center justify-between">
@@ -163,9 +187,16 @@ export default function StudentOnboarding() {
             </div>
             <span className="text-lg font-bold text-foreground">SimplyApply</span>
           </Link>
-          <span className="text-sm text-muted-foreground">{step} of {TOTAL_STEPS}</span>
+          <div className="flex items-center gap-2">
+            {autoSaving && (
+              <span className="text-xs text-muted-foreground">Saving...</span>
+            )}
+            {!autoSaving && lastSaved && (
+              <span className="text-xs text-muted-foreground">Saved ✓</span>
+            )}
+            <span className="text-sm text-muted-foreground">{step} of {TOTAL_STEPS}</span>
+          </div>
         </div>
-
         {/* PROGRESS BAR */}
         <div className="mx-auto max-w-lg mt-3">
           <div className="h-1.5 w-full rounded-full bg-secondary">
@@ -188,7 +219,6 @@ export default function StudentOnboarding() {
                 <h1 className="text-2xl font-bold text-foreground">Let's get started</h1>
                 <p className="text-muted-foreground mt-1">Tell us a little about yourself.</p>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Full Name</label>
@@ -199,7 +229,6 @@ export default function StudentOnboarding() {
                     className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
-
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Age</label>
                   <input
@@ -214,7 +243,6 @@ export default function StudentOnboarding() {
                     className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
-
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Gender</label>
                   <div className="grid grid-cols-2 gap-3">
@@ -244,7 +272,6 @@ export default function StudentOnboarding() {
                 <h1 className="text-2xl font-bold text-foreground">Where are you located?</h1>
                 <p className="text-muted-foreground mt-1">We use this to find jobs near you.</p>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Street Address</label>
@@ -255,7 +282,6 @@ export default function StudentOnboarding() {
                     className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
-
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Zip Code</label>
                   <input
@@ -280,7 +306,6 @@ export default function StudentOnboarding() {
                 <h1 className="text-2xl font-bold text-foreground">Your education</h1>
                 <p className="text-muted-foreground mt-1">Employers love seeing your academic info.</p>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">School</label>
@@ -291,7 +316,6 @@ export default function StudentOnboarding() {
                     className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
-
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Unweighted GPA</label>
                   <input
@@ -306,7 +330,7 @@ export default function StudentOnboarding() {
                     placeholder="e.g. 3.5"
                     className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">You can recive reccomendations with a simple email link.</p>
+                  <p className="text-xs text-muted-foreground mt-1">You can receive recommendations with a simple email link.</p>
                 </div>
               </div>
             </div>
@@ -319,7 +343,6 @@ export default function StudentOnboarding() {
                 <h1 className="text-2xl font-bold text-foreground">How can employers reach you?</h1>
                 <p className="text-muted-foreground mt-1">Your contact info is only shared with employers you match with.</p>
               </div>
-
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Email</label>
@@ -330,7 +353,6 @@ export default function StudentOnboarding() {
                     className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
-
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Phone Number</label>
                   <input
@@ -343,8 +365,6 @@ export default function StudentOnboarding() {
                     className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
-
-                {/* SUMMARY */}
                 <Card className="border-primary/20 bg-primary/5 mt-2">
                   <CardContent className="p-4 space-y-2">
                     <p className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -352,7 +372,7 @@ export default function StudentOnboarding() {
                       Almost done!
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      After this we'll take you to your dashboard, you can always change your information and ajust your avalibilty by editing your profile - just hit the icon in the top right and tap profile.
+                      After this we'll take you to your dashboard. You can always change your information and adjust your availability by editing your profile — just hit the icon in the top right and tap profile.
                     </p>
                   </CardContent>
                 </Card>
@@ -376,7 +396,6 @@ export default function StudentOnboarding() {
               {!saving && step < TOTAL_STEPS && <ChevronRight className="h-4 w-4 ml-1" />}
             </Button>
           </div>
-
         </div>
       </div>
     </div>
