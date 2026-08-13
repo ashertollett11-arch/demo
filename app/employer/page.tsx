@@ -68,14 +68,32 @@ export default function EmployerDashboard() {
           profile?.subscription_status === "active" ||
           profile?.subscription_status === "freeactive"
   
-        // If not subscribed AND profile not complete → go to profile
-        // If not subscribed but profile IS complete → go to billing
         if (!isSubscribed) {
           if (!profile?.profile_complete) {
             router.replace("/employer/profile?missing=true")
           } else {
             router.replace("/pricing/mobile")
           }
+          return
+        }
+  
+        // Check job profile exists
+        const { data: jobData } = await supabase
+          .from("job")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle()
+  
+        if (!jobData) { router.replace("/employer/profile?missing=true"); return }
+  
+        // Check at least one location exists
+        const { data: locs } = await supabase
+          .from("locations")
+          .select("id")
+          .eq("employer_id", jobData.id)
+  
+        if (!locs || locs.length === 0) {
+          router.replace("/employer/profile?missing=true")
           return
         }
   

@@ -209,10 +209,27 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
     if (!deletingId || !jobId) return
     const { error } = await supabase.from("locations").delete().eq("id", deletingId)
     if (error) { toast.error("Failed to delete location."); return }
+  
     toast.success("Location deleted.")
     await loadLocations(jobId)
     setShowDeleteDialog(false)
     setDeletingId(null)
+  
+    // Check if any locations remain — if not, mark profile incomplete
+    const { data: remaining } = await supabase
+      .from("locations")
+      .select("id")
+      .eq("employer_id", jobId)
+  
+    if (!remaining || remaining.length === 0) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({ profile_complete: false })
+          .eq("id", user.id)
+      }
+    }
   }
 
   // -------------------------
