@@ -272,35 +272,44 @@ export default function MatchingPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.replace("/login"); return }
-
+  
         const { data: roleData } = await supabase
           .from("users")
           .select("role")
           .eq("id", user.id)
           .maybeSingle()
-
+  
         if (!roleData?.role) { router.replace("/choose-role"); return }
         if (roleData.role !== "employer") { router.replace("/login"); return }
-
+  
         const { data: profile } = await supabase
           .from("profiles")
-          .select("subscription_status")
+          .select("subscription_status, profile_complete")
           .eq("id", user.id)
           .maybeSingle()
-
+  
         const isSubscribed =
           profile?.subscription_status === "active" ||
           profile?.subscription_status === "freeactive"
-        if (!isSubscribed) { router.replace("/pricing/mobile"); return }
-
+  
+        if (!isSubscribed) {
+          if (!profile?.profile_complete) {
+            router.replace("/employer/profile?missing=true")
+          } else {
+            router.replace("/pricing/mobile")
+          }
+          return
+        }
+  
+        // Subscribed but no job profile yet
         const { data: jobData } = await supabase
           .from("job")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle()
-
+  
         if (!jobData) { router.replace("/employer/profile"); return }
-
+  
         setUserId(user.id)
       } catch (err) {
         router.replace("/login")
