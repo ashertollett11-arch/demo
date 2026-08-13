@@ -301,14 +301,25 @@ export default function MatchingPage() {
           return
         }
   
-        // Subscribed but no job profile yet
+        // Check job profile exists
         const { data: jobData } = await supabase
           .from("job")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle()
   
-        if (!jobData) { router.replace("/employer/profile"); return }
+        if (!jobData) { router.replace("/employer/profile?missing=true"); return }
+  
+        // Check at least one location exists
+        const { data: locs } = await supabase
+          .from("locations")
+          .select("id")
+          .eq("employer_id", jobData.id)
+  
+        if (!locs || locs.length === 0) {
+          router.replace("/employer/profile?missing=true")
+          return
+        }
   
         setUserId(user.id)
       } catch (err) {

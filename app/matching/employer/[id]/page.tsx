@@ -49,31 +49,51 @@ export default function StudentPage() {
         .select("role")
         .eq("id", userId)
         .maybeSingle()
-
+      
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "employer") { router.replace("/login"); return }
-
-      // Check subscription
+      
+      // Check subscription + profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("subscription_status")
+        .select("subscription_status, profile_complete")
         .eq("id", userId)
         .maybeSingle()
-
+      
       const isSubscribed =
         profile?.subscription_status === "active" ||
         profile?.subscription_status === "freeactive"
-      if (!isSubscribed) { router.replace("/pricing/mobile"); return }
-
+      
+      if (!isSubscribed) {
+        if (!profile?.profile_complete) {
+          router.replace("/employer/profile?missing=true")
+        } else {
+          router.replace("/pricing/mobile")
+        }
+        return
+      }
+      
       // Load employer job
       const { data: employerJob } = await supabase
         .from("job")
         .select("id, shift_preference, preferred_jobs")
         .eq("user_id", userId)
         .single()
+      
+      if (!employerJob) { router.replace("/employer/profile?missing=true"); return }
+      
+      // Check at least one location exists
+      const { data: locCheck } = await supabase
+        .from("locations")
+        .select("id")
+        .eq("employer_id", employerJob.id)
+      
+      if (!locCheck || locCheck.length === 0) {
+        router.replace("/employer/profile?missing=true")
+        return
+      }
 
-      if (!employerJob) { router.replace("/employer/profile"); return }
-
+      
       setShiftPreference(employerJob?.shift_preference ?? "flexible")
       setPreferredJobs(employerJob?.preferred_jobs ?? [])
 
