@@ -68,11 +68,11 @@ export async function POST(req: Request) {
       token = data.token
     }
 
-    
+
     const recommendUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/recommend/${token}`
 
     const { error: emailError } = await resend.emails.send({
-      from: "SimplyApply <hello@simplyapply.app>",
+      from: "SimplyApply <noreply@simplyapply.app>",
       to: recommenderEmail,
       subject: `${studentName} is asking for your recommendation`,
       html: `
