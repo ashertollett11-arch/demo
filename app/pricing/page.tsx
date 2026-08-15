@@ -75,7 +75,7 @@ export default function PricingPage() {
                 ))}
               </ul>
               <Button className="w-full bg-chart-2 hover:bg-chart-2/90 text-white" asChild>
-                <Link href="/login">Get Started Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/signup">Get Started Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </CardContent>
           </Card>
@@ -115,7 +115,7 @@ export default function PricingPage() {
                 ))}
               </ul>
               <Button className="w-full" asChild>
-                <Link href="/login">Start Hiring Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/signup">Start Hiring Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </CardContent>
           </Card>
@@ -206,10 +206,10 @@ export default function PricingPage() {
           <p className="mt-3 text-muted-foreground">Join for free today. No credit card, no commitment.</p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button size="lg" asChild>
-              <Link href="/login">Get Started as a Student</Link>
+              <Link href="/signup">Get Started as a Student</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/login">Start Hiring Students</Link>
+              <Link href="/signup">Start Hiring Students</Link>
             </Button>
           </div>
         </div>

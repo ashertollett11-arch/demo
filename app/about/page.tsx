@@ -133,10 +133,10 @@ export default function AboutPage() {
           <p className="mt-3 text-muted-foreground">Join students and employers already using SimplyApply.</p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button size="lg" asChild>
-              <Link href="/login">Get Started as a Student</Link>
+              <Link href="/signup">Get Started as a Student</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/login">Hire Students</Link>
+              <Link href="/signup">Hire Students</Link>
             </Button>
           </div>
         </div>

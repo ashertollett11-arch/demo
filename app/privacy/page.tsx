@@ -158,7 +158,7 @@ export default function PrivacyPolicyPage() {
           <div className="flex gap-6 text-sm text-muted-foreground">
             <Link href="/" className="hover:text-foreground">Home</Link>
             <Link href="/pricing" className="hover:text-foreground">Pricing</Link>
-            <Link href="/login" className="hover:text-foreground">Sign Up</Link>
+            <Link href="/signup" className="hover:text-foreground">Sign Up</Link>
           </div>
         </div>
       </footer>

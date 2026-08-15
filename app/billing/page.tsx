@@ -51,7 +51,7 @@ export default function BillingPage() {
     const user = userData?.user
 
     if (!user) {
-      router.replace("/login")
+      router.replace("/signup")
       return
     }
 

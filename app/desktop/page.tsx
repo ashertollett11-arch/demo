@@ -78,7 +78,7 @@ const { data, error } = await supabase
             <Link href="#how-it-works" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               How it Works
             </Link>
-            <Link href="/login" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+            <Link href="/signup" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
               Create an account
             </Link>
             <Link href="/pricing" className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
@@ -92,7 +92,7 @@ const { data, error } = await supabase
               <Link href="/login">Log in</Link>
             </Button>
             <Button asChild>
-              <Link href="/login">Get Started</Link>
+              <Link href="/signup">Get Started</Link>
             </Button>
           </div>
 
@@ -131,7 +131,7 @@ const { data, error } = await supabase
                   <Link href="/login">Log in</Link>
                 </Button>
                 <Button asChild className="w-full">
-                  <Link href="/login">Get Started</Link>
+                  <Link href="/signup">Get Started</Link>
                 </Button>
               </div>
             </div>
@@ -162,13 +162,13 @@ const { data, error } = await supabase
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button size="lg" className="w-full gap-2 px-8 sm:w-auto" asChild>
-              <Link href="/login">
+              <Link href="/signup">
                 Get Started as a Student
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="w-full px-8 sm:w-auto" asChild>
-              <Link href="/login">Hire Students</Link>
+              <Link href="/signup">Hire Students</Link>
             </Button>
           </div>
 
@@ -266,7 +266,7 @@ const { data, error } = await supabase
                   ))}
                 </ul>
                 <Button className="mt-8 gap-2" asChild>
-                  <Link href="/login">
+                  <Link href="/signup">
                     Get Started Free
                     <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -347,7 +347,7 @@ const { data, error } = await supabase
           {loc.hourly_pay ? `$${loc.hourly_pay}/hr${loc.has_tips ? " + tips" : ""}` : "Competitive pay"}
         </span>
         <Button size="sm" variant="ghost" className="text-xs" asChild>
-          <Link href="/login">View Details</Link>
+          <Link href="/signup">View Details</Link>
         </Button>
       </div>
     </CardContent>
@@ -357,7 +357,7 @@ const { data, error } = await supabase
 
           <div className="mt-10 text-center">
             <Button variant="outline" size="lg" asChild>
-              <Link href="/login">View All Opportunities</Link>
+              <Link href="/signup">View All Opportunities</Link>
             </Button>
           </div>
         </div>
@@ -394,13 +394,13 @@ const { data, error } = await supabase
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button size="lg" className="w-full gap-2 px-8 sm:w-auto" asChild>
-              <Link href="/login">
+              <Link href="/signup">
                 Get Started as a Student
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="w-full px-8 sm:w-auto" asChild>
-              <Link href="/login">Hire Students</Link>
+              <Link href="/signup">Hire Students</Link>
             </Button>
           </div>
         </div>
