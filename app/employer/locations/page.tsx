@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
-import { ChevronLeft, Plus, Pencil, Trash2, MapPin, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, MapPin, X, LayoutDashboard } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -57,7 +57,6 @@ export default function LocationsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
-
   const [formName, setFormName] = useState("")
   const [formAddress, setFormAddress] = useState("")
   const [formZip, setFormZip] = useState("")
@@ -68,14 +67,20 @@ export default function LocationsPage() {
   const [formTips, setFormTips] = useState(false)
   const [formJobs, setFormJobs] = useState<string[]>([])
 
-  // -------------------------
   // AUTH + LOAD
-  // -------------------------
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
+
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle()
+      if (!roleData?.role) { router.replace("/choose-role"); return }
+      if (roleData.role !== "employer") { router.replace("/login"); return }
 
       const { data: job } = await supabase
         .from("job")
@@ -88,14 +93,7 @@ export default function LocationsPage() {
         router.replace("/employer/profile")
         return
       }
-      const { data: roleData } = await supabase
-  .from("users")
-  .select("role")
-  .eq("id", user.id)
-  .maybeSingle()
 
-if (!roleData?.role) { router.replace("/choose-role"); return }
-if (roleData.role !== "employer") { router.replace("/login"); return }
       setJobId(job.id)
       await loadLocations(job.id)
       setLoading(false)
@@ -109,13 +107,10 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
       .select("*")
       .eq("employer_id", jId)
       .order("created_at", { ascending: true })
-    if (error) return 
+    if (error) return
     setLocations(data || [])
   }
 
-  // -------------------------
-  // FORM HELPERS
-  // -------------------------
   const resetForm = () => {
     setFormName("")
     setFormAddress("")
@@ -149,9 +144,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
-  // -------------------------
-  // SAVE LOCATION
-  // -------------------------
   const saveLocation = async () => {
     if (!formName.trim()) { toast.error("Location name is required"); return }
     if (!formAddress.trim()) { toast.error("Address is required"); return }
@@ -161,7 +153,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
     if (!jobId) return
 
     setSaving(true)
-
     const payload = {
       employer_id: jobId,
       name: formName.trim(),
@@ -197,9 +188,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
     setSaving(false)
   }
 
-  // -------------------------
-  // DELETE LOCATION
-  // -------------------------
   const confirmDelete = (id: string) => {
     setDeletingId(id)
     setShowDeleteDialog(true)
@@ -209,18 +197,17 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
     if (!deletingId || !jobId) return
     const { error } = await supabase.from("locations").delete().eq("id", deletingId)
     if (error) { toast.error("Failed to delete location."); return }
-  
+
     toast.success("Location deleted.")
     await loadLocations(jobId)
     setShowDeleteDialog(false)
     setDeletingId(null)
-  
-    // Check if any locations remain — if not, mark profile incomplete
+
     const { data: remaining } = await supabase
       .from("locations")
       .select("id")
       .eq("employer_id", jobId)
-  
+
     if (!remaining || remaining.length === 0) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -232,9 +219,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
     }
   }
 
-  // -------------------------
-  // LOADING STATE
-  // -------------------------
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -252,23 +236,40 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <div className="mx-auto max-w-3xl">
 
-        {/* HEADER */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
+        {/* HEADER — back left, add center, dashboard right */}
+        <div className="grid grid-cols-3 items-center mb-6">
+          {/* LEFT */}
+          <div className="flex justify-start">
             <Button variant="ghost" onClick={() => router.push("/employer/profile")} className="flex items-center gap-1 px-2">
               <ChevronLeft className="h-4 w-4" /> Back
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Locations</h1>
-              <p className="text-sm text-muted-foreground">Manage your business locations</p>
-            </div>
           </div>
-          {!showForm && (
-            <Button onClick={openAddForm} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Location
-            </Button>
-          )}
+
+          {/* CENTER */}
+          <div className="flex justify-center">
+            {!showForm && (
+              <Button onClick={openAddForm} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                New Location
+              </Button>
+            )}
+          </div>
+
+          {/* RIGHT */}
+          <div className="flex justify-end">
+          {locations.length > 0 && (
+  <Button onClick={() => router.push("/pricing/mobile")} className="flex items-center gap-2">
+    Dashboard
+    <ChevronRight className="h-4 w-4" />
+  </Button>
+)}
+          </div>
+        </div>
+
+        {/* PAGE TITLE */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Locations</h1>
+          <p className="text-sm text-muted-foreground">Manage your business locations</p>
         </div>
 
         {/* ADD / EDIT FORM */}
@@ -292,7 +293,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-
               {/* NAME */}
               <div>
                 <label className="text-sm font-medium block mb-1">Location Name (Visible to Students)</label>
@@ -303,7 +303,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                   className="w-full border rounded px-3 py-2 text-sm"
                 />
               </div>
-
               {/* ADDRESS */}
               <div>
                 <label className="text-sm font-medium block mb-1">Street Address</label>
@@ -314,7 +313,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                   className="w-full border rounded px-3 py-2 text-sm"
                 />
               </div>
-
               {/* ZIP */}
               <div>
                 <label className="text-sm font-medium block mb-1">Zip Code</label>
@@ -329,7 +327,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                   className="w-full border rounded px-3 py-2 text-sm"
                 />
               </div>
-
               {/* SEARCH AREA */}
               <div>
                 <label className="text-sm font-medium block mb-2">Search Area</label>
@@ -359,7 +356,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                     : "Show students in your broader region (first 3 digits match)."}
                 </p>
               </div>
-
               {/* PAY */}
               <div>
                 <label className="text-sm font-medium block mb-1">Pay Per Hour ($)</label>
@@ -372,7 +368,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                   className="w-full border rounded px-3 py-2 text-sm"
                 />
               </div>
-
               {/* TIPS */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Tips?</span>
@@ -386,7 +381,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                   {formTips ? "Yes" : "No"}
                 </button>
               </div>
-
               {/* HIRING ROLES */}
               <div>
                 <label className="text-sm font-medium block mb-2">Hiring Roles for this Location</label>
@@ -414,7 +408,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Select up to 3 roles you're hiring for at this location.</p>
               </div>
-
               {/* SHIFT PREFERENCE */}
               <div>
                 <label className="text-sm font-medium block mb-2">Shift Preference</label>
@@ -435,7 +428,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                   ))}
                 </div>
               </div>
-
               {/* AVAILABLE SHIFTS */}
               <div>
                 <label className="text-sm font-medium block mb-2">Available Shifts</label>
@@ -486,7 +478,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                   ))}
                 </div>
               </div>
-
               {/* SAVE */}
               <div className="flex gap-2 pt-2">
                 <Button onClick={saveLocation} disabled={saving} className="flex-1">
@@ -496,7 +487,6 @@ if (roleData.role !== "employer") { router.replace("/login"); return }
                   Cancel
                 </Button>
               </div>
-
             </CardContent>
           </Card>
         )}

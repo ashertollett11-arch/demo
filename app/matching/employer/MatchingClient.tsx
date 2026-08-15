@@ -198,13 +198,7 @@ function FilterContent({
           ))}
         </div>
       </div>
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          checked={verifiedOnly}
-          onCheckedChange={(checked) => setVerifiedOnly(checked === true)}
-        />
-        <label className="text-sm">Verified students only</label>
-      </div>
+     
       {activeFiltersCount > 0 && (
         <Button variant="outline" className="w-full" onClick={clearFilters}>
           Clear all filters

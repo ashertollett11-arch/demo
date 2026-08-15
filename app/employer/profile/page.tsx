@@ -186,33 +186,64 @@ export default function EmployerProfilePage() {
   }
 
   const goToLocations = async () => {
-    if (companyName.trim()) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data } = await supabase
-          .from("job")
-          .upsert(
-            {
-              id: jobId || undefined,
-              user_id: user.id,
-              title: companyName || "Untitled Job",
-              company: companyName || "Unknown Company",
-              owner_name: ownerName || null,
-              business_type: businessType || null,
-              email: email || null,
-              phone: phone || null,
-              details: details || "No description",
-              preferred_jobs: preferredJobs,
-              status: "new",
-              distance: "0",
-            },
-            { onConflict: "user_id" }
-          )
-          .select()
-          .single()
-        if (data?.id) setJobId(data.id)
-      }
+    // Validate company fields before allowing access to locations
+    if (!companyName.trim()) {
+      toast.error("Please enter your company name first")
+      scrollToField(companyRef)
+      return
     }
+    if (!ownerName.trim()) {
+      toast.error("Please enter the owner name first")
+      scrollToField(ownerRef)
+      return
+    }
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email first")
+      scrollToField(emailRef)
+      return
+    }
+    if (!phoneRegex.test(phone)) {
+      toast.error("Please enter a valid phone number first")
+      scrollToField(phoneRef)
+      return
+    }
+    if (!businessType.trim()) {
+      toast.error("Please enter your business type first")
+      return
+    }
+    if (!details.trim()) {
+      toast.error("Please enter a company description first")
+      scrollToField(detailsRef)
+      return
+    }
+  
+    // Save company info before navigating
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data } = await supabase
+        .from("job")
+        .upsert(
+          {
+            id: jobId || undefined,
+            user_id: user.id,
+            title: companyName || "Untitled Job",
+            company: companyName || "Unknown Company",
+            owner_name: ownerName || null,
+            business_type: businessType || null,
+            email: email || null,
+            phone: phone || null,
+            details: details || "No description",
+            preferred_jobs: preferredJobs,
+            status: "new",
+            distance: "0",
+          },
+          { onConflict: "user_id" }
+        )
+        .select()
+        .single()
+      if (data?.id) setJobId(data.id)
+    }
+  
     router.push("/employer/locations")
   }
 
