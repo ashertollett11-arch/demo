@@ -166,19 +166,15 @@ export default function LocationsPage() {
       preferred_jobs: formJobs,
     }
 
-    let error
-    if (editingId) {
-      const { error: e } = await supabase.from("locations").update(payload).eq("id", editingId)
-      error = e
-    } else {
-      const { error: e } = await supabase.from("locations").insert(payload)
-      error = e
-    }
+    let savedLocationId: string | null = editingId
 
-    if (error) {
-      toast.error("Failed to save location.")
-      setSaving(false)
-      return
+    if (editingId) {
+      const { error } = await supabase.from("locations").update(payload).eq("id", editingId)
+      if (error) { toast.error("Failed to save location."); setSaving(false); return }
+    } else {
+      const { data, error } = await supabase.from("locations").insert(payload).select("id").single()
+      if (error) { toast.error("Failed to save location."); setSaving(false); return }
+      savedLocationId = data?.id ?? null
     }
 
     toast.success(editingId ? "Location updated!" : "Location added!")
@@ -186,6 +182,15 @@ export default function LocationsPage() {
     setShowForm(false)
     resetForm()
     setSaving(false)
+
+    // Calculate distances for this location to all students in the background
+    if (savedLocationId) {
+      fetch("/api/calculate-distances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locationId: savedLocationId }),
+      }).catch(() => {}) // fire and forget
+    }
   }
 
   const confirmDelete = (id: string) => {
@@ -211,10 +216,7 @@ export default function LocationsPage() {
     if (!remaining || remaining.length === 0) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        await supabase
-          .from("profiles")
-          .update({ profile_complete: false })
-          .eq("id", user.id)
+        await supabase.from("profiles").update({ profile_complete: false }).eq("id", user.id)
       }
     }
   }
@@ -238,14 +240,11 @@ export default function LocationsPage() {
 
         {/* HEADER — back left, add center, dashboard right */}
         <div className="grid grid-cols-3 items-center mb-6">
-          {/* LEFT */}
           <div className="flex justify-start">
             <Button variant="ghost" onClick={() => router.push("/employer/profile")} className="flex items-center gap-1 px-2">
               <ChevronLeft className="h-4 w-4" /> Back
             </Button>
           </div>
-
-          {/* CENTER */}
           <div className="flex justify-center">
             {!showForm && (
               <Button onClick={openAddForm} className="flex items-center gap-2">
@@ -254,15 +253,13 @@ export default function LocationsPage() {
               </Button>
             )}
           </div>
-
-          {/* RIGHT */}
           <div className="flex justify-end">
-          {locations.length > 0 && (
-  <Button onClick={() => router.push("/pricing/mobile")} className="flex items-center gap-2">
-    Dashboard
-    <ChevronRight className="h-4 w-4" />
-  </Button>
-)}
+            {locations.length > 0 && (
+              <Button onClick={() => router.push("/employer")} className="flex items-center gap-2">
+                Dashboard
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -293,102 +290,56 @@ export default function LocationsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* NAME */}
               <div>
                 <label className="text-sm font-medium block mb-1">Location Name (Visible to Students)</label>
-                <input
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
+                <input value={formName} onChange={(e) => setFormName(e.target.value)}
                   placeholder='e.g. "Main Street" or "Beach Location"'
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
+                  className="w-full border rounded px-3 py-2 text-sm" />
               </div>
-              {/* ADDRESS */}
               <div>
                 <label className="text-sm font-medium block mb-1">Street Address</label>
-                <input
-                  value={formAddress}
-                  onChange={(e) => setFormAddress(e.target.value)}
-                  placeholder="123 Main St"
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
+                <input value={formAddress} onChange={(e) => setFormAddress(e.target.value)} placeholder="123 Main St"
+                  className="w-full border rounded px-3 py-2 text-sm" />
               </div>
-              {/* ZIP */}
               <div>
                 <label className="text-sm font-medium block mb-1">Zip Code</label>
-                <input
-                  value={formZip}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, "")
-                    if (value.length <= 5) setFormZip(value)
-                  }}
-                  placeholder="32459"
-                  maxLength={5}
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
+                <input value={formZip}
+                  onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 5) setFormZip(value) }}
+                  placeholder="32459" maxLength={5} className="w-full border rounded px-3 py-2 text-sm" />
               </div>
-              {/* SEARCH AREA */}
               <div>
                 <label className="text-sm font-medium block mb-2">Search Area</label>
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormPrecision(5)}
-                    className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
-                      formPrecision === 5 ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"
-                    }`}
-                  >
+                  <button type="button" onClick={() => setFormPrecision(5)}
+                    className={`flex-1 py-2 text-xs rounded-lg border transition-all ${formPrecision === 5 ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
                     Local (same zip)
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormPrecision(3)}
-                    className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
-                      formPrecision === 3 ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"
-                    }`}
-                  >
+                  <button type="button" onClick={() => setFormPrecision(3)}
+                    className={`flex-1 py-2 text-xs rounded-lg border transition-all ${formPrecision === 3 ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
                     Regional (nearby zips)
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {formPrecision === 5
-                    ? "Only show students with the exact same zip code."
-                    : "Show students in your broader region (first 3 digits match)."}
+                  {formPrecision === 5 ? "Only show students with the exact same zip code." : "Show students in your broader region (first 3 digits match)."}
                 </p>
               </div>
-              {/* PAY */}
               <div>
                 <label className="text-sm font-medium block mb-1">Pay Per Hour ($)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formPay}
-                  onChange={(e) => setFormPay(e.target.value)}
-                  placeholder="15.50"
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
+                <input type="number" step="0.01" value={formPay} onChange={(e) => setFormPay(e.target.value)}
+                  placeholder="15.50" className="w-full border rounded px-3 py-2 text-sm" />
               </div>
-              {/* TIPS */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Tips?</span>
-                <button
-                  type="button"
-                  onClick={() => setFormTips(prev => !prev)}
-                  className={`px-4 py-1 text-xs rounded border font-semibold transition-all min-w-[60px] text-center ${
-                    formTips ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"
-                  }`}
-                >
+                <button type="button" onClick={() => setFormTips(prev => !prev)}
+                  className={`px-4 py-1 text-xs rounded border font-semibold transition-all min-w-[60px] text-center ${formTips ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
                   {formTips ? "Yes" : "No"}
                 </button>
               </div>
-              {/* HIRING ROLES */}
               <div>
                 <label className="text-sm font-medium block mb-2">Hiring Roles for this Location</label>
                 <div className="flex flex-wrap gap-2">
                   {JOB_ROLES.map((role) => (
-                    <button
-                      key={role}
-                      type="button"
+                    <button key={role} type="button"
                       onClick={() => {
                         setFormJobs(prev => {
                           if (prev.includes(role)) return prev.filter(r => r !== role)
@@ -396,96 +347,54 @@ export default function LocationsPage() {
                           return [...prev, role]
                         })
                       }}
-                      className={`px-3 py-1 text-xs rounded-full border transition-all ${
-                        formJobs.includes(role)
-                          ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm"
-                          : "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
-                    >
+                      className={`px-3 py-1 text-xs rounded-full border transition-all ${formJobs.includes(role) ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
                       {role}
                     </button>
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Select up to 3 roles you're hiring for at this location.</p>
               </div>
-              {/* SHIFT PREFERENCE */}
               <div>
                 <label className="text-sm font-medium block mb-2">Shift Preference</label>
                 <div className="flex gap-2">
                   {["morning", "night", "flexible"].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setFormShiftPref(type as any)}
-                      className={`flex-1 py-1.5 text-xs rounded-full border capitalize transition-all ${
-                        formShiftPref === type
-                          ? "bg-blue-100 text-blue-700 border-blue-200"
-                          : "bg-gray-100 text-gray-600 border-gray-200"
-                      }`}
-                    >
+                    <button key={type} type="button" onClick={() => setFormShiftPref(type as any)}
+                      className={`flex-1 py-1.5 text-xs rounded-full border capitalize transition-all ${formShiftPref === type ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
                       {type}
                     </button>
                   ))}
                 </div>
               </div>
-              {/* AVAILABLE SHIFTS */}
               <div>
                 <label className="text-sm font-medium block mb-2">Available Shifts</label>
                 <div className="space-y-2">
                   {formShifts.map((day, index) => (
                     <div key={day.day} className="flex items-center gap-2 text-sm">
                       <span className="w-10 font-medium text-gray-700">{day.day.slice(0, 3)}</span>
-                      <select
-                        value={day.start}
-                        disabled={!day.active}
-                        onChange={(e) => {
-                          const n = [...formShifts]
-                          n[index].start = e.target.value
-                          setFormShifts(n)
-                        }}
-                        className={`w-24 border rounded text-xs px-1 py-1 ${!day.active ? "opacity-40" : ""}`}
-                      >
+                      <select value={day.start} disabled={!day.active}
+                        onChange={(e) => { const n = [...formShifts]; n[index].start = e.target.value; setFormShifts(n) }}
+                        className={`w-24 border rounded text-xs px-1 py-1 ${!day.active ? "opacity-40" : ""}`}>
                         {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
-                      <select
-                        value={day.end}
-                        disabled={!day.active}
-                        onChange={(e) => {
-                          const n = [...formShifts]
-                          n[index].end = e.target.value
-                          setFormShifts(n)
-                        }}
-                        className={`w-24 border rounded text-xs px-1 py-1 ${!day.active ? "opacity-40" : ""}`}
-                      >
+                      <select value={day.end} disabled={!day.active}
+                        onChange={(e) => { const n = [...formShifts]; n[index].end = e.target.value; setFormShifts(n) }}
+                        className={`w-24 border rounded text-xs px-1 py-1 ${!day.active ? "opacity-40" : ""}`}>
                         {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const n = [...formShifts]
-                          n[index].active = !n[index].active
-                          setFormShifts(n)
-                        }}
-                        className={`text-xs px-2 py-1 rounded-full border transition-all ${
-                          day.active
-                            ? "bg-blue-100 text-blue-700 border-blue-200"
-                            : "bg-gray-100 text-gray-600 border-gray-200"
-                        }`}
-                      >
+                      <button type="button"
+                        onClick={() => { const n = [...formShifts]; n[index].active = !n[index].active; setFormShifts(n) }}
+                        className={`text-xs px-2 py-1 rounded-full border transition-all ${day.active ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
                         {day.active ? "Available" : "Off"}
                       </button>
                     </div>
                   ))}
                 </div>
               </div>
-              {/* SAVE */}
               <div className="flex gap-2 pt-2">
                 <Button onClick={saveLocation} disabled={saving} className="flex-1">
                   {saving ? "Saving..." : editingId ? "Update Location" : "Add Location"}
                 </Button>
-                <Button variant="outline" onClick={() => { setShowForm(false); resetForm() }}>
-                  Cancel
-                </Button>
+                <Button variant="outline" onClick={() => { setShowForm(false); resetForm() }}>Cancel</Button>
               </div>
             </CardContent>
           </Card>
@@ -518,11 +427,7 @@ export default function LocationsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">{loc.name}</h3>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
-                          loc.zip_match_precision === 5
-                            ? "bg-blue-50 text-blue-700 border-blue-200"
-                            : "bg-purple-50 text-purple-700 border-purple-200"
-                        }`}>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${loc.zip_match_precision === 5 ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-purple-50 text-purple-700 border-purple-200"}`}>
                           {loc.zip_match_precision === 5 ? "Local" : "Regional"}
                         </span>
                       </div>
@@ -531,32 +436,23 @@ export default function LocationsPage() {
                         {loc.address} · {loc.zip_code}
                       </div>
                       <div className="flex flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
-                        <span className="font-medium text-primary">
-                          ${loc.hourly_pay}/hr{loc.has_tips ? " + tips" : ""}
-                        </span>
+                        <span className="font-medium text-primary">${loc.hourly_pay}/hr{loc.has_tips ? " + tips" : ""}</span>
                         <span className="capitalize">{loc.shift_preference} shifts</span>
                       </div>
                       {loc.preferred_jobs?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {loc.preferred_jobs.map((job) => (
-                            <span key={job} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
-                              {job}
-                            </span>
+                            <span key={job} className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">{job}</span>
                           ))}
                         </div>
                       )}
                     </div>
                     <div className="flex gap-2 shrink-0">
                       <Button size="sm" variant="outline" onClick={() => openEditForm(loc)} className="flex items-center gap-1">
-                        <Pencil className="h-3.5 w-3.5" />
-                        Edit
+                        <Pencil className="h-3.5 w-3.5" /> Edit
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => confirmDelete(loc.id)}
-                        className="flex items-center gap-1 text-red-600 border-red-200 hover:bg-red-50"
-                      >
+                      <Button size="sm" variant="outline" onClick={() => confirmDelete(loc.id)}
+                        className="flex items-center gap-1 text-red-600 border-red-200 hover:bg-red-50">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

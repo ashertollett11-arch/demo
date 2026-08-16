@@ -32,13 +32,11 @@ export default function ProfilePage() {
       const { data } = await supabase.auth.getUser()
       const user = data?.user
       if (!user) { router.replace("/login"); return }
-  
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
         .eq("id", user.id)
         .maybeSingle()
-  
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "student") { router.replace("/login"); return }
     }
@@ -62,8 +60,6 @@ export default function ProfilePage() {
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [gpaStatus, setGpaStatus] = useState("none")
-  const [isGpaVerified, setIsGpaVerified] = useState(false)
-
   const [recommenderName, setRecommenderName] = useState("")
   const [recommenderEmail, setRecommenderEmail] = useState("")
   const [recommenderRelationship, setRecommenderRelationship] = useState("")
@@ -71,8 +67,6 @@ export default function ProfilePage() {
   const [sendingRec, setSendingRec] = useState(false)
 
   const JOB_OPTIONS = ["Cashier","Server","Busser","Barista","Cook","Dishwasher","Host","Sales Associate","Stock Associate","Customer Service","Store Associate"]
-  const showUpload = gpaStatus === "none" || gpaStatus === "rejected" || !gpaProofUrl
-  const isGpaLocked = gpaStatus === "pending" || gpaStatus === "approved" || !!gpaProofUrl
 
   const DEFAULT_AVAILABILITY = [
     { day: "Monday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
@@ -126,9 +120,7 @@ export default function ProfilePage() {
     return `${hour}:00 ${ampm}`
   })
 
-  // -------------------------
   // LOAD PROFILE
-  // -------------------------
   useEffect(() => {
     const loadProfile = async () => {
       setLoading(true)
@@ -138,13 +130,11 @@ export default function ProfilePage() {
       setUser(userData.user)
       if (!authUser) { setLoading(false); return }
       if (authUser.email) setEmail(authUser.email)
-
       const { data: profileData, error } = await supabase
         .from("Students")
-        .select(`user_id, name, age, gpa, location, zip_code, email, school, phone, interests, preferred_jobs, availability, shift_preference, gpa_proof_path, gpa_proof_url, gpa_verification_status`)
+        .select(`user_id, name, age, gpa, location, zip_code, email, school, phone, interests, preferred_jobs, availability, shift_preference, gpa_proof_url, gpa_verification_status`)
         .eq("user_id", authUser.id)
         .single()
-
       if (error) { setLoading(false); return }
       if (profileData) {
         setGpaProofUrl(profileData.gpa_proof_url || null)
@@ -164,7 +154,6 @@ export default function ProfilePage() {
         setAvailability(safeAvailability)
         setShiftPreference(profileData.shift_preference || "flexible")
       }
-
       const { data: rec } = await supabase
         .from("recommendations")
         .select("*")
@@ -176,19 +165,17 @@ export default function ProfilePage() {
         setRecommenderEmail(rec.recommender_email || "")
         setRecommenderRelationship(rec.recommender_relationship || "")
       }
-
       setLoading(false)
     }
     loadProfile()
   }, [])
 
-  // -------------------------
   // SAVE PROFILE
-  // -------------------------
   const saveStudentProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
     if (!user) { toast.error("Not logged in"); return false }
+
     const { error } = await supabase
       .from("Students")
       .upsert(
@@ -203,13 +190,20 @@ export default function ProfilePage() {
         },
         { onConflict: "user_id" }
       )
+
     if (error) { toast.error(error.message); return false }
+
+    // Recalculate distances in the background since address may have changed
+    fetch("/api/calculate-distances", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentUserId: user.id }),
+    }).catch(() => {}) // fire and forget
+
     return true
   }
 
-  // -------------------------
   // SEND RECOMMENDATION REQUEST
-  // -------------------------
   const sendRecommendationRequest = async () => {
     if (!recommenderName.trim()) { toast.error("Enter recommender name"); return }
     if (!recommenderEmail.trim()) { toast.error("Enter recommender email"); return }
@@ -229,11 +223,7 @@ export default function ProfilePage() {
       }),
     })
     const data = await res.json()
-    if (!res.ok) {
-      toast.error(data.error || "Failed to send request.")
-      setSendingRec(false)
-      return
-    }
+    if (!res.ok) { toast.error(data.error || "Failed to send request."); setSendingRec(false); return }
     toast.success(`Recommendation request sent to ${recommenderName}!`)
     const { data: rec } = await supabase
       .from("recommendations")
@@ -244,9 +234,7 @@ export default function ProfilePage() {
     setSendingRec(false)
   }
 
-  // -------------------------
   // DELETE ACCOUNT
-  // -------------------------
   const handleDeleteAccount = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -263,17 +251,14 @@ export default function ProfilePage() {
         setDeleting(false)
         return
       }
-      await supabase.auth.signOut()
-      window.location.href = "/login"
-    } catch (err) {
+      supabase.auth.signOut().finally(() => { window.location.href = "/login" })
+    } catch {
       toast.error("Something went wrong. Please try again.")
       setDeleting(false)
     }
   }
 
-  // -------------------------
   // SWITCH ROLE
-  // -------------------------
   const handleSwitchRole = async () => {
     setSwitching(true)
     const { data: { user } } = await supabase.auth.getUser()
@@ -290,9 +275,8 @@ export default function ProfilePage() {
         setSwitching(false)
         return
       }
-      await supabase.auth.signOut()
-      window.location.href = "/choose-role"
-    } catch (err) {
+      supabase.auth.signOut().finally(() => { window.location.href = "/choose-role" })
+    } catch {
       toast.error("Something went wrong. Please try again.")
       setSwitching(false)
     }
@@ -311,7 +295,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background p-4 overflow-x-hidden">
-
       {/* SWITCH ROLE DIALOG */}
       <Dialog open={showSwitchDialog} onOpenChange={setShowSwitchDialog}>
         <DialogContent className="sm:max-w-md">
@@ -320,17 +303,16 @@ export default function ProfilePage() {
               <AlertTriangle className="h-5 w-5" />
               Switch to Employer Role?
             </DialogTitle>
-           {/* SWITCH ROLE DIALOG */}
-<DialogDescription className="pt-2 space-y-2">
-  <span className="block">This will <span className="font-semibold text-foreground">permanently delete</span> your student account and all associated data including:</span>
-  <ul className="list-disc pl-5 space-y-1 text-sm mt-2">
-    <li>Your student profile</li>
-    <li>GPA verification</li>
-    <li>Job applications and matches</li>
-    <li>All availability and preferences</li>
-  </ul>
-  <span className="block font-medium text-foreground mt-2">This cannot be undone.</span>
-</DialogDescription>
+            <DialogDescription className="pt-2 space-y-2">
+              <span className="block">This will <span className="font-semibold text-foreground">permanently delete</span> your student account and all associated data including:</span>
+              <ul className="list-disc pl-5 space-y-1 text-sm mt-2">
+                <li>Your student profile</li>
+                <li>GPA verification</li>
+                <li>Job applications and matches</li>
+                <li>All availability and preferences</li>
+              </ul>
+              <span className="block font-medium text-foreground mt-2">This cannot be undone.</span>
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 mt-4">
             <Button variant="outline" onClick={() => setShowSwitchDialog(false)} disabled={switching}>Cancel</Button>
@@ -349,17 +331,16 @@ export default function ProfilePage() {
               <AlertTriangle className="h-5 w-5" />
               Delete Account?
             </DialogTitle>
-          {/* DELETE DIALOG */}
-<DialogDescription className="pt-2 space-y-2">
-  <span className="block">This will <span className="font-semibold text-foreground">permanently delete</span> your account and all associated data including:</span>
-  <ul className="list-disc pl-5 space-y-1 text-sm mt-2">
-    <li>Your student profile</li>
-    <li>All job applications</li>
-    <li>Your recommendation</li>
-    <li>All availability and preferences</li>
-  </ul>
-  <span className="block font-medium text-foreground mt-2">This cannot be undone.</span>
-</DialogDescription>
+            <DialogDescription className="pt-2 space-y-2">
+              <span className="block">This will <span className="font-semibold text-foreground">permanently delete</span> your account and all associated data including:</span>
+              <ul className="list-disc pl-5 space-y-1 text-sm mt-2">
+                <li>Your student profile</li>
+                <li>All job applications</li>
+                <li>Your recommendation</li>
+                <li>All availability and preferences</li>
+              </ul>
+              <span className="block font-medium text-foreground mt-2">This cannot be undone.</span>
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 mt-4">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleting}>Cancel</Button>
@@ -439,8 +420,7 @@ export default function ProfilePage() {
             className="w-full border rounded px-3 py-2 text-sm" placeholder="Age"
           />
           <input ref={locationRef} value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Street Address" />
-          <input
-            ref={zipRef} value={zipCode}
+          <input ref={zipRef} value={zipCode}
             onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 5) setZipCode(value) }}
             className="w-full border rounded px-3 py-2 text-sm" placeholder="Zip Code (5 digits)" maxLength={5}
           />
@@ -450,15 +430,13 @@ export default function ProfilePage() {
             className="w-full border rounded px-3 py-2 text-sm" placeholder="Phone Number"
           />
           <input ref={schoolRef} value={school} onChange={(e) => setSchool(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="School" />
-          <input
-            type="number" step="0.01" min="0" max="4" ref={gpaRef} value={gpa}
+          <input type="number" step="0.01" min="0" max="4" ref={gpaRef} value={gpa}
             onChange={(e) => {
               const value = e.target.value
               if (value === "") { setGpa(""); return }
               if (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 4) setGpa(value)
             }}
-            className="w-full border rounded px-3 py-2 text-sm"
-            placeholder="GPA (Unweighted)"
+            className="w-full border rounded px-3 py-2 text-sm" placeholder="GPA (Unweighted)"
           />
         </CardContent>
       </Card>
@@ -676,7 +654,6 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
-
     </div>
   )
 }

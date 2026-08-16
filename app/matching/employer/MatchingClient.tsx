@@ -198,7 +198,6 @@ function FilterContent({
           ))}
         </div>
       </div>
-     
       {activeFiltersCount > 0 && (
         <Button variant="outline" className="w-full" onClick={clearFilters}>
           Clear all filters
@@ -219,15 +218,12 @@ export default function MatchingPage() {
   const [sortBy, setSortBy] = useState<"matchScore" | "gpa" | "age">("matchScore")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
-
   const [ageMode, setAgeMode] = useState<"range" | "specific">("range")
   const [ageMin, setAgeMin] = useState(14)
   const [ageMax, setAgeMax] = useState(21)
   const [specificAges, setSpecificAges] = useState<number[]>([])
-
   const searchParams = useSearchParams()
   const statusParam = searchParams.get("status")
-
   const [employerShifts, setEmployerShifts] = useState<any[]>([])
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [scoredCandidates, setScoredCandidates] = useState<any[]>([])
@@ -244,6 +240,9 @@ export default function MatchingPage() {
   // MULTI-LOCATION
   const [allLocations, setAllLocations] = useState<any[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+
+  // STORED DISTANCES — keyed by student user_id
+  const [distances, setDistances] = useState<Record<string, { distance_text: string; duration_text: string }>>({})
 
   const matchesZip = (studentZip: string | null): boolean => {
     if (!employerZip || areaRadius === "all") return true
@@ -266,26 +265,26 @@ export default function MatchingPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.replace("/login"); return }
-  
+
         const { data: roleData } = await supabase
           .from("users")
           .select("role")
           .eq("id", user.id)
           .maybeSingle()
-  
+
         if (!roleData?.role) { router.replace("/choose-role"); return }
         if (roleData.role !== "employer") { router.replace("/login"); return }
-  
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("subscription_status, profile_complete")
           .eq("id", user.id)
           .maybeSingle()
-  
+
         const isSubscribed =
           profile?.subscription_status === "active" ||
           profile?.subscription_status === "freeactive"
-  
+
         if (!isSubscribed) {
           if (!profile?.profile_complete) {
             router.replace("/employer/profile?missing=true")
@@ -294,27 +293,25 @@ export default function MatchingPage() {
           }
           return
         }
-  
-        // Check job profile exists
+
         const { data: jobData } = await supabase
           .from("job")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle()
-  
+
         if (!jobData) { router.replace("/employer/profile?missing=true"); return }
-  
-        // Check at least one location exists
+
         const { data: locs } = await supabase
           .from("locations")
           .select("id")
           .eq("employer_id", jobData.id)
-  
+
         if (!locs || locs.length === 0) {
           router.replace("/employer/profile?missing=true")
           return
         }
-  
+
         setUserId(user.id)
       } catch (err) {
         router.replace("/login")
@@ -334,7 +331,7 @@ export default function MatchingPage() {
           .eq("profile_complete", true)
         if (error) { setStudents([]); return }
         setStudents((data ?? []).map((s) => ({ ...s, availability: s.availability ?? [], gpa: s.gpa ?? 0 })))
-      } catch (err) {
+      } catch {
         setStudents([])
       } finally {
         setLoading(false)
@@ -357,27 +354,37 @@ export default function MatchingPage() {
     loadRecommendations()
   }, [students])
 
+  // LOAD STORED DISTANCES for selected location
+  const loadDistances = async (locationId: string) => {
+    const { data } = await supabase
+      .from("employer_student_distances")
+      .select("student_user_id, distance_text, duration_text")
+      .eq("employer_location_id", locationId)
+
+    const distMap: Record<string, { distance_text: string; duration_text: string }> = {}
+    ;(data || []).forEach((d) => {
+      distMap[d.student_user_id] = { distance_text: d.distance_text, duration_text: d.duration_text }
+    })
+    setDistances(distMap)
+  }
+
   // LOAD ALL LOCATIONS
   useEffect(() => {
     const loadJob = async () => {
       const { data: user } = await supabase.auth.getUser()
       if (!user?.user?.id) return
-
       const { data: jobData } = await supabase
         .from("job")
         .select("id, preferred_jobs, shift_preference")
         .eq("user_id", user.user.id)
         .single()
-
       if (!jobData) return
       setPreferredJobs(jobData.preferred_jobs ?? [])
-
       const { data: locations } = await supabase
         .from("locations")
         .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, zip_match_precision")
         .eq("employer_id", jobData.id)
         .order("created_at", { ascending: true })
-
       if (locations?.length) {
         setAllLocations(locations)
         setSelectedLocationId(locations[0].id)
@@ -387,12 +394,13 @@ export default function MatchingPage() {
         setEmployerZip(first.zip_code ?? null)
         setAreaRadius(first.zip_match_precision === 3 ? "broad" : "exact")
         if (first.preferred_jobs?.length > 0) setPreferredJobs(first.preferred_jobs)
+        await loadDistances(first.id)
       }
     }
     loadJob()
   }, [])
 
-  const handleLocationChange = (locationId: string) => {
+  const handleLocationChange = async (locationId: string) => {
     const loc = allLocations.find(l => l.id === locationId)
     if (!loc) return
     setSelectedLocationId(locationId)
@@ -401,6 +409,7 @@ export default function MatchingPage() {
     setEmployerZip(loc.zip_code ?? null)
     setAreaRadius(loc.zip_match_precision === 3 ? "broad" : "exact")
     if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
+    await loadDistances(locationId)
   }
 
   const activeShifts = useMemo(() => {
@@ -936,79 +945,88 @@ export default function MatchingPage() {
 
             {/* CANDIDATE CARDS */}
             <div className="grid gap-4 sm:grid-cols-2">
-              {(groupedCandidates[activeStatus] ?? []).map((candidate) => (
-                <Card key={candidate.id} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
-                          {candidate.name?.split(" ").map((n: string) => n[0]).join("")}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-foreground">{candidate.name}</h3>
-                          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                            <Star className="h-4 w-4" />
-                            <span>GPA: {candidate.gpa}</span>
-                            {recommendations[candidate.user_id] && (
-                              <Badge variant="outline" className="gap-1 text-[10px] text-yellow-600 border-yellow-300 bg-yellow-50">
-                                Recommended
-                              </Badge>
-                            )}
+              {(groupedCandidates[activeStatus] ?? []).map((candidate) => {
+                const dist = distances[candidate.user_id]
+                return (
+                  <Card key={candidate.id} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
+                            {candidate.name?.split(" ").map((n: string) => n[0]).join("")}
                           </div>
-                          {candidate.age && (
-                            <p className="text-xs text-muted-foreground mt-0.5">Age: {candidate.age}</p>
-                          )}
-                          {getStatusBadge(candidate.status)}
+                          <div>
+                            <h3 className="font-semibold text-foreground">{candidate.name}</h3>
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                              <Star className="h-4 w-4" />
+                              <span>GPA: {candidate.gpa}</span>
+                              {recommendations[candidate.user_id] && (
+                                <Badge variant="outline" className="gap-1 text-[10px] text-yellow-600 border-yellow-300 bg-yellow-50">
+                                  Recommended
+                                </Badge>
+                              )}
+                            </div>
+                            {candidate.age && (
+                              <p className="text-xs text-muted-foreground mt-0.5">Age: {candidate.age}</p>
+                            )}
+                            {dist && (
+                              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {dist.distance_text} · {dist.duration_text}
+                              </p>
+                            )}
+                            {getStatusBadge(candidate.status)}
+                          </div>
                         </div>
+                        <Badge className="bg-primary/10 text-primary">{candidate.matchScore}% match</Badge>
                       </div>
-                      <Badge className="bg-primary/10 text-primary">{candidate.matchScore}% match</Badge>
-                    </div>
-                    <div className="mt-4 text-sm text-muted-foreground">
-                      Available:{" "}
-                      {(candidate.availability ?? [])
-                        .filter((a: any) => a?.available)
-                        .map((a: any) => a?.day)
-                        .join(", ") || "None"}
-                    </div>
-                    <div className="mt-5 flex gap-2">
-                      <Button variant="outline" className="flex-1" size="sm"
-                        onClick={(e) => { e.stopPropagation(); router.push(`/matching/employer/${candidate.id}`) }}
-                      >
-                        View Profile
-                      </Button>
-                      <Select
-                        value={statuses.find((s) => s.student_id === candidate.id && s.employer_id === employerId)?.status || "new"}
-                        onValueChange={async (value) => {
-                          if (!employerId) return
-                          const newStatus = value as "new" | "contacted" | "hired"
-                          setStatuses((prev) => {
-                            const exists = prev.find((s) => s.student_id === candidate.id && s.employer_id === employerId)
-                            if (exists) {
-                              return prev.map((s) =>
-                                s.student_id === candidate.id && s.employer_id === employerId
-                                  ? { ...s, status: newStatus } : s
-                              )
-                            }
-                            return [...prev, { student_id: candidate.id, employer_id: employerId, status: newStatus }]
-                          })
-                          await supabase.from("student_statuses").upsert(
-                            { student_id: candidate.id, employer_id: employerId, status: newStatus },
-                            { onConflict: "student_id,employer_id" }
-                          )
-                          setActiveStatus(newStatus)
-                        }}
-                      >
-                        <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">New</SelectItem>
-                          <SelectItem value="contacted">Contacted</SelectItem>
-                          <SelectItem value="hired">Hired</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      <div className="mt-4 text-sm text-muted-foreground">
+                        Available:{" "}
+                        {(candidate.availability ?? [])
+                          .filter((a: any) => a?.available)
+                          .map((a: any) => a?.day)
+                          .join(", ") || "None"}
+                      </div>
+                      <div className="mt-5 flex gap-2">
+                        <Button variant="outline" className="flex-1" size="sm"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/matching/employer/${candidate.id}`) }}
+                        >
+                          View Profile
+                        </Button>
+                        <Select
+                          value={statuses.find((s) => s.student_id === candidate.id && s.employer_id === employerId)?.status || "new"}
+                          onValueChange={async (value) => {
+                            if (!employerId) return
+                            const newStatus = value as "new" | "contacted" | "hired"
+                            setStatuses((prev) => {
+                              const exists = prev.find((s) => s.student_id === candidate.id && s.employer_id === employerId)
+                              if (exists) {
+                                return prev.map((s) =>
+                                  s.student_id === candidate.id && s.employer_id === employerId
+                                    ? { ...s, status: newStatus } : s
+                                )
+                              }
+                              return [...prev, { student_id: candidate.id, employer_id: employerId, status: newStatus }]
+                            })
+                            await supabase.from("student_statuses").upsert(
+                              { student_id: candidate.id, employer_id: employerId, status: newStatus },
+                              { onConflict: "student_id,employer_id" }
+                            )
+                            setActiveStatus(newStatus)
+                          }}
+                        >
+                          <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="new">New</SelectItem>
+                            <SelectItem value="contacted">Contacted</SelectItem>
+                            <SelectItem value="hired">Hired</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
 
             {loading ? (

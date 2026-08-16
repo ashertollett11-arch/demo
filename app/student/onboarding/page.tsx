@@ -28,28 +28,28 @@ export default function StudentOnboarding() {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
 
-  // AUTH CHECK + AUTO FILL
+  // AUTH CHECK + LOAD EXISTING DATA
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.replace("/login"); return }
-  
+
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
         .eq("id", user.id)
         .maybeSingle()
-  
+
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "student") { router.replace("/login"); return }
-  
+
       // Load existing data if they've been here before
       const { data: existing } = await supabase
         .from("Students")
         .select("name, age, gender, location, zip_code, school, gpa, email, phone")
         .eq("user_id", user.id)
         .maybeSingle()
-  
+
       if (existing) {
         if (existing.name) setName(existing.name)
         if (existing.age) setAge(String(existing.age))
@@ -61,7 +61,6 @@ export default function StudentOnboarding() {
         if (existing.phone) setPhone(existing.phone)
         if (existing.email) setEmail(existing.email)
       } else {
-        // Fall back to auth metadata if no DB record yet
         if (user.email) setEmail(user.email)
         if (user.user_metadata?.full_name) setName(user.user_metadata.full_name)
       }
@@ -94,17 +93,14 @@ export default function StudentOnboarding() {
     setLastSaved(new Date())
   }
 
-  // AUTOSAVE EVERY 2 SECONDS when any field changes
+  // AUTOSAVE EVERY 2 SECONDS
   useEffect(() => {
-    // Don't autosave if nothing meaningful is filled in yet
     if (!name && !age && !address && !zipCode && !school && !gpa && !phone) return
-
     const timer = setTimeout(async () => {
       setAutoSaving(true)
       await saveProgress()
       setAutoSaving(false)
     }, 2000)
-
     return () => clearTimeout(timer)
   }, [name, age, gender, address, zipCode, school, gpa, email, phone])
 
@@ -174,6 +170,13 @@ export default function StudentOnboarding() {
       return
     }
 
+    // Calculate distances to all employer locations in the background
+    fetch("/api/calculate-distances", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentUserId: user.id }),
+    }).catch(() => {}) // fire and forget — don't block the user
+
     toast.success("Welcome to SimplyApply! You can always change your information in the top right.")
     router.push("/matching/student")
   }
@@ -193,7 +196,6 @@ export default function StudentOnboarding() {
   }
 
   const back = () => setStep(s => s - 1)
-
   const progress = (step / TOTAL_STEPS) * 100
 
   return (
@@ -208,16 +210,11 @@ export default function StudentOnboarding() {
             <span className="text-lg font-bold text-foreground">SimplyApply</span>
           </Link>
           <div className="flex items-center gap-2">
-            {autoSaving && (
-              <span className="text-xs text-muted-foreground">Saving...</span>
-            )}
-            {!autoSaving && lastSaved && (
-              <span className="text-xs text-muted-foreground">Saved ✓</span>
-            )}
+            {autoSaving && <span className="text-xs text-muted-foreground">Saving...</span>}
+            {!autoSaving && lastSaved && <span className="text-xs text-muted-foreground">Saved ✓</span>}
             <span className="text-sm text-muted-foreground">{step} of {TOTAL_STEPS}</span>
           </div>
         </div>
-        {/* PROGRESS BAR */}
         <div className="mx-auto max-w-lg mt-3">
           <div className="h-1.5 w-full rounded-full bg-secondary">
             <div
@@ -232,7 +229,7 @@ export default function StudentOnboarding() {
       <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-lg">
 
-          {/* STEP 1 — Name, Age, Gender */}
+          {/* STEP 1 */}
           {step === 1 && (
             <div className="space-y-6">
               <div>
@@ -242,17 +239,12 @@ export default function StudentOnboarding() {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Full Name</label>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your full name"
-                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name"
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Age</label>
-                  <input
-                    type="number" value={age}
+                  <input type="number" value={age}
                     onChange={(e) => {
                       const value = e.target.value
                       if (value === "") { setAge(""); return }
@@ -260,22 +252,16 @@ export default function StudentOnboarding() {
                       setAge(value)
                     }}
                     placeholder="Your age (14–21)"
-                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Gender</label>
                   <div className="grid grid-cols-2 gap-3">
                     {["male", "female"].map((g) => (
-                      <button
-                        key={g}
-                        onClick={() => setGender(g as "male" | "female")}
+                      <button key={g} onClick={() => setGender(g as "male" | "female")}
                         className={`py-3 rounded-xl border text-sm font-medium capitalize transition-all ${
-                          gender === g
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-background border-border text-foreground hover:border-primary/50"
-                        }`}
-                      >
+                          gender === g ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border text-foreground hover:border-primary/50"
+                        }`}>
                         {g === "male" ? "Male" : "Female"}
                       </button>
                     ))}
@@ -285,7 +271,7 @@ export default function StudentOnboarding() {
             </div>
           )}
 
-          {/* STEP 2 — Address + Zip */}
+          {/* STEP 2 */}
           {step === 2 && (
             <div className="space-y-6">
               <div>
@@ -295,31 +281,21 @@ export default function StudentOnboarding() {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Street Address</label>
-                  <input
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="123 Main St"
-                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                  <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="123 Main St"
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Zip Code</label>
-                  <input
-                    value={zipCode}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "")
-                      if (value.length <= 5) setZipCode(value)
-                    }}
-                    placeholder="12345"
-                    maxLength={5}
-                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                  <input value={zipCode}
+                    onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 5) setZipCode(value) }}
+                    placeholder="12345" maxLength={5}
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
               </div>
             </div>
           )}
 
-          {/* STEP 3 — School + GPA */}
+          {/* STEP 3 */}
           {step === 3 && (
             <div className="space-y-6">
               <div>
@@ -329,18 +305,12 @@ export default function StudentOnboarding() {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">School</label>
-                  <input
-                    value={school}
-                    onChange={(e) => setSchool(e.target.value)}
-                    placeholder="Your school name"
-                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                  <input value={school} onChange={(e) => setSchool(e.target.value)} placeholder="Your school name"
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Unweighted GPA</label>
-                  <input
-                    type="number" step="0.01" min="0" max="4"
-                    value={gpa}
+                  <input type="number" step="0.01" min="0" max="4" value={gpa}
                     onChange={(e) => {
                       const value = e.target.value
                       if (value === "") { setGpa(""); return }
@@ -348,15 +318,14 @@ export default function StudentOnboarding() {
                       setGpa(value)
                     }}
                     placeholder="e.g. 3.5"
-                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   <p className="text-xs text-muted-foreground mt-1">You can receive recommendations with a simple email link.</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* STEP 4 — Email + Phone */}
+          {/* STEP 4 */}
           {step === 4 && (
             <div className="space-y-6">
               <div>
@@ -366,24 +335,15 @@ export default function StudentOnboarding() {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Email</label>
-                  <input
-                    type="email" value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com"
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Phone Number</label>
-                  <input
-                    type="tel" value={phone}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, "")
-                      if (value.length <= 10) setPhone(value)
-                    }}
+                  <input type="tel" value={phone}
+                    onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 10) setPhone(value) }}
                     placeholder="10-digit number"
-                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                    className="w-full border border-border rounded-xl px-4 py-3 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <Card className="border-primary/20 bg-primary/5 mt-2">
                   <CardContent className="p-4 space-y-2">
@@ -407,11 +367,7 @@ export default function StudentOnboarding() {
                 <ChevronLeft className="h-4 w-4 mr-1" /> Back
               </Button>
             )}
-            <Button
-              onClick={next}
-              disabled={!canProceed() || saving}
-              className="flex-1 h-12 text-base font-semibold"
-            >
+            <Button onClick={next} disabled={!canProceed() || saving} className="flex-1 h-12 text-base font-semibold">
               {saving ? "Saving..." : step === TOTAL_STEPS ? "Finish" : "Continue"}
               {!saving && step < TOTAL_STEPS && <ChevronRight className="h-4 w-4 ml-1" />}
             </Button>
