@@ -758,21 +758,7 @@ useEffect(() => {
           </div>
         </div>
       </header>
-      <Button onClick={async () => {
-  const { data: locs } = await supabase.from('locations').select('id')
-  for (const loc of locs || []) {
-    const res = await fetch('/api/calculate-distances', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ locationId: loc.id })
-    })
-    const data = await res.json()
-    console.log('location:', loc.id, 'result:', data)
-  }
-  toast.success('Done calculating distances!')
-}}>
-  Recalculate All Distances
-</Button>
+    
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Find Your Perfect Match</h1>
