@@ -367,7 +367,11 @@ export default function MatchingPage() {
     })
     setDistances(distMap)
   }
-
+// Reload distances when students finish loading and we have a location selected
+useEffect(() => {
+  if (!selectedLocationId || !students.length) return
+  loadDistances(selectedLocationId)
+}, [selectedLocationId, students])
   // LOAD ALL LOCATIONS
   useEffect(() => {
     const loadJob = async () => {
