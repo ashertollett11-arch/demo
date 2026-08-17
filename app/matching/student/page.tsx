@@ -15,9 +15,11 @@ import {
   User,
   LogOut,
   Bell,
+  MapPin,
+  Clock,
 } from "lucide-react"
 import Link from "next/link"
-import { useParams, useRouter, usePathname } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { calculateMatch } from "@/lib/matchScore"
 import { supabase } from "@/lib/supabase"
 import {
@@ -41,6 +43,8 @@ interface Job {
   shifts: { day: string; active: boolean }[]
   shift_Preference: string
   preferredJobs?: string[]
+  distanceText?: string
+  durationText?: string
 }
 
 interface Availability {
@@ -57,47 +61,41 @@ export default function MatchesPage() {
   const [matchedJobs, setMatchedJobs] = useState<Job[]>([])
   const [filter, setFilter] = useState<"pay" | "tips" | "matchScore">("matchScore")
   const [name, setName] = useState("")
-  const [shift_Preference, setShift_Preference] = useState<"morning" | "night" | "flexible">("flexible")
   const pathname = usePathname()
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set())
   const [studentNotifications, setStudentNotifications] = useState<any[]>([])
-  // -------------------------
+
   // AUTH + PROFILE CHECK
-  // -------------------------
   useEffect(() => {
     const checkProfile = async () => {
       const { data } = await supabase.auth.getUser()
       const user = data?.user
       if (!user) { router.replace("/login"); return }
-  
-      // Check role
+
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
         .eq("id", user.id)
         .maybeSingle()
-  
+
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "student") { router.replace("/login"); return }
-  
-      // Check student profile is complete
+
       const { data: profile } = await supabase
         .from("Students")
         .select("profile_complete")
         .eq("user_id", user.id)
         .maybeSingle()
-  
+
       if (!profile || !profile.profile_complete) {
         router.replace("/student/onboarding")
-                return
+        return
       }
     }
     checkProfile()
   }, [router])
 
-  // -------------------------
-  // FETCH JOBS + APPLIED STATUS
-  // -------------------------
+  // FETCH JOBS + APPLIED STATUS + STORED DISTANCES
   useEffect(() => {
     const fetchJobs = async () => {
       const { data: authData } = await supabase.auth.getUser()
@@ -106,15 +104,15 @@ export default function MatchesPage() {
 
       const { data: studentData, error: studentError } = await supabase
         .from("Students")
-        .select("availability, shift_preference, zip_code")
+        .select("availability, shift_preference, zip_code, user_id")
         .eq("user_id", userId)
         .single()
-
       if (studentError) return
 
       const studentAvailability = studentData?.availability ?? []
       const studentShiftPreference = studentData?.shift_preference || "flexible"
       const studentZip = studentData?.zip_code ?? ""
+      const studentUserId = studentData?.user_id
 
       const { data: locations, error: locError } = await supabase
         .from("locations")
@@ -137,17 +135,29 @@ export default function MatchesPage() {
             status
           )
         `)
-
       if (locError) return
 
-      // Load which locations this student has already applied to
+      // Load applied locations
       const { data: applications } = await supabase
         .from("location_applications")
         .select("location_id")
         .eq("student_user_id", userId)
-
       const appliedSet = new Set((applications || []).map((a: any) => a.location_id))
       setAppliedIds(appliedSet)
+
+      // Load stored distances for this student
+      const { data: distanceRows } = await supabase
+        .from("employer_student_distances")
+        .select("employer_location_id, distance_text, duration_text")
+        .eq("student_user_id", studentUserId)
+
+      const distanceMap: Record<string, { distance_text: string; duration_text: string }> = {}
+      ;(distanceRows || []).forEach((d) => {
+        distanceMap[d.employer_location_id] = {
+          distance_text: d.distance_text,
+          duration_text: d.duration_text,
+        }
+      })
 
       const updated = (locations || [])
         .filter((loc: any) => {
@@ -167,6 +177,7 @@ export default function MatchesPage() {
             { availability: studentAvailability, shiftPreference: studentShiftPreference },
             { shifts: activeShifts.map((s: any) => s.day || s), shiftPreference: loc.shift_preference || "flexible" }
           )
+          const dist = distanceMap[loc.id]
           return {
             id: loc.id,
             title: loc.name || "Untitled Location",
@@ -178,18 +189,17 @@ export default function MatchesPage() {
             shift_Preference: loc.shift_preference || "flexible",
             matchScore: Math.round(base),
             preferredJobs: loc.preferred_jobs || [],
+            distanceText: dist?.distance_text ?? null,
+            durationText: dist?.duration_text ?? null,
           }
         })
 
       setMatchedJobs(updated)
     }
-
     fetchJobs()
   }, [])
 
-  // -------------------------
   // FETCH STUDENT NAME
-  // -------------------------
   useEffect(() => {
     const fetchStudentName = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -206,21 +216,20 @@ export default function MatchesPage() {
     fetchStudentName()
   }, [])
 
-
-useEffect(() => {
-  const loadStudentNotifications = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase
-      .from("student_notifications")
-      .select("*")
-      .eq("student_user_id", user.id)
-      .eq("read", false)
-      .order("created_at", { ascending: false })
-    setStudentNotifications(data || [])
-  }
-  loadStudentNotifications()
-}, [])
+  useEffect(() => {
+    const loadStudentNotifications = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from("student_notifications")
+        .select("*")
+        .eq("student_user_id", user.id)
+        .eq("read", false)
+        .order("created_at", { ascending: false })
+      setStudentNotifications(data || [])
+    }
+    loadStudentNotifications()
+  }, [])
 
   const parsePay = (p: string) => parseFloat(p.replace(/[^0-9.]/g, "")) || 0
 
@@ -245,151 +254,140 @@ useEffect(() => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background" suppressHydrationWarning>
-
       {/* BACKGROUND */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-background to-cyan-600/10" />
       <div className="absolute left-0 top-0 h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-3xl" />
       <div className="absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-3xl" />
 
       {/* HEADER */}
-{/* HEADER */}
-<header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl" suppressHydrationWarning>
-  <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-
-    {/* LEFT */}
-    <div className="w-24">
-      <Button variant="ghost" className="hidden sm:flex items-center gap-2" onClick={() => router.push("/student")}>
-        <ChevronLeft className="h-5 w-5" />
-        Back
-      </Button>
-    </div>
-
-    {/* CENTER */}
-    <div className="hidden md:flex items-center gap-8">
-    <Link href="/student" className={`text-sm font-medium transition-colors hover:text-foreground ${
-  pathname === "/student" ? "text-primary font-semibold" : "text-muted-foreground"
-}`}>
-  Dashboard
-</Link>
-<Link href="/matching/student" className={`text-sm font-medium transition-colors hover:text-foreground ${
-  pathname === "/matching/student" ? "text-primary font-semibold" : "text-muted-foreground"
-}`}>
-  Jobs Near You
-</Link>
-    </div>
-
-    {/* RIGHT */}
-    <div className="flex items-center gap-2 w-24 justify-end">
-      {/* BELL */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            {studentNotifications.length > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white" suppressHydrationWarning>
-                {studentNotifications.length}
-              </span>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-80">
-          <div className="flex items-center justify-between px-4 py-3 border-b">
-            <p className="font-semibold text-sm text-foreground">Notifications</p>
-            {studentNotifications.length > 0 && (
-              <Badge className="bg-red-100 text-red-600 text-xs">{studentNotifications.length} new</Badge>
-            )}
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/70 backdrop-blur-xl" suppressHydrationWarning>
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+          {/* LEFT */}
+          <div className="w-24">
+            <Button variant="ghost" className="hidden sm:flex items-center gap-2" onClick={() => router.push("/student")}>
+              <ChevronLeft className="h-5 w-5" />
+              Back
+            </Button>
           </div>
-          {studentNotifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-              <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
-              <p className="text-sm font-medium text-foreground">All caught up</p>
-              <p className="text-xs text-muted-foreground mt-1">No new notifications</p>
-            </div>
-          ) : (
-            <div className="max-h-80 overflow-y-auto divide-y divide-border">
-              {studentNotifications.map((n) => (
-                <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg">📲</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground leading-snug">{n.message}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {n.created_at ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Just now"}
-                    </p>
-                  </div>
-                  <button
-                    onClick={async () => {
-                      setStudentNotifications(prev => prev.filter(x => x.id !== n.id))
-                      await supabase.from("student_notifications").update({ read: true }).eq("id", n.id)
-                    }}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                  >
-                    Dismiss
-                  </button>
+          {/* CENTER */}
+          <div className="hidden md:flex items-center gap-8">
+            <Link href="/student" className={`text-sm font-medium transition-colors hover:text-foreground ${
+              pathname === "/student" ? "text-primary font-semibold" : "text-muted-foreground"
+            }`}>
+              Dashboard
+            </Link>
+            <Link href="/matching/student" className={`text-sm font-medium transition-colors hover:text-foreground ${
+              pathname === "/matching/student" ? "text-primary font-semibold" : "text-muted-foreground"
+            }`}>
+              Jobs Near You
+            </Link>
+          </div>
+          {/* RIGHT */}
+          <div className="flex items-center gap-2 w-24 justify-end">
+            {/* BELL */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-5 w-5" />
+                  {studentNotifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white" suppressHydrationWarning>
+                      {studentNotifications.length}
+                    </span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                  <p className="font-semibold text-sm text-foreground">Notifications</p>
+                  {studentNotifications.length > 0 && (
+                    <Badge className="bg-red-100 text-red-600 text-xs">{studentNotifications.length} new</Badge>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* PROFILE */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-1 shrink-0 px-1">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
-              {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
-            </div>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="px-3 py-2.5 border-b border-border">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">{name}</p>
-                <p className="text-xs text-muted-foreground">Student Account</p>
-              </div>
-            </div>
+                {studentNotifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                    <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                    <p className="text-sm font-medium text-foreground">All caught up</p>
+                    <p className="text-xs text-muted-foreground mt-1">No new notifications</p>
+                  </div>
+                ) : (
+                  <div className="max-h-80 overflow-y-auto divide-y divide-border">
+                    {studentNotifications.map((n) => (
+                      <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg">📲</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground leading-snug">{n.message}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {n.created_at ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Just now"}
+                          </p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            setStudentNotifications(prev => prev.filter(x => x.id !== n.id))
+                            await supabase.from("student_notifications").update({ read: true }).eq("id", n.id)
+                          }}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {/* PROFILE */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-1 shrink-0 px-1">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-2 ring-primary/20">
+                    {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+                  </div>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-3 py-2.5 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                      {(name || "").trim().split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]?.toUpperCase()).join("") || "?"}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{name}</p>
+                      <p className="text-xs text-muted-foreground">Student Account</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="py-1">
+                  <DropdownMenuItem asChild>
+                    <Link href="/student/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      My Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/matching/student" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                      Jobs Near You
+                    </Link>
+                  </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator />
+                <div className="py-1">
+                  <DropdownMenuItem
+                    onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+                    className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <div className="py-1">
-            <DropdownMenuItem asChild>
-              <Link href="/student/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-                <User className="h-4 w-4 text-muted-foreground" />
-                My Profile
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/matching/student" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
-                Jobs Near You
-              </Link>
-            </DropdownMenuItem>
-          </div>
-          <DropdownMenuSeparator />
-          <div className="py-1">
-            <DropdownMenuItem
-              onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
-            >
-              <LogOut className="h-4 w-4" />
-              Log out
-            </DropdownMenuItem>
-          </div>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-
-  </div>
-</header>
-
-
-
+        </div>
+      </header>
 
       {/* PAGE CONTENT */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-8">
-
         {/* HERO */}
         <div className="mb-8 rounded-3xl border border-blue-500/20 bg-card/80 p-8 backdrop-blur-xl">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -403,7 +401,6 @@ useEffect(() => {
                 Browse local opportunities that match your schedule, preferences, and availability.
               </p>
             </div>
-
             <div className="grid grid-cols-3 gap-4">
               <Card className="border-blue-500/20 bg-card/60 backdrop-blur">
                 <CardContent className="p-4 text-center">
@@ -455,17 +452,16 @@ useEffect(() => {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                      <CardTitle className="group-hover:text-primary transition-colors">
-  {job.company}
-</CardTitle>
-<p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{job.title}</p>
+                        <CardTitle className="group-hover:text-primary transition-colors">
+                          {job.company}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{job.title}</p>
                       </div>
                       <Badge className="bg-blue-500/10 text-blue-600 border border-blue-500/20 shrink-0">
                         {job.matchScore}% Match
                       </Badge>
                     </div>
                   </CardHeader>
-
                   <CardContent className="space-y-4">
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="outline">{job.shift_Preference}</Badge>
@@ -478,9 +474,21 @@ useEffect(() => {
                         <Badge className="bg-primary/10 text-primary border border-primary/20">Applied ✓</Badge>
                       )}
                     </div>
-
                     <p className="text-2xl font-bold text-primary">{job.pay}</p>
-
+                    {/* DISTANCE — shown if stored */}
+                    {job.distanceText && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {job.distanceText}
+                        {job.durationText && (
+                          <>
+                            <span className="mx-1">·</span>
+                            <Clock className="h-3 w-3" />
+                            {job.durationText}
+                          </>
+                        )}
+                      </p>
+                    )}
                     <Button
                       className="w-full rounded-xl"
                       variant={alreadyApplied ? "secondary" : "default"}
@@ -507,7 +515,6 @@ useEffect(() => {
             </CardContent>
           </Card>
         )}
-
       </div>
     </div>
   )

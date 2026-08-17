@@ -3,7 +3,7 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, ChevronLeft } from "lucide-react"
+import { MapPin, ChevronLeft, Clock } from "lucide-react"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { calculateMatch } from "@/lib/matchScore"
@@ -13,6 +13,7 @@ export default function JobPage() {
   const router = useRouter()
   const params = useParams()
   const jobId = params.id as string
+
   const [studentShiftPreference, setStudentShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [job, setJob] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -20,58 +21,56 @@ export default function JobPage() {
   const [applying, setApplying] = useState(false)
   const [availability, setAvailability] = useState<any[]>([])
   const [jobMatchScore, setJobMatchScore] = useState(0)
+  const [distance, setDistance] = useState<{ distanceText: string; durationText: string } | null>(null)
+  const [studentUserId, setStudentUserId] = useState<string | null>(null)
 
-  // -------------------------
   // AUTH CHECK
-  // -------------------------
   useEffect(() => {
     const run = async () => {
       const { data } = await supabase.auth.getUser()
       const user = data?.user
       if (!user?.id) { router.replace("/login"); return }
-  
-      // Check role
+
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
         .eq("id", user.id)
         .maybeSingle()
-  
+
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "student") { router.replace("/login"); return }
-  
-      // Check student profile is complete
+
       const { data: profile } = await supabase
         .from("Students")
         .select("profile_complete")
         .eq("user_id", user.id)
         .maybeSingle()
-  
+
       if (!profile?.profile_complete) {
-        router.replace("/student/profile?missing=true")
+        router.replace("/student/onboarding")
         return
       }
     }
     run()
   }, [router])
 
-  // -------------------------
   // LOAD STUDENT + CHECK APPLIED
-  // -------------------------
   useEffect(() => {
     const fetchStudent = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      setStudentUserId(user.id)
+
       const { data, error } = await supabase
-      .from("Students")
-      .select("availability, shift_preference")
-      .eq("user_id", user.id)
-      .single()
-    
-    if (error || !data) return
-    setAvailability(data.availability || [])
-    setStudentShiftPreference(data.shift_preference || "flexible")
+        .from("Students")
+        .select("availability, shift_preference")
+        .eq("user_id", user.id)
+        .single()
+
+      if (error || !data) return
+      setAvailability(data.availability || [])
+      setStudentShiftPreference(data.shift_preference || "flexible")
 
       const { data: existing } = await supabase
         .from("location_applications")
@@ -85,9 +84,7 @@ export default function JobPage() {
     fetchStudent()
   }, [jobId])
 
-  // -------------------------
   // FETCH LOCATION
-  // -------------------------
   useEffect(() => {
     const fetchJob = async () => {
       const id = params.id as string
@@ -121,7 +118,6 @@ export default function JobPage() {
       if (error || !data) { setLoading(false); return }
 
       const jobData = Array.isArray(data.job) ? data.job[0] : data.job
-
       setJob({
         ...data,
         title: data.name,
@@ -134,49 +130,55 @@ export default function JobPage() {
         employer_user_id: jobData?.user_id,
         job_id: jobData?.id,
       })
-
       setLoading(false)
     }
     fetchJob()
   }, [params.id])
 
-  // -------------------------
+  // LOAD STORED DISTANCE once both student and job are loaded
+  useEffect(() => {
+    if (!studentUserId || !jobId) return
+    const fetchDistance = async () => {
+      const { data } = await supabase
+        .from("employer_student_distances")
+        .select("distance_text, duration_text")
+        .eq("employer_location_id", jobId)
+        .eq("student_user_id", studentUserId)
+        .maybeSingle()
+
+      if (data?.distance_text) {
+        setDistance({ distanceText: data.distance_text, durationText: data.duration_text })
+      }
+    }
+    fetchDistance()
+  }, [studentUserId, jobId])
+
   // MATCH SCORE
-  // -------------------------
   useEffect(() => {
     if (!job || !availability.length) return
-
     let shifts = job.available_shifts ?? []
     if (!Array.isArray(shifts)) shifts = Object.values(shifts || {})
-
     const activeShifts = shifts.filter(
       (s: any) => s.active === true || s.active === "true" || s.active === 1
     )
-
     const score = calculateMatch(
       { availability, shiftPreference: studentShiftPreference },
       { shifts: activeShifts.map((s: any) => s.day), shiftPreference: job.shift_preference || "flexible" }
     )
-
     setJobMatchScore(Math.round(score))
   }, [job, availability])
 
-  // -------------------------
   // APPLY
-  // -------------------------
   const handleApply = async () => {
     if (hasApplied) {
       toast.error("You've already applied to this location.")
       return
     }
-
     const { data: authData } = await supabase.auth.getUser()
     const studentId = authData?.user?.id
     if (!studentId) return
-
     setApplying(true)
 
-    // Double check for duplicate
     const { data: existing } = await supabase
       .from("location_applications")
       .select("id")
@@ -191,7 +193,6 @@ export default function JobPage() {
       return
     }
 
-    // Record application
     const { error: appError } = await supabase
       .from("location_applications")
       .insert({ student_user_id: studentId, location_id: job.id })
@@ -202,7 +203,6 @@ export default function JobPage() {
       return
     }
 
-    // Get student name
     const { data: studentData } = await supabase
       .from("Students")
       .select("name")
@@ -218,21 +218,17 @@ export default function JobPage() {
       return
     }
 
-    // Send notification
-    const { error: notifError } = await supabase
-  .from("notifications")
-  .insert({
-    employer_id: employerId,
-    student_user_id: studentId,
-    type: "application",
-    title: "New Applicant",
-    message: `${studentName} applied to ${job.title} — ${job.company}`,
-    location_id: job.id,
-    read: false,
-  })
-
-    if (notifError) {
-    }
+    await supabase
+      .from("notifications")
+      .insert({
+        employer_id: employerId,
+        student_user_id: studentId,
+        type: "application",
+        title: "New Applicant",
+        message: `${studentName} applied to ${job.title} — ${job.company}`,
+        location_id: job.id,
+        read: false,
+      })
 
     toast.success(`Applied to ${job.title} at ${job.company}!`)
     setHasApplied(true)
@@ -249,7 +245,7 @@ export default function JobPage() {
       </div>
     )
   }
-  
+
   if (!job) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -260,6 +256,7 @@ export default function JobPage() {
       </div>
     )
   }
+
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <Button
@@ -274,8 +271,8 @@ export default function JobPage() {
       <Card className="border-border bg-card">
         <CardHeader className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
           <div>
-          <CardTitle className="text-2xl">{job.company}</CardTitle>
-          <p className="text-muted-foreground mt-1">{job.title}</p>
+            <CardTitle className="text-2xl">{job.company}</CardTitle>
+            <p className="text-muted-foreground mt-1">{job.title}</p>
           </div>
           <Badge
             className={
@@ -291,11 +288,18 @@ export default function JobPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {/* BASIC INFO */}
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
               {job.location}
             </span>
+            {distance && (
+              <span className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                {distance.distanceText} · {distance.durationText}
+              </span>
+            )}
             <span className="font-semibold text-primary">{job.pay}</span>
             {job.tips ? (
               <Badge className="bg-green-500/10 text-green-600 border border-green-500/20 text-[10px] px-2 py-0">+ Tips</Badge>
@@ -304,11 +308,13 @@ export default function JobPage() {
             )}
           </div>
 
+          {/* DESCRIPTION */}
           <div>
             <h2 className="font-semibold text-lg mb-1">Description</h2>
             <p className="text-sm text-muted-foreground">{job.details}</p>
           </div>
 
+          {/* AVAILABLE SHIFTS */}
           <div>
             <h2 className="font-semibold text-lg mb-2">Available Shifts</h2>
             <div className="space-y-1 text-sm text-muted-foreground">
@@ -324,6 +330,7 @@ export default function JobPage() {
             <Badge variant="secondary" className="mt-2">{job.shift_preference}</Badge>
           </div>
 
+          {/* HIRING FOR */}
           {job.preferred_jobs?.length > 0 && (
             <div>
               <h2 className="font-semibold text-lg mb-2">Hiring For</h2>
@@ -335,10 +342,12 @@ export default function JobPage() {
             </div>
           )}
 
+          {/* MATCH SCORE */}
           <div className="text-sm text-muted-foreground">
             Match Score: <span className="text-primary font-semibold">{jobMatchScore}%</span>
           </div>
 
+          {/* APPLY BUTTON */}
           <Button
             className="w-full mt-4"
             disabled={hasApplied || applying}

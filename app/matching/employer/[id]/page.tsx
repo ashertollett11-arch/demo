@@ -40,30 +40,27 @@ export default function StudentPage() {
       setLoading(true)
       const { data: authData } = await supabase.auth.getUser()
       const userId = authData?.user?.id
-
       if (!userId) { router.replace("/login"); return }
 
-      // Check role
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
         .eq("id", userId)
         .maybeSingle()
-      
+
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "employer") { router.replace("/login"); return }
-      
-      // Check subscription + profile
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("subscription_status, profile_complete")
         .eq("id", userId)
         .maybeSingle()
-      
+
       const isSubscribed =
         profile?.subscription_status === "active" ||
         profile?.subscription_status === "freeactive"
-      
+
       if (!isSubscribed) {
         if (!profile?.profile_complete) {
           router.replace("/employer/profile?missing=true")
@@ -72,32 +69,28 @@ export default function StudentPage() {
         }
         return
       }
-      
-      // Load employer job
+
       const { data: employerJob } = await supabase
         .from("job")
         .select("id, shift_preference, preferred_jobs")
         .eq("user_id", userId)
         .single()
-      
+
       if (!employerJob) { router.replace("/employer/profile?missing=true"); return }
-      
-      // Check at least one location exists
+
       const { data: locCheck } = await supabase
         .from("locations")
         .select("id")
         .eq("employer_id", employerJob.id)
-      
+
       if (!locCheck || locCheck.length === 0) {
         router.replace("/employer/profile?missing=true")
         return
       }
 
-      
       setShiftPreference(employerJob?.shift_preference ?? "flexible")
       setPreferredJobs(employerJob?.preferred_jobs ?? [])
 
-      // Load ALL locations
       if (employerJob?.id) {
         const { data: locations } = await supabase
           .from("locations")
@@ -118,7 +111,6 @@ export default function StudentPage() {
         }
       }
 
-      // Load student
       const { data, error } = await supabase
         .from("Students")
         .select("*")
@@ -149,6 +141,52 @@ export default function StudentPage() {
     loadStudent()
   }, [studentId, router])
 
+  // Load stored distance for the selected location + this student
+  // Falls back to live Google Maps call if not stored yet
+  const loadDistance = async (locationId: string, studentUserIdParam: string) => {
+    setLoadingDistance(true)
+
+    // Try stored distance first
+    const { data: stored } = await supabase
+      .from("employer_student_distances")
+      .select("distance_text, duration_text")
+      .eq("employer_location_id", locationId)
+      .eq("student_user_id", studentUserIdParam)
+      .maybeSingle()
+
+    if (stored?.distance_text) {
+      setDistance({ distance: stored.distance_text, duration: stored.duration_text })
+      setLoadingDistance(false)
+      return
+    }
+
+    // Fall back to live calculation if not stored yet
+    const loc = allLocations.find(l => l.id === locationId)
+    if (!loc || !student?.location || !student?.zip_code) {
+      setLoadingDistance(false)
+      return
+    }
+
+    const result = await getDistance(
+      student.location,
+      student.zip_code,
+      loc.address,
+      loc.zip_code
+    )
+
+    if (result) {
+      setDistance({ distance: result.distance, duration: result.duration })
+    }
+
+    setLoadingDistance(false)
+  }
+
+  // Load distance when student and location are both ready
+  useEffect(() => {
+    if (!student?.user_id || !selectedLocationId || allLocations.length === 0) return
+    loadDistance(selectedLocationId, student.user_id)
+  }, [student?.user_id, selectedLocationId, allLocations])
+
   const handleLocationChange = (locationId: string) => {
     const loc = allLocations.find(l => l.id === locationId)
     if (!loc) return
@@ -159,25 +197,10 @@ export default function StudentPage() {
     if (loc.address && loc.zip_code) {
       setEmployerLocation({ address: loc.address, zip: loc.zip_code })
     }
-  }
-
-  // Refetch distance when employer location changes
-  useEffect(() => {
-    if (!student || !employerLocation) return
-    if (!student.location || !student.zip_code) return
-    const fetchDistance = async () => {
-      setLoadingDistance(true)
-      const result = await getDistance(
-        student.location,
-        student.zip_code,
-        employerLocation.address,
-        employerLocation.zip
-      )
-      setDistance(result)
-      setLoadingDistance(false)
+    if (student?.user_id) {
+      loadDistance(locationId, student.user_id)
     }
-    fetchDistance()
-  }, [student, employerLocation])
+  }
 
   const matchScore = useMemo(() => {
     if (!student) return 0
@@ -282,7 +305,7 @@ export default function StudentPage() {
             </span>
             <span className="flex items-center gap-1">
               {loadingDistance ? (
-                <span>Calculating distance...</span>
+                <span className="text-muted-foreground">Calculating distance...</span>
               ) : distance && distance.distance !== "Unknown" ? (
                 <>
                   <Clock className="h-4 w-4" />
