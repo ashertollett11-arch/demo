@@ -949,8 +949,10 @@ useEffect(() => {
 
             {/* CANDIDATE CARDS */}
             <div className="grid gap-4 sm:grid-cols-2">
-              {(groupedCandidates[activeStatus] ?? []).map((candidate) => {
-                const dist = distances[candidate.user_id]
+            {(groupedCandidates[activeStatus] ?? []).map((candidate) => {
+  console.log("candidate.user_id:", candidate.user_id)
+  console.log("distances keys:", Object.keys(distances))
+  const dist = distances[candidate.user_id]
                 return (
                   <Card key={candidate.id} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer">
                     <CardContent className="p-6">
