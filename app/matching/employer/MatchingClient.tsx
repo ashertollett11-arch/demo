@@ -356,11 +356,15 @@ export default function MatchingPage() {
 
   // LOAD STORED DISTANCES for selected location
   const loadDistances = async (locationId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("employer_student_distances")
       .select("student_user_id, distance_text, duration_text")
       .eq("employer_location_id", locationId)
-
+  
+    console.log("loadDistances locationId:", locationId)
+    console.log("loadDistances result:", data)
+    console.log("loadDistances error:", error)
+  
     const distMap: Record<string, { distance_text: string; duration_text: string }> = {}
     ;(data || []).forEach((d) => {
       distMap[d.student_user_id] = { distance_text: d.distance_text, duration_text: d.duration_text }
