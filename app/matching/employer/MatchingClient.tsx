@@ -361,9 +361,7 @@ export default function MatchingPage() {
       .select("student_user_id, distance_text, duration_text")
       .eq("employer_location_id", locationId)
   
-    console.log("loadDistances locationId:", locationId)
-    console.log("loadDistances result:", data)
-    console.log("loadDistances error:", error)
+
   
     const distMap: Record<string, { distance_text: string; duration_text: string }> = {}
     ;(data || []).forEach((d) => {
@@ -954,8 +952,7 @@ useEffect(() => {
             {/* CANDIDATE CARDS */}
             <div className="grid gap-4 sm:grid-cols-2">
             {(groupedCandidates[activeStatus] ?? []).map((candidate) => {
-  console.log("candidate.user_id:", candidate.user_id)
-  console.log("distances keys:", Object.keys(distances))
+
   const dist = distances[candidate.user_id]
                 return (
                   <Card key={candidate.id} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer">
