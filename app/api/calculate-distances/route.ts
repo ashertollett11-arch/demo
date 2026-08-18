@@ -8,7 +8,6 @@ const supabaseAdmin = createClient(
 )
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY!
-const MAX_DISTANCE_METERS = 24140 // 15 miles
 
 async function getDistance(
   studentAddress: string,
@@ -37,7 +36,6 @@ async function getDistance(
   }
 }
 
-// Helper to sleep between API calls to avoid rate limiting
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 export async function POST(request: Request) {
@@ -49,10 +47,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Provide studentUserId or locationId" }, { status: 400 })
     }
 
-    let pairs: { locationId: string; locationAddress: string; locationZip: string; studentUserId: string; studentAddress: string; studentZip: string }[] = []
+    let pairs: {
+      locationId: string
+      locationAddress: string
+      locationZip: string
+      studentUserId: string
+      studentAddress: string
+      studentZip: string
+    }[] = []
 
     if (studentUserId) {
-      // Calculate distances from this student to ALL employer locations
+      // Delete existing distances for this student so address changes are recalculated fresh
+      await supabaseAdmin
+        .from("employer_student_distances")
+        .delete()
+        .eq("student_user_id", studentUserId)
+
       const { data: student } = await supabaseAdmin
         .from("Students")
         .select("user_id, location, zip_code")
@@ -84,7 +94,12 @@ export async function POST(request: Request) {
     }
 
     if (locationId) {
-      // Calculate distances from this location to ALL students
+      // Delete existing distances for this location so address changes are recalculated fresh
+      await supabaseAdmin
+        .from("employer_student_distances")
+        .delete()
+        .eq("employer_location_id", locationId)
+
       const { data: location } = await supabaseAdmin
         .from("locations")
         .select("id, address, zip_code")
@@ -116,28 +131,10 @@ export async function POST(request: Request) {
         }))
     }
 
-    // Check which pairs already have recent distances (within 7 days)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-    const { data: existing } = await supabaseAdmin
-      .from("employer_student_distances")
-      .select("employer_location_id, student_user_id, calculated_at")
-      .in("employer_location_id", pairs.map(p => p.locationId))
-      .in("student_user_id", pairs.map(p => p.studentUserId))
-      .gte("calculated_at", sevenDaysAgo)
-
-    const existingSet = new Set(
-      (existing || []).map(e => `${e.employer_location_id}:${e.student_user_id}`)
-    )
-
-    // Only calculate pairs that don't have recent data
-    const pairsToCalculate = pairs.filter(
-      p => !existingSet.has(`${p.locationId}:${p.studentUserId}`)
-    )
-
     let calculated = 0
     const upsertRows = []
 
-    for (const pair of pairsToCalculate) {
+    for (const pair of pairs) {
       const result = await getDistance(
         pair.studentAddress,
         pair.studentZip,
@@ -157,18 +154,16 @@ export async function POST(request: Request) {
         calculated++
       }
 
-      // Small delay to avoid hitting Google Maps rate limits
       await sleep(50)
     }
 
-    // Batch upsert all results
     if (upsertRows.length > 0) {
       await supabaseAdmin
         .from("employer_student_distances")
         .upsert(upsertRows, { onConflict: "employer_location_id,student_user_id" })
     }
 
-    return NextResponse.json({ success: true, calculated, skipped: pairs.length - pairsToCalculate.length })
+    return NextResponse.json({ success: true, calculated })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
