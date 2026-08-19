@@ -174,8 +174,18 @@ export default function MatchesPage() {
             (s: any) => s.active === true || s.active === "true" || s.active === 1
           )
           const base = calculateMatch(
-            { availability: studentAvailability, shiftPreference: studentShiftPreference },
-            { shifts: activeShifts.map((s: any) => s.day || s), shiftPreference: loc.shift_preference || "flexible" }
+            { 
+              availability: studentAvailability, 
+              shiftPreference: studentShiftPreference,
+              preferred_jobs: studentData.preferred_jobs ?? [],
+              hasRecommendation: hasRecommendation,
+              distanceMeters: distanceMap[loc.id]?.distance_meters ?? undefined,
+            },
+            { 
+              shifts: activeShifts.map((s: any) => s.day || s), 
+              shiftPreference: loc.shift_preference || "flexible",
+              preferred_jobs: loc.preferred_jobs ?? [],
+            }
           )
           const dist = distanceMap[loc.id]
           return {

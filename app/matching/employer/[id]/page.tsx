@@ -21,7 +21,7 @@ export default function StudentPage() {
   const router = useRouter()
   const params = useParams()
   const studentId = params.id as string
-
+  const [distanceMeters, setDistanceMeters] = useState<number | undefined>(undefined)
   const [recommendation, setRecommendation] = useState<any>(null)
   const [student, setStudent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -149,13 +149,14 @@ export default function StudentPage() {
     // Try stored distance first
     const { data: stored } = await supabase
       .from("employer_student_distances")
-      .select("distance_text, duration_text")
-      .eq("employer_location_id", locationId)
+      .select("distance_text, duration_text, distance_meters")
+            .eq("employer_location_id", locationId)
       .eq("student_user_id", studentUserIdParam)
       .maybeSingle()
 
     if (stored?.distance_text) {
       setDistance({ distance: stored.distance_text, duration: stored.duration_text })
+      setDistanceMeters(stored.distance_meters ?? undefined)
       setLoadingDistance(false)
       return
     }
@@ -176,6 +177,7 @@ export default function StudentPage() {
 
     if (result) {
       setDistance({ distance: result.distance, duration: result.duration })
+      setDistanceMeters(undefined) // live fallback doesn't return meters
     }
 
     setLoadingDistance(false)
@@ -211,14 +213,14 @@ export default function StudentPage() {
     const jobDays = activeShifts.map((s) => s.day)
     if (!jobDays.length) return 22
     return calculateEmployerMatch(
-      { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
+      { shifts: activeShifts, shiftPreference, preferred_jobs: preferredJobs },
       student.availability,
       student.shift_preference,
       student.gpa,
-      student.preferred_jobs
-    )
-  }, [student, employerShifts, shiftPreference, preferredJobs])
-
+      student.preferred_jobs,
+      !!recommendation,
+      distanceMeters    )
+    }, [student, employerShifts, shiftPreference, preferredJobs, recommendation, distanceMeters])
   const updateStatus = async (newStatus: "new" | "contacted" | "hired") => {
     setStudent((prev: any) => ({ ...prev, status: newStatus }))
     const { data: userData } = await supabase.auth.getUser()

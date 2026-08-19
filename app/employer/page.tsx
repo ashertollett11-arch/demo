@@ -37,10 +37,12 @@ export default function EmployerDashboard() {
   const [employerZip, setEmployerZip] = useState<string | null>(null)
   const [zipMatchPrecision, setZipMatchPrecision] = useState<number>(5)
   const [pageLoading, setPageLoading] = useState(true)
-
   // MULTI-LOCATION
   const [allLocations, setAllLocations] = useState<any[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+  // DISTANCES + RECOMMENDATIONS for scoring
+  const [distances, setDistances] = useState<Record<string, number>>({})
+  const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
 
   // AUTH
   useEffect(() => {
@@ -48,26 +50,26 @@ export default function EmployerDashboard() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.replace("/login"); return }
-  
+
         const { data: roleData } = await supabase
           .from("users")
           .select("role")
           .eq("id", user.id)
           .maybeSingle()
-  
+
         if (!roleData?.role) { router.replace("/choose-role"); return }
         if (roleData.role !== "employer") { router.replace("/login"); return }
-  
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("subscription_status, profile_complete")
           .eq("id", user.id)
           .maybeSingle()
-  
+
         const isSubscribed =
           profile?.subscription_status === "active" ||
           profile?.subscription_status === "freeactive"
-  
+
         if (!isSubscribed) {
           if (!profile?.profile_complete) {
             router.replace("/employer/profile?missing=true")
@@ -76,27 +78,25 @@ export default function EmployerDashboard() {
           }
           return
         }
-  
-        // Check job profile exists
+
         const { data: jobData } = await supabase
           .from("job")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle()
-  
+
         if (!jobData) { router.replace("/employer/profile?missing=true"); return }
-  
-        // Check at least one location exists
+
         const { data: locs } = await supabase
           .from("locations")
           .select("id")
           .eq("employer_id", jobData.id)
-  
+
         if (!locs || locs.length === 0) {
           router.replace("/employer/profile?missing=true")
           return
         }
-  
+
         setUserId(user.id)
       } catch (err) {
         router.replace("/login")
@@ -134,6 +134,32 @@ export default function EmployerDashboard() {
     loadStudents()
   }, [userId])
 
+  // LOAD RECOMMENDATIONS
+  useEffect(() => {
+    if (!students.length) return
+    const loadRecommendations = async () => {
+      const { data } = await supabase
+        .from("recommendations")
+        .select("student_user_id")
+        .eq("submitted", true)
+      const map: Record<string, boolean> = {}
+      ;(data || []).forEach((r) => { map[r.student_user_id] = true })
+      setRecommendations(map)
+    }
+    loadRecommendations()
+  }, [students])
+
+  // LOAD DISTANCES for a location
+  const loadDistances = async (locationId: string) => {
+    const { data } = await supabase
+      .from("employer_student_distances")
+      .select("student_user_id, distance_meters")
+      .eq("employer_location_id", locationId)
+    const map: Record<string, number> = {}
+    ;(data || []).forEach((d) => { map[d.student_user_id] = d.distance_meters })
+    setDistances(map)
+  }
+
   // LOAD ALL LOCATIONS
   useEffect(() => {
     if (!userId) return
@@ -144,16 +170,13 @@ export default function EmployerDashboard() {
         .eq("user_id", userId)
         .single()
       if (!jobData) return
-
       setShiftPreference(jobData.shift_preference || "flexible")
       setPreferredJobs(jobData.preferred_jobs || [])
-
       const { data: locations } = await supabase
         .from("locations")
         .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, zip_match_precision")
         .eq("employer_id", jobData.id)
         .order("created_at", { ascending: true })
-
       if (locations?.length) {
         setAllLocations(locations)
         setSelectedLocationId(locations[0].id)
@@ -163,6 +186,7 @@ export default function EmployerDashboard() {
         setEmployerZip(first.zip_code ?? null)
         setZipMatchPrecision(first.zip_match_precision ?? 5)
         if (first.preferred_jobs?.length > 0) setPreferredJobs(first.preferred_jobs)
+        loadDistances(locations[0].id)
       }
     }
     loadJob()
@@ -177,6 +201,7 @@ export default function EmployerDashboard() {
     setEmployerZip(loc.zip_code ?? null)
     setZipMatchPrecision(loc.zip_match_precision ?? 5)
     if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
+    loadDistances(locationId)
   }
 
   // LOAD NOTIFICATIONS
@@ -257,7 +282,6 @@ export default function EmployerDashboard() {
     const activeShifts = employerShifts.filter(
       (s) => s.active === true || s.active === "true" || s.active === 1
     )
-    const jobDays = activeShifts.map((s) => s.day)
     return students
       .filter((s) => {
         if (!employerZip || !s.zip_code) return true
@@ -266,15 +290,17 @@ export default function EmployerDashboard() {
       })
       .map((s) => {
         const score = calculateEmployerMatch(
-          { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
+          { shifts: activeShifts, shiftPreference, preferred_jobs: preferredJobs },
           s.availability,
           s.shift_preference,
           s.gpa,
-          s.preferred_jobs
+          s.preferred_jobs,
+          recommendations[s.user_id] ?? false,
+          distances[s.user_id] ?? undefined
         )
         return { ...s, matchScore: Math.round(score) }
       })
-  }, [students, employerShifts, shiftPreference, preferredJobs, employerZip, zipMatchPrecision])
+  }, [students, employerShifts, shiftPreference, preferredJobs, employerZip, zipMatchPrecision, distances, recommendations])
 
   const greatCandidates = candidatesWithScores.filter((c) => c.matchScore >= 75).length
   const perfectMatches = candidatesWithScores.filter((c) => c.matchScore === 100).length

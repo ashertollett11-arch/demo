@@ -357,16 +357,18 @@ export default function MatchingPage() {
   // LOAD STORED DISTANCES for selected location
   const loadDistances = async (locationId: string) => {
     const { data, error } = await supabase
-      .from("employer_student_distances")
-      .select("student_user_id, distance_text, duration_text")
-      .eq("employer_location_id", locationId)
+    .from("employer_student_distances")
+    .select("student_user_id, distance_text, duration_text, distance_meters")
+    .eq("employer_location_id", locationId)
   
-
-  
-    const distMap: Record<string, { distance_text: string; duration_text: string }> = {}
-    ;(data || []).forEach((d) => {
-      distMap[d.student_user_id] = { distance_text: d.distance_text, duration_text: d.duration_text }
-    })
+      const distMap: Record<string, { distance_text: string; duration_text: string; distance_meters: number }> = {}
+      ;(data || []).forEach((d) => {
+        distMap[d.student_user_id] = {
+          distance_text: d.distance_text,
+          duration_text: d.duration_text,
+          distance_meters: d.distance_meters,
+        }
+      })
     setDistances(distMap)
   }
 // Reload distances when students finish loading and we have a location selected
@@ -504,18 +506,19 @@ useEffect(() => {
     if (!students.length) return
     const results = students.map((candidate) => {
       const matchScore = calculateEmployerMatch(
-        { shifts: jobDays, shiftPreference, preferred_jobs: preferredJobs },
+        { shifts: activeShifts, shiftPreference, preferred_jobs: preferredJobs },
         candidate.availability,
         candidate.shift_preference,
         candidate.gpa,
-        candidate.preferred_jobs
+        candidate.preferred_jobs,
+        recommendations[candidate.user_id] ?? false,        // hasRecommendation
+        distances[candidate.user_id]?.distance_meters ?? undefined  // distanceMeters
       )
       return { ...candidate, matchScore: Math.round(matchScore) }
     })
     setScoredCandidates(results)
-  }, [students, employerShifts, shiftPreference, preferredJobs])
-
-  useEffect(() => {
+  }, [students, employerShifts, shiftPreference, preferredJobs, distances, recommendations, activeShifts])
+    useEffect(() => {
     if (statusParam === "new" || statusParam === "contacted" || statusParam === "hired") {
       setActiveStatus(statusParam)
     }
