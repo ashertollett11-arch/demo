@@ -982,6 +982,23 @@ export default function MatchingPage() {
                               { onConflict: "student_id,employer_id" }
                             )
                             setActiveStatus(newStatus)
+                            if (newStatus === "contacted" && candidate.email) {
+                              const { data: jobData } = await supabase
+                                .from("job")
+                                .select("company, business_type")
+                                .eq("user_id", employerId)
+                                .single()
+                              fetch("/api/send-contacted-email", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  studentEmail: candidate.email,
+                                  studentName: candidate.name,
+                                  companyName: jobData?.company || "An employer",
+                                  businessType: jobData?.business_type || "",
+                                }),
+                              }).catch(() => {})
+                            }
                           }}
                         >
                           <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>

@@ -234,44 +234,22 @@ export default function StudentPage() {
         )
       console.log("updateStatus called with:", newStatus, "student email:", student?.email)
       if (newStatus === "contacted" && student?.email) {
-        const studentUserId = student.user_id
-        const studentEmail = student.email
-        const studentName = student.name
-  
-        setTimeout(async () => {
-          // Check if status is still "contacted" after 10 minutes
-          const { data: userData } = await supabase.auth.getUser()
-          const currentEmployerId = userData?.user?.id
-          if (!currentEmployerId) return
-  
-          const { data: statusCheck } = await supabase
-            .from("student_statuses")
-            .select("status")
-            .eq("student_id", studentId)
-            .eq("employer_id", currentEmployerId)
-            .maybeSingle()
-  
-          if (statusCheck?.status !== "contacted") return // status changed, don't send
-  
-          const { data: jobData } = await supabase
-            .from("job")
-            .select("company, business_type")
-            .eq("user_id", currentEmployerId)
-            .single()
-  
-          fetch("/api/send-contacted-email", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              studentEmail,
-              studentName,
-              companyName: jobData?.company || "An employer",
-              businessType: jobData?.business_type || "",
-            }),
-          }).catch(() => {})
-        }, 10 * 60 * 1000) // 10 minutes
-      }
-    }
+        const { data: jobData } = await supabase
+          .from("job")
+          .select("company, business_type")
+          .eq("user_id", employerId)
+          .single()
+        fetch("/api/send-contacted-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentEmail: student.email,
+            studentName: student.name,
+            companyName: jobData?.company || "An employer",
+            businessType: jobData?.business_type || "",
+          }),
+        }).catch(() => {})
+      } }
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
