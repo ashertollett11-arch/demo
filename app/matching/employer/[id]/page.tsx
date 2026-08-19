@@ -221,18 +221,36 @@ export default function StudentPage() {
       !!recommendation,
       distanceMeters    )
     }, [student, employerShifts, shiftPreference, preferredJobs, recommendation, distanceMeters])
-  const updateStatus = async (newStatus: "new" | "contacted" | "hired") => {
-    setStudent((prev: any) => ({ ...prev, status: newStatus }))
-    const { data: userData } = await supabase.auth.getUser()
-    const employerId = userData?.user?.id
-    if (!employerId) return
-    await supabase
-      .from("student_statuses")
-      .upsert(
-        { student_id: studentId, employer_id: employerId, status: newStatus },
-        { onConflict: "student_id,employer_id" }
-      )
-  }
+    const updateStatus = async (newStatus: "new" | "contacted" | "hired") => {
+      setStudent((prev: any) => ({ ...prev, status: newStatus }))
+      const { data: userData } = await supabase.auth.getUser()
+      const employerId = userData?.user?.id
+      if (!employerId) return
+      await supabase
+        .from("student_statuses")
+        .upsert(
+          { student_id: studentId, employer_id: employerId, status: newStatus },
+          { onConflict: "student_id,employer_id" }
+        )
+      // Send email when employer marks student as contacted
+      if (newStatus === "contacted" && student?.email) {
+        const { data: jobData } = await supabase
+          .from("job")
+          .select("company, business_type")
+          .eq("user_id", employerId)
+          .single()
+        fetch("/api/send-contacted-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentEmail: student.email,
+            studentName: student.name,
+            companyName: jobData?.company || "An employer",
+            businessType: jobData?.business_type || "",
+          }),
+        }).catch(() => {})
+      }
+    }
 
   if (loading) {
     return (
