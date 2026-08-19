@@ -461,6 +461,7 @@ export default function StudentPage() {
                 value={student?.status ?? "new"}
                 onValueChange={(value) => {
                   const newStatus = value as "new" | "contacted" | "hired"
+                  console.log("sending contacted email to:", student.email, "status:", newStatus)
                   updateStatus(newStatus)
                   toast.success("Status updated", {
                     description: `Student marked as ${newStatus}`,
