@@ -271,7 +271,7 @@ export default function StudentPage() {
           }).catch(() => {})
         }, 10 * 60 * 1000) // 10 minutes
       }
-
+    }
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
