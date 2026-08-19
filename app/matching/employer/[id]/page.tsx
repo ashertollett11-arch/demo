@@ -234,7 +234,11 @@ export default function StudentPage() {
         )
       console.log("updateStatus called with:", newStatus, "student email:", student?.email)
       if (newStatus === "contacted" && student?.email) {
-        console.log("firing contacted email to:", student.email)
+        const { data: jobData } = await supabase
+          .from("job")
+          .select("company, business_type")
+          .eq("user_id", employerId)
+          .single()
         fetch("/api/send-contacted-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
