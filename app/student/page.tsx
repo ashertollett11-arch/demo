@@ -56,6 +56,7 @@ type Job = {
 }
 
 export default function StudentDashboard() {
+  const [distances, setDistances] = useState<Record<string, number>>({})
   const router = useRouter()
   const [studentNotifications, setStudentNotifications] = useState<any[]>([])
   const [name, setName] = useState("")
@@ -74,7 +75,7 @@ export default function StudentDashboard() {
     { day: "Sunday", available: true, start: "12:00 PM", end: "5:00 PM", hours: "5" },
   ])
 
-  const greatMatches = matchedJobsWithScore.filter(job => job.matchScore >= 45).length
+  const greatMatches = matchedJobsWithScore.filter(job => job.matchScore >= 75).length
   const newJobsCount = matchedJobsWithScore.filter(job => job.status === "new").length
 
   // -------------------------
@@ -126,8 +127,8 @@ export default function StudentDashboard() {
 
       const { data: studentData, error: studentError } = await supabase
         .from("Students")
-        .select("availability, shift_preference, zip_code")
-        .eq("user_id", user.id)
+        .select("availability, shift_preference, zip_code, user_id")
+                .eq("user_id", user.id)
         .single()
 
       if (studentError || !studentData) return
@@ -156,9 +157,27 @@ export default function StudentDashboard() {
           )
         `)
 
-      if (locError)  return 
+        if (locError) return
 
-      const scoredJobs = (locations || [])
+        const { data: distanceRows } = await supabase
+          .from("employer_student_distances")
+          .select("employer_location_id, distance_meters")
+          .eq("student_user_id", studentData.user_id)
+        
+        const distanceMap: Record<string, number> = {}
+        ;(distanceRows || []).forEach((d) => {
+          distanceMap[d.employer_location_id] = d.distance_meters
+        })
+        
+        const { data: recData } = await supabase
+          .from("recommendations")
+          .select("id")
+          .eq("student_user_id", user.id)
+          .eq("submitted", true)
+          .maybeSingle()
+        const studentHasRecommendation = !!recData
+        
+        const scoredJobs = (locations || [])
         .filter((loc: any) => {
           const locZip = loc.zip_code ?? ""
           const precision = loc.zip_match_precision ?? 5
@@ -173,8 +192,13 @@ export default function StudentDashboard() {
           const jobDays = activeShifts.map((s: any) => s.day)
 
           const matchScore = calculateMatch(
-            { availability: studentData.availability || [], shiftPreference: studentData.shift_preference || "flexible" },
-            { shifts: jobDays, shiftPreference: loc.shift_preference || "flexible" }
+            {
+              availability: studentData.availability || [],
+              shiftPreference: studentData.shift_preference || "flexible",
+              hasRecommendation: studentHasRecommendation,
+              distanceMeters: distanceMap[loc.id] ?? undefined,
+            },
+            { shifts: activeShifts, shiftPreference: loc.shift_preference || "flexible" }
           )
 
           return {

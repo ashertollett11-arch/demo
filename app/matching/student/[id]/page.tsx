@@ -13,7 +13,8 @@ export default function JobPage() {
   const router = useRouter()
   const params = useParams()
   const jobId = params.id as string
-
+  const [distanceMeters, setDistanceMeters] = useState<number | undefined>(undefined)
+const [hasRecommendation, setHasRecommendation] = useState(false)
   const [studentShiftPreference, setStudentShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [job, setJob] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -141,18 +142,27 @@ export default function JobPage() {
     const fetchDistance = async () => {
       const { data } = await supabase
         .from("employer_student_distances")
-        .select("distance_text, duration_text")
+        .select("distance_text, duration_text, distance_meters")
         .eq("employer_location_id", jobId)
         .eq("student_user_id", studentUserId)
         .maybeSingle()
-
       if (data?.distance_text) {
         setDistance({ distanceText: data.distance_text, durationText: data.duration_text })
+        setDistanceMeters(data.distance_meters ?? undefined)
       }
     }
+    const fetchRecommendation = async () => {
+      const { data } = await supabase
+        .from("recommendations")
+        .select("id")
+        .eq("student_user_id", studentUserId)
+        .eq("submitted", true)
+        .maybeSingle()
+      setHasRecommendation(!!data)
+    }
     fetchDistance()
+    fetchRecommendation()
   }, [studentUserId, jobId])
-
   // MATCH SCORE
   useEffect(() => {
     if (!job || !availability.length) return
@@ -162,11 +172,16 @@ export default function JobPage() {
       (s: any) => s.active === true || s.active === "true" || s.active === 1
     )
     const score = calculateMatch(
-      { availability, shiftPreference: studentShiftPreference },
-      { shifts: activeShifts.map((s: any) => s.day), shiftPreference: job.shift_preference || "flexible" }
+      {
+        availability,
+        shiftPreference: studentShiftPreference,
+        hasRecommendation,
+        distanceMeters,
+      },
+      { shifts: activeShifts, shiftPreference: job.shift_preference || "flexible" }
     )
     setJobMatchScore(Math.round(score))
-  }, [job, availability])
+  }, [job, availability, hasRecommendation, distanceMeters])
 
   // APPLY
   const handleApply = async () => {

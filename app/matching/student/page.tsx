@@ -147,17 +147,26 @@ export default function MatchesPage() {
 
       // Load stored distances for this student
       const { data: distanceRows } = await supabase
-        .from("employer_student_distances")
-        .select("employer_location_id, distance_text, duration_text")
-        .eq("student_user_id", studentUserId)
-
-      const distanceMap: Record<string, { distance_text: string; duration_text: string }> = {}
-      ;(distanceRows || []).forEach((d) => {
-        distanceMap[d.employer_location_id] = {
-          distance_text: d.distance_text,
-          duration_text: d.duration_text,
-        }
-      })
+      .from("employer_student_distances")
+      .select("employer_location_id, distance_text, duration_text, distance_meters")
+      .eq("student_user_id", studentUserId)
+    
+    const distanceMap: Record<string, { distance_text: string; duration_text: string; distance_meters: number }> = {}
+    ;(distanceRows || []).forEach((d) => {
+      distanceMap[d.employer_location_id] = {
+        distance_text: d.distance_text,
+        duration_text: d.duration_text,
+        distance_meters: d.distance_meters,
+      }
+    })
+    
+    const { data: recData } = await supabase
+      .from("recommendations")
+      .select("id")
+      .eq("student_user_id", studentUserId)
+      .eq("submitted", true)
+      .maybeSingle()
+    const studentHasRecommendation = !!recData
 
       const updated = (locations || [])
         .filter((loc: any) => {
@@ -174,18 +183,13 @@ export default function MatchesPage() {
             (s: any) => s.active === true || s.active === "true" || s.active === 1
           )
           const base = calculateMatch(
-            { 
-              availability: studentAvailability, 
+            {
+              availability: studentAvailability,
               shiftPreference: studentShiftPreference,
-              preferred_jobs: studentData.preferred_jobs ?? [],
-              hasRecommendation: hasRecommendation,
+              hasRecommendation: studentHasRecommendation,
               distanceMeters: distanceMap[loc.id]?.distance_meters ?? undefined,
             },
-            { 
-              shifts: activeShifts.map((s: any) => s.day || s), 
-              shiftPreference: loc.shift_preference || "flexible",
-              preferred_jobs: loc.preferred_jobs ?? [],
-            }
+            { shifts: activeShifts, shiftPreference: loc.shift_preference || "flexible" }
           )
           const dist = distanceMap[loc.id]
           return {

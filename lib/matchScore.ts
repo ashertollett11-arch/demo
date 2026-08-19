@@ -76,42 +76,40 @@ export function calculateMatch(
       end: a.end || null,
     }))
 
-  if (studentDays.size === 0) return 0
+  if (studentDays.length === 0) return 0
 
   // ── DAYS + HOURS SCORE (60 points max) ──
-  // Score = total overlapping hours / employer's total shift hours
-  // Answers: "what fraction of the employer's needs can this student cover?"
-
-  let employerTotalMinutes = 0
-  let overlappingMinutes = 0
+  // Day match = 6pts base, hour overlap = up to 4pts bonus per day
+  // Only penalized if student doesn't have the day at all
+  let dayHourScore = 0
+  const totalJobDays = jobShifts.length || 1
 
   jobShifts.forEach((jobShift) => {
-    // Employer's total minutes for this shift day
-    const employerShiftMinutes = jobShift.start && jobShift.end
-      ? parseTime(jobShift.end) - parseTime(jobShift.start)
-      : 480 // assume 8hr day if no times
-
-    employerTotalMinutes += employerShiftMinutes
-
-    // Find matching student day
     const studentDay = studentDays.find((s) => s.day === jobShift.day)
-    if (!studentDay) return // student not available this day — 0 overlap
+    if (!studentDay) return // no match on this day — no points
 
+    // Day matches — base points
+    const dayPoints = 6
+
+    // Hour overlap bonus — up to 4 extra points
+    let hourBonus = 0
     if (studentDay.start && studentDay.end && jobShift.start && jobShift.end) {
+      const employerMinutes = parseTime(jobShift.end) - parseTime(jobShift.start)
       const overlap = getOverlapMinutes(
         studentDay.start, studentDay.end,
         jobShift.start, jobShift.end
       )
-      overlappingMinutes += overlap
+      const overlapRatio = employerMinutes > 0 ? overlap / employerMinutes : 0
+      hourBonus = overlapRatio * 4
     } else {
-      // No time data on one side — count as full day match
-      overlappingMinutes += employerShiftMinutes
+      hourBonus = 4 // no time data — assume full overlap
     }
+
+    dayHourScore += dayPoints + hourBonus
   })
 
-  const dayHourScore = employerTotalMinutes > 0
-    ? (overlappingMinutes / employerTotalMinutes) * 60
-    : 0
+  // Scale to 60 points max based on how many job days are covered
+  dayHourScore = Math.min(60, (dayHourScore / (totalJobDays * 10)) * 60)
 
   // ── DISTANCE SCORE (up to 12 points) ──
   let distanceScore = 0
@@ -124,17 +122,12 @@ export function calculateMatch(
 
   // ── SHIFT PREFERENCE (up to 8 points) ──
   let shiftScore = 0
-  if (
-    student.shiftPreference &&
-    job.shiftPreference &&
-    student.shiftPreference === job.shiftPreference
-  ) {
-    shiftScore = 8
-  } else if (
-    student.shiftPreference === "flexible" ||
-    job.shiftPreference === "flexible"
-  ) {
-    shiftScore = 4
+  if (student.shiftPreference && job.shiftPreference) {
+    if (student.shiftPreference === job.shiftPreference) {
+      shiftScore = 8
+    } else if (student.shiftPreference === "flexible" || job.shiftPreference === "flexible") {
+      shiftScore = 4
+    }
   }
 
   // ── JOB ROLE MATCH (up to 8 points) ──
