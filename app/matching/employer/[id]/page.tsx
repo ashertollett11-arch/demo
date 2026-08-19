@@ -232,13 +232,9 @@ export default function StudentPage() {
           { student_id: studentId, employer_id: employerId, status: newStatus },
           { onConflict: "student_id,employer_id" }
         )
-      // Send email when employer marks student as contacted
+      console.log("updateStatus called with:", newStatus, "student email:", student?.email)
       if (newStatus === "contacted" && student?.email) {
-        const { data: jobData } = await supabase
-          .from("job")
-          .select("company, business_type")
-          .eq("user_id", employerId)
-          .single()
+        console.log("firing contacted email to:", student.email)
         fetch("/api/send-contacted-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
