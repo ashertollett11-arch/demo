@@ -45,6 +45,7 @@ interface Job {
   preferredJobs?: string[]
   distanceText?: string
   durationText?: string
+  distanceMeters?: number
 }
 
 interface Availability {
@@ -59,7 +60,7 @@ export default function MatchesPage() {
   const [pageLoading, setPageLoading] = useState(true)
   const [availability, setAvailability] = useState<Availability[]>([])
   const [matchedJobs, setMatchedJobs] = useState<Job[]>([])
-  const [filter, setFilter] = useState<"pay" | "tips" | "matchScore">("matchScore")
+  const [filter, setFilter] = useState<"pay" | "tips" | "matchScore" | "distance">("matchScore")
   const [name, setName] = useState("")
   const pathname = usePathname()
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set())
@@ -205,6 +206,7 @@ export default function MatchesPage() {
             preferredJobs: loc.preferred_jobs || [],
             distanceText: dist?.distance_text ?? null,
             durationText: dist?.duration_text ?? null,
+            distanceMeters: dist?.distance_meters ?? undefined,
           }
         })
 
@@ -251,6 +253,10 @@ export default function MatchesPage() {
     switch (filter) {
       case "pay": return parsePay(b.pay) - parsePay(a.pay)
       case "tips": return Number(b.tips) - Number(a.tips)
+      case "distance":
+        const aDist = a.distanceMeters ?? Infinity
+        const bDist = b.distanceMeters ?? Infinity
+        return aDist - bDist
       default: return b.matchScore - a.matchScore
     }
   })
@@ -454,7 +460,11 @@ export default function MatchesPage() {
           <Button variant={filter === "tips" ? "default" : "outline"} onClick={() => setFilter("tips")} className="rounded-xl">
             Tips Included
           </Button>
-        </div>
+          <Button variant={filter === "distance" ? "default" : "outline"} onClick={() => setFilter("distance")} className="rounded-xl">
+            Closest
+          </Button>
+       
+       </div>
 
         {/* JOBS GRID */}
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
