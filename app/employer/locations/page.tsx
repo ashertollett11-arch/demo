@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, MapPin, X, LayoutDashboard } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, MapPin, X } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -16,18 +16,16 @@ import {
 } from "@/components/ui/dialog"
 
 type Location = {
-  id: string
-  employer_id: string
-  name: string
-  address: string
-  zip_code: string
-  zip_match_precision: 5 | 3
-  available_shifts: any[]
-  shift_preference: string
-  hourly_pay: number | null
-  has_tips: boolean
-  preferred_jobs: string[]
-}
+    id: string
+    name: string
+    address: string
+    zip_code: string
+    max_distance_miles: number
+    hourly_pay: number | null
+    has_tips: boolean
+    shift_preference: string
+    available_shifts: any[]
+  }
 
 const DEFAULT_SHIFTS = [
   { day: "Monday", start: "9:00 AM", end: "5:00 PM", active: true },
@@ -57,10 +55,12 @@ export default function LocationsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+
+  // Form state
   const [formName, setFormName] = useState("")
   const [formAddress, setFormAddress] = useState("")
   const [formZip, setFormZip] = useState("")
-  const [formPrecision, setFormPrecision] = useState<5 | 3>(5)
+  const [formMaxDistance, setFormMaxDistance] = useState<number>(10)
   const [formShiftPref, setFormShiftPref] = useState<"morning" | "night" | "flexible">("flexible")
   const [formShifts, setFormShifts] = useState(DEFAULT_SHIFTS)
   const [formPay, setFormPay] = useState("")
@@ -87,13 +87,11 @@ export default function LocationsPage() {
         .select("id")
         .eq("user_id", user.id)
         .maybeSingle()
-
       if (!job) {
         toast.error("Please complete your company profile first.")
         router.replace("/employer/profile")
         return
       }
-
       setJobId(job.id)
       await loadLocations(job.id)
       setLoading(false)
@@ -115,7 +113,7 @@ export default function LocationsPage() {
     setFormName("")
     setFormAddress("")
     setFormZip("")
-    setFormPrecision(5)
+    setFormMaxDistance(10)
     setFormShiftPref("flexible")
     setFormShifts(DEFAULT_SHIFTS)
     setFormPay("")
@@ -133,7 +131,7 @@ export default function LocationsPage() {
     setFormName(loc.name)
     setFormAddress(loc.address || "")
     setFormZip(loc.zip_code || "")
-    setFormPrecision(loc.zip_match_precision || 5)
+    setFormMaxDistance(loc.max_distance_miles ?? 10)
     setFormShiftPref((loc.shift_preference as any) || "flexible")
     setFormShifts(loc.available_shifts?.length ? loc.available_shifts : DEFAULT_SHIFTS)
     setFormPay(loc.hourly_pay ? String(loc.hourly_pay) : "")
@@ -158,7 +156,7 @@ export default function LocationsPage() {
       name: formName.trim(),
       address: formAddress.trim(),
       zip_code: formZip,
-      zip_match_precision: formPrecision,
+      max_distance_miles: formMaxDistance,
       shift_preference: formShiftPref,
       available_shifts: formShifts,
       hourly_pay: Number(formPay),
@@ -167,7 +165,6 @@ export default function LocationsPage() {
     }
 
     let savedLocationId: string | null = editingId
-
     if (editingId) {
       const { error } = await supabase.from("locations").update(payload).eq("id", editingId)
       if (error) { toast.error("Failed to save location."); setSaving(false); return }
@@ -183,13 +180,12 @@ export default function LocationsPage() {
     resetForm()
     setSaving(false)
 
-    // Calculate distances for this location to all students in the background
     if (savedLocationId) {
       fetch("/api/calculate-distances", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locationId: savedLocationId }),
-      }).catch(() => {}) // fire and forget
+      }).catch(() => {})
     }
   }
 
@@ -202,17 +198,14 @@ export default function LocationsPage() {
     if (!deletingId || !jobId) return
     const { error } = await supabase.from("locations").delete().eq("id", deletingId)
     if (error) { toast.error("Failed to delete location."); return }
-
     toast.success("Location deleted.")
     await loadLocations(jobId)
     setShowDeleteDialog(false)
     setDeletingId(null)
-
     const { data: remaining } = await supabase
       .from("locations")
       .select("id")
       .eq("employer_id", jobId)
-
     if (!remaining || remaining.length === 0) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -237,8 +230,7 @@ export default function LocationsPage() {
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <div className="mx-auto max-w-3xl">
-
-        {/* HEADER — back left, add center, dashboard right */}
+        {/* HEADER */}
         <div className="grid grid-cols-3 items-center mb-6">
           <div className="flex justify-start">
             <Button variant="ghost" onClick={() => router.push("/employer/profile")} className="flex items-center gap-1 px-2">
@@ -308,20 +300,22 @@ export default function LocationsPage() {
                   placeholder="32459" maxLength={5} className="w-full border rounded px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-sm font-medium block mb-2">Search Area</label>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setFormPrecision(5)}
-                    className={`flex-1 py-2 text-xs rounded-lg border transition-all ${formPrecision === 5 ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
-                    Local (same zip)
-                  </button>
-                  <button type="button" onClick={() => setFormPrecision(3)}
-                    className={`flex-1 py-2 text-xs rounded-lg border transition-all ${formPrecision === 3 ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
-                    Regional (nearby zips)
-                  </button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formPrecision === 5 ? "Only show students with the exact same zip code." : "Show students in your broader region (first 3 digits match)."}
-                </p>
+                <label className="text-sm font-medium block mb-1">Max Hiring Distance</label>
+                <select
+                  value={formMaxDistance}
+                  onChange={(e) => setFormMaxDistance(Number(e.target.value))}
+                  className="w-full border rounded px-3 py-2 text-sm bg-background"
+                >
+                  <option value={1}>1 mile</option>
+                  <option value={3}>3 miles</option>
+                  <option value={5}>5 miles</option>
+                  <option value={10}>10 miles</option>
+                  <option value={15}>15 miles</option>
+                  <option value={20}>20 miles</option>
+                  <option value={25}>25 miles</option>
+                  <option value={35}>35 miles</option>
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">Only students within this distance will see your listing.</p>
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1">Pay Per Hour ($)</label>
@@ -427,8 +421,8 @@ export default function LocationsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground">{loc.name}</h3>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${loc.zip_match_precision === 5 ? "bg-blue-50 text-blue-700 border-blue-200" : "bg-purple-50 text-purple-700 border-purple-200"}`}>
-                          {loc.zip_match_precision === 5 ? "Local" : "Regional"}
+                        <span className="text-[10px] px-2 py-0.5 rounded-full border font-medium bg-blue-50 text-blue-700 border-blue-200">
+                          {loc.max_distance_miles ?? 10} mi radius
                         </span>
                       </div>
                       <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
@@ -478,7 +472,6 @@ export default function LocationsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
       </div>
     </div>
   )

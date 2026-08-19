@@ -112,30 +112,28 @@ export default function MatchesPage() {
 
       const studentAvailability = studentData?.availability ?? []
       const studentShiftPreference = studentData?.shift_preference || "flexible"
-      const studentZip = studentData?.zip_code ?? ""
       const studentUserId = studentData?.user_id
 
       const { data: locations, error: locError } = await supabase
-        .from("locations")
-        .select(`
+      .from("locations")
+      .select(`
+        id,
+        name,
+        address,
+        max_distance_miles,
+        available_shifts,
+        shift_preference,
+        hourly_pay,
+        has_tips,
+        preferred_jobs,
+        employer_id,
+        job:employer_id (
           id,
-          name,
-          address,
-          zip_code,
-          zip_match_precision,
-          available_shifts,
-          shift_preference,
-          hourly_pay,
-          has_tips,
-          preferred_jobs,
-          employer_id,
-          job:employer_id (
-            id,
-            company,
-            details,
-            status
-          )
-        `)
+          company,
+          details,
+          status
+        )
+      `)
       if (locError) return
 
       // Load applied locations
@@ -169,14 +167,12 @@ export default function MatchesPage() {
       .maybeSingle()
     const studentHasRecommendation = !!recData
 
-      const updated = (locations || [])
-        .filter((loc: any) => {
-          const locZip = loc.zip_code ?? ""
-          const precision = loc.zip_match_precision ?? 5
-          if (!locZip || !studentZip) return false
-          if (precision === 5) return locZip === studentZip
-          return locZip.slice(0, 3) === studentZip.slice(0, 3)
-        })
+    const updated = (locations || [])
+    .filter((loc: any) => {
+      const distMeters = distanceMap[loc.id]?.distance_meters
+      if (!distMeters) return false
+      return distMeters <= (loc.max_distance_miles ?? 10) * 1609.34
+    })
         .map((loc: any) => {
           let shifts = loc.available_shifts ?? []
           if (!Array.isArray(shifts)) shifts = Object.values(shifts || {})

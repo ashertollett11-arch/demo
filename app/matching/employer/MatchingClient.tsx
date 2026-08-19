@@ -1,18 +1,10 @@
 "use client"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabase"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
@@ -23,10 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, User, Bell, MapPin, Building2, CreditCard, LogOut } from "lucide-react"
+import { ChevronDown, Bell, MapPin, Building2, CreditCard, LogOut } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
-  CheckCircle2,
   Star,
   Filter,
   X,
@@ -63,8 +54,6 @@ const ALL_AGES = [14, 15, 16, 17, 18, 19, 20, 21]
 function FilterContent({
   minGpa, setMinGpa,
   selectedDays, setSelectedDays,
-  verifiedOnly, setVerifiedOnly,
-  areaRadius, employerZip,
   ageMode, setAgeMode,
   ageMin, setAgeMin,
   ageMax, setAgeMax,
@@ -72,21 +61,20 @@ function FilterContent({
   daysOfWeek,
   activeFiltersCount,
   clearFilters,
+  selectedLocationMaxMiles,
 }: any) {
   return (
     <div className="space-y-6">
-      {employerZip && (
+      {selectedLocationMaxMiles && (
         <div className="rounded-lg border border-border bg-secondary/30 p-3">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <MapPin className="h-3.5 w-3.5 text-primary" />
-            Location Filter
+            Distance Filter
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Zip: <span className="font-medium text-foreground">{employerZip}</span>
-            {" — "}
-            <span className="font-medium text-foreground">
-              {areaRadius === "exact" ? "Same zip" : areaRadius === "broad" ? "Broader region" : "All areas"}
-            </span>
+            Showing students within{" "}
+            <span className="font-medium text-foreground">{selectedLocationMaxMiles} miles</span>{" "}
+            of this location.
           </p>
           <p className="text-[11px] text-muted-foreground mt-1">Changes with selected location.</p>
         </div>
@@ -210,8 +198,7 @@ function FilterContent({
 export default function MatchingPage() {
   const router = useRouter()
   const [name, setName] = useState("Employer")
-  const [employerZip, setEmployerZip] = useState<string | null>(null)
-  const [areaRadius, setAreaRadius] = useState<"exact" | "broad" | "all">("exact")
+  const [selectedLocationMaxMiles, setSelectedLocationMaxMiles] = useState<number>(10)
   const [minGpa, setMinGpa] = useState<(number | "")[]>([1.0])
   const [selectedDays, setSelectedDays] = useState<string[]>([])
   const [verifiedOnly, setVerifiedOnly] = useState(false)
@@ -236,20 +223,15 @@ export default function MatchingPage() {
   const [statuses, setStatuses] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
-
-  // MULTI-LOCATION
   const [allLocations, setAllLocations] = useState<any[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
+  const [distances, setDistances] = useState<Record<string, { distance_text: string; duration_text: string; distance_meters: number }>>({})
 
-  // STORED DISTANCES — keyed by student user_id
-  const [distances, setDistances] = useState<Record<string, { distance_text: string; duration_text: string }>>({})
-
-  const matchesZip = (studentZip: string | null): boolean => {
-    if (!employerZip || areaRadius === "all") return true
-    if (!studentZip) return false
-    if (areaRadius === "exact") return studentZip === employerZip
-    if (areaRadius === "broad") return studentZip.slice(0, 3) === employerZip.slice(0, 3)
-    return true
+  // Filter students by distance using stored distances
+  const matchesDistance = (studentUserId: string): boolean => {
+    const dist = distances[studentUserId]
+    if (!dist?.distance_meters) return false
+    return dist.distance_meters <= selectedLocationMaxMiles * 1609.34
   }
 
   const matchesAge = (age: number | null): boolean => {
@@ -265,26 +247,21 @@ export default function MatchingPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.replace("/login"); return }
-
         const { data: roleData } = await supabase
           .from("users")
           .select("role")
           .eq("id", user.id)
           .maybeSingle()
-
         if (!roleData?.role) { router.replace("/choose-role"); return }
         if (roleData.role !== "employer") { router.replace("/login"); return }
-
         const { data: profile } = await supabase
           .from("profiles")
           .select("subscription_status, profile_complete")
           .eq("id", user.id)
           .maybeSingle()
-
         const isSubscribed =
           profile?.subscription_status === "active" ||
           profile?.subscription_status === "freeactive"
-
         if (!isSubscribed) {
           if (!profile?.profile_complete) {
             router.replace("/employer/profile?missing=true")
@@ -293,25 +270,20 @@ export default function MatchingPage() {
           }
           return
         }
-
         const { data: jobData } = await supabase
           .from("job")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle()
-
         if (!jobData) { router.replace("/employer/profile?missing=true"); return }
-
         const { data: locs } = await supabase
           .from("locations")
           .select("id")
           .eq("employer_id", jobData.id)
-
         if (!locs || locs.length === 0) {
           router.replace("/employer/profile?missing=true")
           return
         }
-
         setUserId(user.id)
       } catch (err) {
         router.replace("/login")
@@ -356,26 +328,26 @@ export default function MatchingPage() {
 
   // LOAD STORED DISTANCES for selected location
   const loadDistances = async (locationId: string) => {
-    const { data, error } = await supabase
-    .from("employer_student_distances")
-    .select("student_user_id, distance_text, duration_text, distance_meters")
-    .eq("employer_location_id", locationId)
-  
-      const distMap: Record<string, { distance_text: string; duration_text: string; distance_meters: number }> = {}
-      ;(data || []).forEach((d) => {
-        distMap[d.student_user_id] = {
-          distance_text: d.distance_text,
-          duration_text: d.duration_text,
-          distance_meters: d.distance_meters,
-        }
-      })
+    const { data } = await supabase
+      .from("employer_student_distances")
+      .select("student_user_id, distance_text, duration_text, distance_meters")
+      .eq("employer_location_id", locationId)
+    const distMap: Record<string, { distance_text: string; duration_text: string; distance_meters: number }> = {}
+    ;(data || []).forEach((d) => {
+      distMap[d.student_user_id] = {
+        distance_text: d.distance_text,
+        duration_text: d.duration_text,
+        distance_meters: d.distance_meters,
+      }
+    })
     setDistances(distMap)
   }
-// Reload distances when students finish loading and we have a location selected
-useEffect(() => {
-  if (!selectedLocationId || !students.length) return
-  loadDistances(selectedLocationId)
-}, [selectedLocationId, students])
+
+  useEffect(() => {
+    if (!selectedLocationId || !students.length) return
+    loadDistances(selectedLocationId)
+  }, [selectedLocationId, students])
+
   // LOAD ALL LOCATIONS
   useEffect(() => {
     const loadJob = async () => {
@@ -390,7 +362,7 @@ useEffect(() => {
       setPreferredJobs(jobData.preferred_jobs ?? [])
       const { data: locations } = await supabase
         .from("locations")
-        .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, zip_match_precision")
+        .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, max_distance_miles")
         .eq("employer_id", jobData.id)
         .order("created_at", { ascending: true })
       if (locations?.length) {
@@ -399,8 +371,7 @@ useEffect(() => {
         const first = locations[0]
         setEmployerShifts(first.available_shifts ?? [])
         setShiftPreference(first.shift_preference ?? "flexible")
-        setEmployerZip(first.zip_code ?? null)
-        setAreaRadius(first.zip_match_precision === 3 ? "broad" : "exact")
+        setSelectedLocationMaxMiles(first.max_distance_miles ?? 10)
         if (first.preferred_jobs?.length > 0) setPreferredJobs(first.preferred_jobs)
         await loadDistances(first.id)
       }
@@ -414,8 +385,7 @@ useEffect(() => {
     setSelectedLocationId(locationId)
     setEmployerShifts(loc.available_shifts ?? [])
     setShiftPreference(loc.shift_preference ?? "flexible")
-    setEmployerZip(loc.zip_code ?? null)
-    setAreaRadius(loc.zip_match_precision === 3 ? "broad" : "exact")
+    setSelectedLocationMaxMiles(loc.max_distance_miles ?? 10)
     if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
     await loadDistances(locationId)
   }
@@ -425,8 +395,6 @@ useEffect(() => {
       ? employerShifts.filter((s) => s.active === true || s.active === "true" || s.active === 1)
       : []
   }, [employerShifts])
-
-  const jobDays = useMemo(() => activeShifts.map((s) => s.day), [activeShifts])
 
   useEffect(() => {
     const loadEmployer = async () => {
@@ -451,12 +419,14 @@ useEffect(() => {
   }, [employerId])
 
   useEffect(() => {
-    if (!employerId || students.length === 0 || !employerZip) return
+    if (!employerId || students.length === 0) return
     const seedStatuses = async () => {
+      // Only seed statuses for students within distance
       const rows = students
         .filter((student) => student.profile_complete === true)
-        .filter((student) => matchesZip(student.zip_code))
+        .filter((student) => matchesDistance(student.user_id))
         .map((student) => ({ employer_id: employerId, student_id: student.id, status: "new" }))
+      if (rows.length === 0) return
       const { error } = await supabase
         .from("student_statuses")
         .upsert(rows, { onConflict: "employer_id,student_id", ignoreDuplicates: true })
@@ -468,7 +438,7 @@ useEffect(() => {
       setStatuses(data || [])
     }
     seedStatuses()
-  }, [employerId, students, employerZip, areaRadius])
+  }, [employerId, students, distances, selectedLocationMaxMiles])
 
   useEffect(() => {
     if (!userId) return
@@ -511,14 +481,15 @@ useEffect(() => {
         candidate.shift_preference,
         candidate.gpa,
         candidate.preferred_jobs,
-        recommendations[candidate.user_id] ?? false,        // hasRecommendation
-        distances[candidate.user_id]?.distance_meters ?? undefined  // distanceMeters
+        recommendations[candidate.user_id] ?? false,
+        distances[candidate.user_id]?.distance_meters ?? undefined
       )
       return { ...candidate, matchScore: Math.round(matchScore) }
     })
     setScoredCandidates(results)
   }, [students, employerShifts, shiftPreference, preferredJobs, distances, recommendations, activeShifts])
-    useEffect(() => {
+
+  useEffect(() => {
     if (statusParam === "new" || statusParam === "contacted" || statusParam === "hired") {
       setActiveStatus(statusParam)
     }
@@ -566,7 +537,7 @@ useEffect(() => {
     })
     .filter((candidate): candidate is NonNullable<typeof candidate> => {
       if (!candidate) return false
-      if (!matchesZip(candidate.zip_code)) return false
+      if (!matchesDistance(candidate.user_id)) return false
       if (!matchesAge(candidate.age)) return false
       if (candidate.gpa < minGpa[0]) return false
       const perfect = searchParams.get("perfect")
@@ -759,21 +730,16 @@ useEffect(() => {
           </div>
         </div>
       </header>
-    
+
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Find Your Perfect Match</h1>
-          <p className="mt-2 text-muted-foreground">Browse verified students filtered by availability, GPA, age, and location.</p>
-          {employerZip && (
-            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-1.5 text-sm">
-              <MapPin className="h-3.5 w-3.5 text-primary" />
-              <span className="text-muted-foreground">Showing students in</span>
-              <span className="font-semibold text-foreground">
-                {areaRadius === "exact" ? `zip code ${employerZip}` :
-                 areaRadius === "broad" ? `region ${employerZip.slice(0, 3)}xx` : "all areas"}
-              </span>
-            </div>
-          )}
+          <p className="mt-2 text-muted-foreground">Browse verified students filtered by availability, GPA, age, and distance.</p>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-1.5 text-sm">
+            <MapPin className="h-3.5 w-3.5 text-primary" />
+            <span className="text-muted-foreground">Showing students within</span>
+            <span className="font-semibold text-foreground">{selectedLocationMaxMiles} miles</span>
+          </div>
         </div>
 
         {/* LOCATION SELECTOR */}
@@ -796,7 +762,7 @@ useEffect(() => {
               ))}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Switch locations to see match scores and zip filtering based on each location's shifts and zip code.
+              Switch locations to see match scores and distance filtering based on each location.
             </p>
           </div>
         )}
@@ -810,7 +776,7 @@ useEffect(() => {
               <div>
                 <h3 className="font-semibold text-foreground">Smart Matching</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Filter by GPA, age, availability, and location. Sort by best match, GPA, or age.
+                  Filter by GPA, age, availability, and distance. Sort by best match, GPA, or age.
                 </p>
               </div>
             </div>
@@ -832,7 +798,6 @@ useEffect(() => {
                   minGpa={minGpa} setMinGpa={setMinGpa}
                   selectedDays={selectedDays} setSelectedDays={setSelectedDays}
                   verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}
-                  areaRadius={areaRadius} employerZip={employerZip}
                   ageMode={ageMode} setAgeMode={setAgeMode}
                   ageMin={ageMin} setAgeMin={setAgeMin}
                   ageMax={ageMax} setAgeMax={setAgeMax}
@@ -840,6 +805,7 @@ useEffect(() => {
                   daysOfWeek={daysOfWeek}
                   activeFiltersCount={activeFiltersCount}
                   clearFilters={clearFilters}
+                  selectedLocationMaxMiles={selectedLocationMaxMiles}
                 />
               </CardContent>
             </Card>
@@ -877,7 +843,6 @@ useEffect(() => {
                       minGpa={minGpa} setMinGpa={setMinGpa}
                       selectedDays={selectedDays} setSelectedDays={setSelectedDays}
                       verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}
-                      areaRadius={areaRadius} employerZip={employerZip}
                       ageMode={ageMode} setAgeMode={setAgeMode}
                       ageMin={ageMin} setAgeMin={setAgeMin}
                       ageMax={ageMax} setAgeMax={setAgeMax}
@@ -885,6 +850,7 @@ useEffect(() => {
                       daysOfWeek={daysOfWeek}
                       activeFiltersCount={activeFiltersCount}
                       clearFilters={clearFilters}
+                      selectedLocationMaxMiles={selectedLocationMaxMiles}
                     />
                   </div>
                 </SheetContent>
@@ -929,12 +895,6 @@ useEffect(() => {
                     <button onClick={() => setSelectedDays([])}><X className="h-3 w-3" /></button>
                   </Badge>
                 )}
-                {verifiedOnly && (
-                  <Badge variant="secondary" className="gap-1">
-                    Verified only
-                    <button onClick={() => setVerifiedOnly(false)}><X className="h-3 w-3" /></button>
-                  </Badge>
-                )}
               </div>
             )}
 
@@ -954,9 +914,8 @@ useEffect(() => {
 
             {/* CANDIDATE CARDS */}
             <div className="grid gap-4 sm:grid-cols-2">
-            {(groupedCandidates[activeStatus] ?? []).map((candidate) => {
-
-  const dist = distances[candidate.user_id]
+              {(groupedCandidates[activeStatus] ?? []).map((candidate) => {
+                const dist = distances[candidate.user_id]
                 return (
                   <Card key={candidate.id} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer">
                     <CardContent className="p-6">
@@ -1050,7 +1009,7 @@ useEffect(() => {
               <Card className="border-dashed">
                 <CardContent className="py-12 text-center">
                   <p className="font-medium">No matches found</p>
-                  <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters and double check your Area Code</p>
+                  <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters or increasing the hiring distance on your location.</p>
                   <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear filters</Button>
                 </CardContent>
               </Card>

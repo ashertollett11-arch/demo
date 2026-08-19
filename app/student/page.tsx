@@ -133,7 +133,6 @@ export default function StudentDashboard() {
 
       if (studentError || !studentData) return
 
-      const studentZip = studentData?.zip_code ?? ""
 
       const { data: locations, error: locError } = await supabase
         .from("locations")
@@ -141,8 +140,7 @@ export default function StudentDashboard() {
           id,
           name,
           address,
-          zip_code,
-          zip_match_precision,
+          max_distance_miles,
           available_shifts,
           shift_preference,
           hourly_pay,
@@ -179,11 +177,9 @@ export default function StudentDashboard() {
         
         const scoredJobs = (locations || [])
         .filter((loc: any) => {
-          const locZip = loc.zip_code ?? ""
-          const precision = loc.zip_match_precision ?? 5
-          if (!locZip || !studentZip) return false
-          if (precision === 5) return locZip === studentZip
-          return locZip.slice(0, 3) === studentZip.slice(0, 3)
+          const distMeters = distanceMap[loc.id]
+          if (!distMeters) return false
+          return distMeters <= (loc.max_distance_miles ?? 10) * 1609.34
         })
         .map((loc: any) => {
           let shifts = loc.available_shifts ?? []
@@ -493,8 +489,8 @@ if (pageLoading) {
                   {matchedJobsWithScore.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground">
                       <MapPin className="mx-auto h-6 w-6 mb-2 opacity-60" />
-                      <p className="text-sm font-medium">No employers in your zip range yet</p>
-                      <p className="text-xs mt-1">Check back soon — new jobs are added regularly.</p>
+                      <p className="text-sm font-medium">No employers near you yet</p>
+                                            <p className="text-xs mt-1">Check back soon — new jobs are added regularly.</p>
                     </div>
                   ) : (
                     matchedJobsWithScore.map(job => (

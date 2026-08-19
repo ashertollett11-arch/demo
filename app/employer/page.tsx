@@ -34,8 +34,7 @@ export default function EmployerDashboard() {
   const [statuses, setStatuses] = useState<any[]>([])
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
-  const [employerZip, setEmployerZip] = useState<string | null>(null)
-  const [zipMatchPrecision, setZipMatchPrecision] = useState<number>(5)
+  const [selectedLocationMaxMiles, setSelectedLocationMaxMiles] = useState<number>(10)
   const [pageLoading, setPageLoading] = useState(true)
   // MULTI-LOCATION
   const [allLocations, setAllLocations] = useState<any[]>([])
@@ -50,26 +49,21 @@ export default function EmployerDashboard() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) { router.replace("/login"); return }
-
         const { data: roleData } = await supabase
           .from("users")
           .select("role")
           .eq("id", user.id)
           .maybeSingle()
-
         if (!roleData?.role) { router.replace("/choose-role"); return }
         if (roleData.role !== "employer") { router.replace("/login"); return }
-
         const { data: profile } = await supabase
           .from("profiles")
           .select("subscription_status, profile_complete")
           .eq("id", user.id)
           .maybeSingle()
-
         const isSubscribed =
           profile?.subscription_status === "active" ||
           profile?.subscription_status === "freeactive"
-
         if (!isSubscribed) {
           if (!profile?.profile_complete) {
             router.replace("/employer/profile?missing=true")
@@ -78,25 +72,20 @@ export default function EmployerDashboard() {
           }
           return
         }
-
         const { data: jobData } = await supabase
           .from("job")
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle()
-
         if (!jobData) { router.replace("/employer/profile?missing=true"); return }
-
         const { data: locs } = await supabase
           .from("locations")
           .select("id")
           .eq("employer_id", jobData.id)
-
         if (!locs || locs.length === 0) {
           router.replace("/employer/profile?missing=true")
           return
         }
-
         setUserId(user.id)
       } catch (err) {
         router.replace("/login")
@@ -174,7 +163,7 @@ export default function EmployerDashboard() {
       setPreferredJobs(jobData.preferred_jobs || [])
       const { data: locations } = await supabase
         .from("locations")
-        .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, zip_match_precision")
+        .select("id, name, available_shifts, shift_preference, preferred_jobs, max_distance_miles")
         .eq("employer_id", jobData.id)
         .order("created_at", { ascending: true })
       if (locations?.length) {
@@ -183,8 +172,7 @@ export default function EmployerDashboard() {
         const first = locations[0]
         setEmployerShifts(first.available_shifts ?? [])
         setShiftPreference(first.shift_preference ?? "flexible")
-        setEmployerZip(first.zip_code ?? null)
-        setZipMatchPrecision(first.zip_match_precision ?? 5)
+        setSelectedLocationMaxMiles(first.max_distance_miles ?? 10)
         if (first.preferred_jobs?.length > 0) setPreferredJobs(first.preferred_jobs)
         loadDistances(locations[0].id)
       }
@@ -198,8 +186,7 @@ export default function EmployerDashboard() {
     setSelectedLocationId(locationId)
     setEmployerShifts(loc.available_shifts ?? [])
     setShiftPreference(loc.shift_preference ?? "flexible")
-    setEmployerZip(loc.zip_code ?? null)
-    setZipMatchPrecision(loc.zip_match_precision ?? 5)
+    setSelectedLocationMaxMiles(loc.max_distance_miles ?? 10)
     if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
     loadDistances(locationId)
   }
@@ -235,15 +222,16 @@ export default function EmployerDashboard() {
     return () => { supabase.removeChannel(channel) }
   }, [userId])
 
-  // SEED STATUSES
+  // SEED STATUSES using distance filter
   useEffect(() => {
-    if (!userId || students.length === 0 || statuses.length > 0 || !employerZip) return
+    if (!userId || students.length === 0 || statuses.length > 0) return
     const seedStatuses = async () => {
       const rows = students
-        .filter((s) => s.profile_complete && s.zip_code)
+        .filter((s) => s.profile_complete)
         .filter((s) => {
-          if (zipMatchPrecision === 5) return s.zip_code === employerZip
-          return s.zip_code?.slice(0, 3) === employerZip?.slice(0, 3)
+          const distMeters = distances[s.user_id]
+          if (!distMeters) return false
+          return distMeters <= selectedLocationMaxMiles * 1609.34
         })
         .map((s) => ({ employer_id: userId, student_id: s.id, status: "new" }))
       if (rows.length === 0) return
@@ -257,7 +245,7 @@ export default function EmployerDashboard() {
       setStatuses(data || [])
     }
     seedStatuses()
-  }, [userId, students, statuses, employerZip, zipMatchPrecision])
+  }, [userId, students, statuses, distances, selectedLocationMaxMiles])
 
   // LOAD STATUSES
   useEffect(() => {
@@ -284,9 +272,9 @@ export default function EmployerDashboard() {
     )
     return students
       .filter((s) => {
-        if (!employerZip || !s.zip_code) return true
-        if (zipMatchPrecision === 5) return s.zip_code === employerZip
-        return s.zip_code.slice(0, 3) === employerZip.slice(0, 3)
+        const distMeters = distances[s.user_id]
+        if (!distMeters) return false
+        return distMeters <= selectedLocationMaxMiles * 1609.34
       })
       .map((s) => {
         const score = calculateEmployerMatch(
@@ -300,7 +288,7 @@ export default function EmployerDashboard() {
         )
         return { ...s, matchScore: Math.round(score) }
       })
-  }, [students, employerShifts, shiftPreference, preferredJobs, employerZip, zipMatchPrecision, distances, recommendations])
+  }, [students, employerShifts, shiftPreference, preferredJobs, selectedLocationMaxMiles, distances, recommendations])
 
   const greatCandidates = candidatesWithScores.filter((c) => c.matchScore >= 75).length
   const perfectMatches = candidatesWithScores.filter((c) => c.matchScore === 100).length

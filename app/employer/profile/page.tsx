@@ -20,7 +20,7 @@ type Location = {
   name: string
   address: string
   zip_code: string
-  zip_match_precision: number
+  max_distance_miles: number
   hourly_pay: number | null
   has_tips: boolean
   shift_preference: string
@@ -485,12 +485,8 @@ export default function EmployerProfilePage() {
                     <p className="text-sm font-medium text-foreground truncate">{loc.name}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <p className="text-xs text-muted-foreground truncate">{loc.address} · {loc.zip_code}</p>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
-                        loc.zip_match_precision === 5
-                          ? "bg-blue-50 text-blue-700 border-blue-200"
-                          : "bg-purple-50 text-purple-700 border-purple-200"
-                      }`}>
-                        {loc.zip_match_precision === 5 ? "Local" : "Regional"}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200">
+                        {loc.max_distance_miles ?? 25} mi radius
                       </span>
                       {loc.hourly_pay && (
                         <span className="text-xs font-medium text-primary">${loc.hourly_pay}/hr{loc.has_tips ? " + tips" : ""}</span>
