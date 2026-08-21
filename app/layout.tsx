@@ -4,7 +4,6 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { Toaster } from "sonner"
-import IOSInstallBanner from "@/components/IOSInstallBanner";
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
@@ -55,7 +54,6 @@ export default function RootLayout({
       <body className="font-sans antialiased">
   <Providers>
     {/* 👇 ADD IT RIGHT HERE (GLOBAL BANNER) */}
-    <IOSInstallBanner />
 
     {children}
   </Providers>
