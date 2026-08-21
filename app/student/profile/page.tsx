@@ -193,14 +193,13 @@ export default function ProfilePage() {
 
     if (error) { toast.error(error.message); return false }
 
-    // Recalculate distances in the background since address may have changed
-    fetch("/api/calculate-distances", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ studentUserId: user.id }),
-    }).catch(() => {}) // fire and forget
-
-    return true
+// Wait for distances to recalculate before navigating
+await fetch("/api/calculate-distances", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ studentUserId: user.id }),
+}).catch(() => {})
+return true
   }
 
   // SEND RECOMMENDATION REQUEST

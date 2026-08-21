@@ -170,15 +170,14 @@ export default function StudentOnboarding() {
       return
     }
 
-    // Calculate distances to all employer locations in the background
-    fetch("/api/calculate-distances", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ studentUserId: user.id }),
-    }).catch(() => {}) // fire and forget — don't block the user
-
-    toast.success("Welcome to SimplyApply! You can always change your information in the top right.")
-    router.push("/matching/student")
+// Wait for distances before navigating so matching page has fresh data
+await fetch("/api/calculate-distances", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ studentUserId: user.id }),
+}).catch(() => {})
+toast.success("Welcome to SimplyApply! You can always change your information in the top right.")
+router.push("/matching/student")
   }
 
   // NEXT — save progress first then advance
