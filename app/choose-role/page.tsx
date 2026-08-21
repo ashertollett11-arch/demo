@@ -20,31 +20,22 @@ export default function ChooseRolePage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.replace("/login"); return }
-  
+    const handleUserRedirect = async (userId: string) => {
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
-        .eq("id", user.id)
+        .eq("id", userId)
         .maybeSingle()
   
       if (!roleData?.role) return // no role yet, stay on this page
   
-      // Already has a role — redirect to their dashboard
       if (roleData.role === "student") {
         const { data: profile } = await supabase
           .from("Students")
           .select("profile_complete")
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .maybeSingle()
-  
-        if (!profile?.profile_complete) {
-          router.replace("/student/onboarding")
-        } else {
-          router.replace("/student")
-        }
+        router.replace(profile?.profile_complete ? "/student" : "/student/onboarding")
         return
       }
   
@@ -52,16 +43,28 @@ export default function ChooseRolePage() {
         const { data: profile } = await supabase
           .from("profiles")
           .select("profile_complete")
-          .eq("id", user.id)
+          .eq("id", userId)
           .maybeSingle()
-        if (!profile?.profile_complete) {
-          router.replace("/employer/onboarding")
-        } else {
-          router.replace("/employer")
-        }
+        router.replace(profile?.profile_complete ? "/employer" : "/employer/onboarding")
         return
       }
     }
+  
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        handleUserRedirect(session.user.id)
+        return
+      }
+      // No session yet — listen for it (handles mobile email confirmation links)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+          handleUserRedirect(session.user.id)
+        }
+      })
+      setTimeout(() => subscription.unsubscribe(), 10000)
+    }
+  
     checkAuth()
   }, [router])
 
