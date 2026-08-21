@@ -16,7 +16,7 @@ export default function StudentOnboarding() {
   const [saving, setSaving] = useState(false)
   const [autoSaving, setAutoSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
-
+  const [finished, setFinished] = useState(false)
   // FORM STATE
   const [name, setName] = useState("")
   const [age, setAge] = useState("")
@@ -97,6 +97,7 @@ export default function StudentOnboarding() {
   useEffect(() => {
     if (!name && !age && !address && !zipCode && !school && !gpa && !phone) return
     const timer = setTimeout(async () => {
+      if (finished) return
       setAutoSaving(true)
       await saveProgress()
       setAutoSaving(false)
@@ -128,6 +129,7 @@ export default function StudentOnboarding() {
   const handleFinish = async () => {
     if (!canProceed()) return
     setSaving(true)
+    setFinished(true) // prevent autosave from overwriting profile_complete
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSaving(false); return }
 
