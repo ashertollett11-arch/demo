@@ -16,16 +16,18 @@ import {
 } from "@/components/ui/dialog"
 
 type Location = {
-    id: string
-    name: string
-    address: string
-    zip_code: string
-    max_distance_miles: number
-    hourly_pay: number | null
-    has_tips: boolean
-    shift_preference: string
-    available_shifts: any[]
-  }
+  id: string
+  employer_id: string
+  name: string
+  address: string
+  zip_code: string
+  max_distance_miles: number
+  available_shifts: any[]
+  shift_preference: string
+  hourly_pay: number | null
+  has_tips: boolean
+  preferred_jobs: string[]
+}
 
 const DEFAULT_SHIFTS = [
   { day: "Monday", start: "9:00 AM", end: "5:00 PM", active: true },
@@ -181,13 +183,13 @@ export default function LocationsPage() {
     setSaving(false)
 
     if (savedLocationId) {
-      fetch("/api/calculate-distances", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locationId: savedLocationId }),
-      }).catch(() => {})
+        await fetch("/api/calculate-distances", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ locationId: savedLocationId }),
+        }).catch(() => {})
+      }
     }
-  }
 
   const confirmDelete = (id: string) => {
     setDeletingId(id)
@@ -385,10 +387,12 @@ export default function LocationsPage() {
                 </div>
               </div>
               <div className="flex gap-2 pt-2">
-                <Button onClick={saveLocation} disabled={saving} className="flex-1">
+                <Button onClick={async () => { await saveLocation(); }} disabled={saving} className="flex-1">
                   {saving ? "Saving..." : editingId ? "Update Location" : "Add Location"}
                 </Button>
-                <Button variant="outline" onClick={() => { setShowForm(false); resetForm() }}>Cancel</Button>
+                <Button onClick={async () => { await saveLocation(); router.push("/employer") }} disabled={saving} className="flex-1" variant="outline">
+                  {saving ? "Saving..." : "Save & Go to Dashboard"}
+                </Button>
               </div>
             </CardContent>
           </Card>

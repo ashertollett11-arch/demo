@@ -161,16 +161,17 @@ export default function EmployerOnboarding() {
     }
 
     // Calculate distances in background
-    if (locData?.id) {
-      fetch("/api/calculate-distances", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locationId: locData.id }),
-      }).catch(() => {})
-    }
+   // Calculate distances before moving on
+   if (locData?.id) {
+    await fetch("/api/calculate-distances", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locationId: locData.id }),
+    }).catch(() => {})
+  }
 
-    setSaving(false)
-    setStep(3)
+  setSaving(false)
+  setStep(3)
   }
 
   const steps = [
