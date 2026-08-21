@@ -49,7 +49,16 @@ export default function ChooseRolePage() {
       }
   
       if (roleData.role === "employer") {
-        router.replace("/employer")
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("profile_complete")
+          .eq("id", user.id)
+          .maybeSingle()
+        if (!profile?.profile_complete) {
+          router.replace("/employer/onboarding")
+        } else {
+          router.replace("/employer")
+        }
         return
       }
     }
@@ -82,7 +91,7 @@ export default function ChooseRolePage() {
     }
   
     if (role === "employer") {
-      router.push("/employer/profile")
+      router.push("/employer/onboarding")
     }
   }
 

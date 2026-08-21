@@ -85,7 +85,18 @@ export default function EmployerProfilePage() {
     
         if (!roleData?.role) { router.replace("/choose-role"); return }
         if (roleData.role !== "employer") { router.replace("/login"); return }
-    
+
+        // Redirect incomplete employers to onboarding
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("profile_complete")
+          .eq("id", user.id)
+          .maybeSingle()
+        if (!profile?.profile_complete) {
+          router.replace("/employer/onboarding")
+          return
+        }
+  
         setUserId(user.id)
       }
       checkAuth()
