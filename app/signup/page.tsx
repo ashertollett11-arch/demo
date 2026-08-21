@@ -46,45 +46,12 @@ export default function SignupPage() {
     checkExistingSession()
     return () => { mounted = false }
   }, [])
-
   const signUp = async () => {
     if (!email || !password) {
       toast.error("Missing email or password", { description: "Please fill out both fields." })
       return
     }
     setLoading(true)
-
-    // Try signing in first to detect existing accounts
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    })
-
-    // If sign in succeeds, account already exists with correct password
-    if (!signInError) {
-      setLoading(false)
-      toast.error("Account already exists", {
-        description: "You already have an account. Redirecting to login...",
-      })
-      setTimeout(() => router.push("/login"), 2000)
-      return
-    }
-
-    // If invalid credentials error, account exists but wrong password
-    const signInMsg = signInError.message.toLowerCase()
-    if (signInMsg.includes("invalid") || signInMsg.includes("credentials")) {
-      setLoading(false)
-      toast.error("Account already exists", {
-        description: "An account with this email already exists. Try logging in instead.",
-        action: {
-          label: "Log in",
-          onClick: () => router.push("/login"),
-        },
-      })
-      return
-    }
-
-    // No existing account — proceed with signup
     const { error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
@@ -92,19 +59,21 @@ export default function SignupPage() {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
-
     setLoading(false)
-
     if (error) {
       const message = error.message.toLowerCase()
-      if (message.includes("password") && message.includes("short")) {
+      if (message.includes("already registered") || message.includes("already exists")) {
+        toast.error("Account already exists", {
+          description: "An account with this email already exists. Try logging in instead.",
+          action: { label: "Log in", onClick: () => router.push("/login") },
+        })
+      } else if (message.includes("password") && message.includes("short")) {
         toast.error("Password too short", { description: "Password must be at least 6 characters." })
       } else {
         toast.error("Signup failed", { description: error.message })
       }
       return
     }
-
     setDone(true)
   }
 
