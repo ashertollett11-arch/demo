@@ -648,10 +648,17 @@ export default function MatchingPage() {
                           </p>
                         </div>
                         <div className="flex flex-col gap-1.5 shrink-0">
-                          <button
-                            onClick={() => {
-                              const studentName = n.message?.split(" applied to ")[0]?.trim()
-                              if (studentName) { setSearchQuery(studentName); setActiveStatus("new") }
+                        <button
+                            onClick={async () => {
+                              dismissNotification(n.id)
+                              if (n.student_user_id) {
+                                const { data } = await supabase
+                                  .from("Students")
+                                  .select("id")
+                                  .eq("user_id", n.student_user_id)
+                                  .maybeSingle()
+                                if (data?.id) router.push(`/matching/employer/${data.id}`)
+                              }
                             }}
                             className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
                           >

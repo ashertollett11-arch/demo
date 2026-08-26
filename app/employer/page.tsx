@@ -467,11 +467,20 @@ export default function EmployerDashboard() {
                     <span>{n.message}</span>
                     <div className="flex items-center gap-2">
                       {studentName && (
-                        <Button size="sm" variant="outline"
-                          onClick={() => { window.location.href = `/matching/employer?search=${encodeURIComponent(studentName)}` }}
-                        >
-                          View Profile
-                        </Button>
+                <Button size="sm" variant="outline"
+                onClick={async () => {
+                  if (n.student_user_id) {
+                    const { data } = await supabase
+                      .from("Students")
+                      .select("id")
+                      .eq("user_id", n.student_user_id)
+                      .maybeSingle()
+                    if (data?.id) window.location.href = `/matching/employer/${data.id}`
+                  }
+                }}
+              >
+                View Profile
+              </Button>
                       )}
                       <button onClick={() => dismissNotification(n.id)} className="text-muted-foreground">✕</button>
                     </div>
