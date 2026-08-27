@@ -217,65 +217,52 @@ const [hasRecommendation, setHasRecommendation] = useState(false)
       setApplying(false)
       return
     }
-
     const { data: studentData } = await supabase
-      .from("Students")
-      .select("name")
-      .eq("user_id", studentId)
-      .single()
-
-    const studentName = studentData?.name || "A student"
-    const employerId = job.employer_user_id
-
-    if (!employerId) {
-      toast.error("Could not find employer.")
-      setApplying(false)
-      return
-    }
-
-    await supabase
-      .from("notifications")
-      .insert({
-        employer_id: employerId,
-        student_user_id: studentId,
-        type: "application",
-        title: "New Applicant",
-        message: `${studentName} applied to ${job.title} — ${job.company}`,
-        location_id: job.id,
-        read: false,
-      })
-
-// Send email to employer
-const { data: employerProfile } = await supabase
-.from("profiles")
-.select("email_notifications")
-.eq("id", employerId)
-.maybeSingle()
-
-const { data: employerJobData } = await supabase
-.from("job")
-.select("email")
-.eq("user_id", employerId)
-.single()
-
-if (employerJobData?.email) {
-fetch("/api/send-application-email", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    employerUserId: employerId,
-    employerEmail: employerJobData.email,
-    studentName,
-    studentId,
-    locationName: job.title,
-    companyName: job.company,
-  }),
-}).catch(() => {})
-}
-
-toast.success(`Applied to ${job.title} at ${job.company}!`)
-setHasApplied(true)
-setApplying(false)
+    .from("Students")
+    .select("name, id")
+    .eq("user_id", studentId)
+    .single()
+  const studentName = studentData?.name || "A student"
+  const studentDbId = studentData?.id
+  const employerId = job.employer_user_id
+  if (!employerId) {
+    toast.error("Could not find employer.")
+    setApplying(false)
+    return
+  }
+  await supabase
+    .from("notifications")
+    .insert({
+      employer_id: employerId,
+      student_user_id: studentId,
+      type: "application",
+      title: "New Applicant",
+      message: `${studentName} applied to ${job.title} — ${job.company}`,
+      location_id: job.id,
+      read: false,
+    })
+  const { data: employerJobData } = await supabase
+    .from("job")
+    .select("email")
+    .eq("user_id", employerId)
+    .single()
+  if (employerJobData?.email && studentDbId) {
+    fetch("/api/send-application-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        employerUserId: employerId,
+        employerEmail: employerJobData.email,
+        studentName,
+        studentId: studentDbId,
+        locationName: job.title,
+        companyName: job.company,
+      }),
+    }).catch(() => {})
+  }
+  toast.success(`Applied to ${job.title} at ${job.company}!`)
+  setHasApplied(true)
+  setApplying(false)
   }
 
   if (loading) {
