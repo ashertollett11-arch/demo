@@ -1,6 +1,6 @@
 "use client"
 import { toast } from "sonner"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, CheckCircle2, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
@@ -56,7 +56,6 @@ export default function LoginPage() {
       password,
     })
     setLoading(false)
-
     if (error) {
       const message = error.message.toLowerCase()
       if (message.includes("invalid login credentials") || message.includes("invalid credentials")) {
@@ -70,16 +69,13 @@ export default function LoginPage() {
       }
       return
     }
-
     const user = data.user
     if (!user) return
-
     const { data: roleData, error: roleError } = await supabase
       .from("users")
       .select("role")
       .eq("id", user.id)
       .single()
-
     if (roleError || !roleData?.role) { router.push("/choose-role"); return }
     if (roleData.role === "student") {
       router.push(isMobileDevice() ? "/matching/student" : "/student")
@@ -111,20 +107,16 @@ export default function LoginPage() {
           Back
         </Button>
       </div>
-
       {/* BACKGROUND */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
-
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12">
         <div className="w-full flex justify-center">
           <Card className="w-full max-w-md border-border bg-card/95 shadow-2xl backdrop-blur">
             <CardContent className="p-10">
-
               <div className="mb-8 text-center">
                 <h1 className="text-3xl font-bold text-foreground">Welcome back</h1>
                 <p className="mt-2 text-muted-foreground">Log in to your SimplyApply account.</p>
               </div>
-
               {/* EMAIL */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Email</label>
@@ -136,7 +128,6 @@ export default function LoginPage() {
                   onKeyDown={(e) => { if (e.key === "Enter") signIn() }}
                 />
               </div>
-
               {/* PASSWORD */}
               <div className="mt-5 space-y-2">
                 <label className="text-sm font-medium text-foreground">Password</label>
@@ -149,7 +140,6 @@ export default function LoginPage() {
                   onKeyDown={(e) => { if (e.key === "Enter") signIn() }}
                 />
               </div>
-
               {/* LOGIN BUTTON */}
               <Button
                 className="mt-6 h-14 w-full rounded-xl text-lg font-semibold"
@@ -159,7 +149,6 @@ export default function LoginPage() {
                 {loading ? "Logging in..." : "Log In"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-
               {/* SWITCH TO SIGNUP */}
               <p className="mt-4 text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}
@@ -167,7 +156,6 @@ export default function LoginPage() {
                   Sign up
                 </Link>
               </p>
-
               {/* NOT WORKING */}
               <div className="mt-6 border-t border-border pt-5">
                 <details className="group">
@@ -191,17 +179,27 @@ export default function LoginPage() {
                   </div>
                 </details>
               </div>
-
               {/* FOOTER */}
               <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 Secure authentication powered by Supabase
               </div>
-
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
