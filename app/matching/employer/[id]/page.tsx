@@ -40,8 +40,7 @@ export default function StudentPage() {
       setLoading(true)
       const { data: authData } = await supabase.auth.getUser()
       const userId = authData?.user?.id
-      if (!userId) { router.replace("/login"); return }
-
+      if (!userId) { router.replace(`/login?redirect=/matching/employer/${studentId}`); return }
       const { data: roleData } = await supabase
         .from("users")
         .select("role")
