@@ -25,7 +25,7 @@ export default function RecommendPage() {
 
   useEffect(() => {
     const load = async () => {
-      const { data, error } = await supabase
+        const { data, error } = await supabase
         .from("recommendations")
         .select(`
           id,
@@ -35,8 +35,7 @@ export default function RecommendPage() {
           student_user_id
         `)
         .eq("token", token)
-        .single()
-
+        .maybeSingle()
       if (error || !data) { setLoading(false); return }
 
       if (data.submitted) {

@@ -245,9 +245,37 @@ const [hasRecommendation, setHasRecommendation] = useState(false)
         read: false,
       })
 
-    toast.success(`Applied to ${job.title} at ${job.company}!`)
-    setHasApplied(true)
-    setApplying(false)
+// Send email to employer
+const { data: employerProfile } = await supabase
+.from("profiles")
+.select("email_notifications")
+.eq("id", employerId)
+.maybeSingle()
+
+const { data: employerJobData } = await supabase
+.from("job")
+.select("email")
+.eq("user_id", employerId)
+.single()
+
+if (employerJobData?.email) {
+fetch("/api/send-application-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    employerUserId: employerId,
+    employerEmail: employerJobData.email,
+    studentName,
+    studentId,
+    locationName: job.title,
+    companyName: job.company,
+  }),
+}).catch(() => {})
+}
+
+toast.success(`Applied to ${job.title} at ${job.company}!`)
+setHasApplied(true)
+setApplying(false)
   }
 
   if (loading) {

@@ -650,7 +650,6 @@ export default function MatchingPage() {
                         <div className="flex flex-col gap-1.5 shrink-0">
                         <button
                             onClick={async () => {
-                              dismissNotification(n.id)
                               if (n.student_user_id) {
                                 const { data } = await supabase
                                   .from("Students")

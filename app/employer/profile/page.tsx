@@ -28,6 +28,7 @@ type Location = {
 }
 
 export default function EmployerProfilePage() {
+  const [emailNotifications, setEmailNotifications] = useState(true)
   const router = useRouter()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
@@ -177,9 +178,16 @@ export default function EmployerProfilePage() {
         setLoadingLocations(false)
       }
 
-      setLoading(false)
-    }
-    loadEmployer()
+      const { data: profileData } = await supabase
+      .from("profiles")
+      .select("email_notifications")
+      .eq("id", user.id)
+      .maybeSingle()
+    setEmailNotifications(profileData?.email_notifications !== false)
+
+    setLoading(false)
+  }
+  loadEmployer()
   }, [])
 
   const validateProfile = () => {
@@ -514,6 +522,28 @@ export default function EmployerProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      <div className="flex items-center justify-between rounded-lg border px-3 py-2.5 mt-2">
+  <div>
+    <p className="text-sm font-medium text-foreground">Application Email Notifications</p>
+    <p className="text-xs text-muted-foreground">Receive an email when a student applies to your listing</p>
+  </div>
+  <button
+    type="button"
+    onClick={async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const newVal = !emailNotifications
+      setEmailNotifications(newVal)
+      await supabase.from("profiles").update({ email_notifications: newVal }).eq("id", user.id)
+      toast.success(newVal ? "Email notifications enabled" : "Email notifications disabled")
+    }}
+    className={`px-4 py-1 text-xs rounded border font-semibold transition-all min-w-[60px] text-center ${emailNotifications ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-600 border-gray-200"}`}
+  >
+    {emailNotifications ? "On" : "Off"}
+  </button>
+</div>
+
 
       {/* SWITCH ROLE */}
       <Card className="border-red-100 bg-red-50/30">
