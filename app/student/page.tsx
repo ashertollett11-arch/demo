@@ -50,6 +50,8 @@ export default function StudentDashboard() {
   const [gpa, setGpa] = useState<number | null>(null)
   const [hasRecommendation, setHasRecommendation] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
+  const [jobsLoaded, setJobsLoaded] = useState(false)
+  const [studentLoaded, setStudentLoaded] = useState(false)
   const [matchedJobsWithScore, setMatchedJobsWithScore] = useState<(Job & { matchScore: number })[]>([])
 
   const greatMatches = matchedJobsWithScore.filter(job => job.matchScore >= 65).length
@@ -118,10 +120,11 @@ export default function StudentDashboard() {
             matchScore: Math.round(matchScore),
           }
         })
-      scoredJobs.sort((a, b) => b.matchScore - a.matchScore)
-      setMatchedJobsWithScore(scoredJobs)
-    }
-    fetchJobs()
+        scoredJobs.sort((a, b) => b.matchScore - a.matchScore)
+        setMatchedJobsWithScore(scoredJobs)
+        setJobsLoaded(true)
+      }
+      fetchJobs()
   }, [])
 
   useEffect(() => {
@@ -137,7 +140,7 @@ export default function StudentDashboard() {
       setName(studentData?.name || "")
       const { data: rec } = await supabase.from("recommendations").select("id").eq("student_user_id", user.id).eq("submitted", true).maybeSingle()
       setHasRecommendation(!!rec)
-      setPageLoading(false)
+      setStudentLoaded(true)
     }
     fetchStudent()
   }, [])
@@ -151,13 +154,15 @@ export default function StudentDashboard() {
     }
     loadStudentNotifications()
   }, [])
-
+  useEffect(() => {
+    if (jobsLoaded && studentLoaded) setPageLoading(false)
+  }, [jobsLoaded, studentLoaded])
   if (pageLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-muted-foreground text-sm">Loading your dashboard...</p>
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+                  <p className="text-muted-foreground text-sm">Loading your dashboard...</p>
         </div>
       </div>
     )

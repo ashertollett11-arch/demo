@@ -49,6 +49,8 @@ interface Job {
 export default function MatchesPage() {
   const router = useRouter()
   const [pageLoading, setPageLoading] = useState(true)
+  const [jobsLoaded, setJobsLoaded] = useState(false)
+  const [nameLoaded, setNameLoaded] = useState(false)
   const [matchedJobs, setMatchedJobs] = useState<Job[]>([])
   const [filter, setFilter] = useState<"pay" | "tips" | "matchScore" | "distance">("matchScore")
   const [name, setName] = useState("")
@@ -114,9 +116,10 @@ export default function MatchesPage() {
             distanceMeters: dist?.distance_meters ?? undefined,
           }
         })
-      setMatchedJobs(updated)
-    }
-    fetchJobs()
+        setMatchedJobs(updated)
+        setJobsLoaded(true)
+      }
+      fetchJobs()
   }, [])
 
   useEffect(() => {
@@ -124,9 +127,9 @@ export default function MatchesPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       const { data, error } = await supabase.from("Students").select("name").eq("user_id", user.id).single()
-      if (error) { setPageLoading(false); return }
-      setName(data?.name || "")
-      setPageLoading(false)
+      if (error) { setNameLoaded(true); return }
+            setName(data?.name || "")
+      setNameLoaded(true)
     }
     fetchStudentName()
   }, [])
@@ -140,6 +143,10 @@ export default function MatchesPage() {
     }
     loadStudentNotifications()
   }, [])
+
+useEffect(() => {
+    if (jobsLoaded && nameLoaded) setPageLoading(false)
+  }, [jobsLoaded, nameLoaded])
 
   const parsePay = (p: string) => parseFloat(p.replace(/[^0-9.]/g, "")) || 0
   const sortedJobs = [...matchedJobs].sort((a, b) => {
@@ -155,8 +162,8 @@ export default function MatchesPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-muted-foreground text-sm">Finding jobs near you...</p>
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+                  <p className="text-muted-foreground text-sm">Finding jobs near you...</p>
         </div>
       </div>
     )
