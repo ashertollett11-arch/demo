@@ -228,6 +228,12 @@ export default function StudentDashboard() {
             {/* RIGHT */}
             <div className="flex items-center gap-2">
               {/* BELL */}
+              <Button asChild variant="ghost" size="icon" className="h-9 w-9">
+                <Link href="/student/activity">
+                  <Briefcase className="h-4 w-4" />
+                </Link>
+              </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative h-9 w-9">
@@ -323,11 +329,19 @@ export default function StudentDashboard() {
                   : "No jobs near you yet — check back soon"}
               </p>
             </div>
-            <Button asChild size="sm" className="hidden sm:flex gap-1.5">
+            <div className="hidden sm:flex items-center gap-2">
+            <Button asChild size="sm" variant="outline" className="gap-1.5">
+              <Link href="/student/activity">
+                <Bell className="h-3.5 w-3.5" />
+                Activity
+              </Link>
+            </Button>
+            <Button asChild size="sm" className="gap-1.5">
               <Link href="/matching/student">
                 Browse Jobs <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </Button>
+          </div>
           </div>
 
           {/* STAT CARDS */}
@@ -501,6 +515,13 @@ export default function StudentDashboard() {
                     <span className="text-sm text-foreground">Edit my profile</span>
                     <ChevronRight className="h-4 w-4 text-muted-foreground/40 ml-auto" />
                   </Link>
+                
+                  <Link href="/student/activity" className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 hover:bg-secondary/30 transition-colors">
+  <Bell className="h-4 w-4 text-muted-foreground" />
+  <span className="text-sm text-foreground">Employer activity</span>
+  <ChevronRight className="h-4 w-4 text-muted-foreground/40 ml-auto" />
+</Link>
+
                 </div>
               </div>
 

@@ -315,6 +315,16 @@ export default function StudentPage() {
         </CardHeader>
 
         <CardContent className="space-y-4">
+          {/* NOT LOOKING BANNER */}
+          {student.is_looking === false && (
+            <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 flex items-start gap-3">
+              <span className="text-yellow-500 text-lg">⚠️</span>
+              <div>
+                <p className="text-sm font-semibold text-yellow-800">This student is no longer looking for work</p>
+                <p className="text-xs text-yellow-700 mt-0.5">They've updated their status to unavailable. You can still view their profile but they may not respond.</p>
+              </div>
+            </div>
+          )}
           {/* BASIC INFO */}
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">

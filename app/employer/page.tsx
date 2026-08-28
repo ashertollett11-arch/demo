@@ -291,11 +291,14 @@ export default function EmployerDashboard() {
       })
   }, [students, employerShifts, shiftPreference, preferredJobs, selectedLocationMaxMiles, distances, recommendations])
 
-  const greatCandidates = candidatesWithScores.filter((c) => c.matchScore >= 75).length
-  const perfectMatches = candidatesWithScores.filter((c) => c.matchScore === 100).length
-  const topMatch = Math.max(0, ...candidatesWithScores.map((c) => c.matchScore || 0))
-  const recentActivity = notifications.slice(0, 4)
+// Only count statuses for students who are currently visible (looking + within distance)
+const visibleStudentIds = new Set(candidatesWithScores.map((c) => c.id))
+const visibleStatuses = statuses.filter((s) => visibleStudentIds.has(s.student_id))
 
+const greatCandidates = candidatesWithScores.filter((c) => c.matchScore >= 75).length
+const perfectMatches = candidatesWithScores.filter((c) => c.matchScore === 100).length
+const topMatch = Math.max(0, ...candidatesWithScores.map((c) => c.matchScore || 0))
+const recentActivity = notifications.slice(0, 4)
   if (pageLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -421,20 +424,17 @@ export default function EmployerDashboard() {
             <Link href="/matching/employer?status=new">
               <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
                 <p className="text-sm text-muted-foreground">New</p>
-                <p className="mt-2 text-3xl font-bold">{statuses.filter((s) => s.status === "new").length}</p>
-              </div>
+                <p className="mt-2 text-3xl font-bold">{visibleStatuses.filter((s) => s.status === "new").length}</p>              </div>
             </Link>
             <Link href="/matching/employer?status=contacted">
               <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
                 <p className="text-sm text-muted-foreground">Contacted</p>
-                <p className="mt-2 text-3xl font-bold">{statuses.filter((s) => s.status === "contacted").length}</p>
-              </div>
+                <p className="mt-2 text-3xl font-bold">{visibleStatuses.filter((s) => s.status === "contacted").length}</p>              </div>
             </Link>
             <Link href="/matching/employer?status=hired">
               <div className="rounded-xl border p-4 cursor-pointer hover:bg-muted/40 transition">
                 <p className="text-sm text-muted-foreground">Hired</p>
-                <p className="mt-2 text-3xl font-bold">{statuses.filter((s) => s.status === "hired").length}</p>
-              </div>
+                <p className="mt-2 text-3xl font-bold">{visibleStatuses.filter((s) => s.status === "hired").length}</p>              </div>
             </Link>
           </CardContent>
         </Card>

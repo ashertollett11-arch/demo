@@ -444,7 +444,18 @@ export default function MatchesPage() {
             </div>
           </div>
         </div>
+{/* ACTIVITY LINK */}
+<div className="mb-4 flex justify-end">
+          <Button asChild variant="outline" size="sm" className="gap-2 rounded-xl">
+            <Link href="/student/activity">
+              <Briefcase className="h-4 w-4" />
+              Employer Activity
+            </Link>
+          </Button>
+        </div>
 
+        {/* FILTERS */}
+        <div className="mb-8 flex flex-wrap gap-3">
         {/* FILTERS */}
         <div className="mb-8 flex flex-wrap gap-3">
           <Button variant={filter === "matchScore" ? "default" : "outline"} onClick={() => setFilter("matchScore")} className="rounded-xl">

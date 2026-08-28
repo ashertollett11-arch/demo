@@ -410,7 +410,7 @@ export default function ProfilePage() {
                   : "bg-gray-100 text-gray-500 border-gray-200"
               }`}
             >
-              ✅ Available
+               Available
             </button>
             <button
               type="button"
@@ -421,7 +421,7 @@ export default function ProfilePage() {
                   : "bg-gray-100 text-gray-500 border-gray-200"
               }`}
             >
-              🚫 No Longer Looking
+               No Longer Looking
             </button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">

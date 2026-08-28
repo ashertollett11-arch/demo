@@ -24,7 +24,7 @@ const [hasRecommendation, setHasRecommendation] = useState(false)
   const [jobMatchScore, setJobMatchScore] = useState(0)
   const [distance, setDistance] = useState<{ distanceText: string; durationText: string } | null>(null)
   const [studentUserId, setStudentUserId] = useState<string | null>(null)
-
+  const [isLooking, setIsLooking] = useState(true)
   // AUTH CHECK
   useEffect(() => {
     const run = async () => {
@@ -62,17 +62,15 @@ const [hasRecommendation, setHasRecommendation] = useState(false)
       if (!user) return
 
       setStudentUserId(user.id)
-
       const { data, error } = await supabase
-        .from("Students")
-        .select("availability, shift_preference")
-        .eq("user_id", user.id)
-        .single()
-
-      if (error || !data) return
-      setAvailability(data.availability || [])
-      setStudentShiftPreference(data.shift_preference || "flexible")
-
+      .from("Students")
+      .select("availability, shift_preference, is_looking")
+      .eq("user_id", user.id)
+      .single()
+    if (error || !data) return
+    setAvailability(data.availability || [])
+    setStudentShiftPreference(data.shift_preference || "flexible")
+    setIsLooking(data.is_looking !== false)
       const { data: existing } = await supabase
         .from("location_applications")
         .select("id")
@@ -378,13 +376,23 @@ const [hasRecommendation, setHasRecommendation] = useState(false)
           </div>
 
           {/* APPLY BUTTON */}
-          <Button
-            className="w-full mt-4"
-            disabled={hasApplied || applying}
-            onClick={handleApply}
-          >
-            {applying ? "Applying..." : hasApplied ? "Already Applied ✓" : "Apply Now"}
-          </Button>
+          {!isLooking ? (
+            <div className="mt-4 rounded-xl border border-yellow-200 bg-yellow-50 p-4 text-center">
+              <p className="text-sm font-medium text-yellow-700">You've set your status to "No Longer Looking"</p>
+              <p className="text-xs text-yellow-600 mt-1">Update your profile status to Available to apply to jobs.</p>
+              <Button variant="outline" className="mt-3 border-yellow-300 text-yellow-700" onClick={() => router.push("/student/profile")}>
+                Update Profile
+              </Button>
+            </div>
+          ) : (
+            <Button
+              className="w-full mt-4"
+              disabled={hasApplied || applying}
+              onClick={handleApply}
+            >
+              {applying ? "Applying..." : hasApplied ? "Already Applied ✓" : "Apply Now"}
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>
