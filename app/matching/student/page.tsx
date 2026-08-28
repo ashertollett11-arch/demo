@@ -455,7 +455,6 @@ export default function MatchesPage() {
         </div>
 
         {/* FILTERS */}
-        <div className="mb-8 flex flex-wrap gap-3">
         {/* FILTERS */}
         <div className="mb-8 flex flex-wrap gap-3">
           <Button variant={filter === "matchScore" ? "default" : "outline"} onClick={() => setFilter("matchScore")} className="rounded-xl">
