@@ -220,7 +220,10 @@ export default function MatchingPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [employerId, setEmployerId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [statuses, setStatuses] = useState<any[]>([])
+  const [studentsLoaded, setStudentsLoaded] = useState(false)
+  const [distancesLoaded, setDistancesLoaded] = useState(false)
+  const [scoresLoaded, setScoresLoaded] = useState(false)
+    const [statuses, setStatuses] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [allLocations, setAllLocations] = useState<any[]>([])
@@ -307,7 +310,7 @@ export default function MatchingPage() {
       } catch {
         setStudents([])
       } finally {
-        setLoading(false)
+        setStudentsLoaded(true)
       }
     }
     loadStudents()
@@ -342,6 +345,7 @@ export default function MatchingPage() {
       }
     })
     setDistances(distMap)
+    setDistancesLoaded(true)
   }
 
   useEffect(() => {
@@ -488,8 +492,8 @@ export default function MatchingPage() {
       return { ...candidate, matchScore: Math.round(matchScore) }
     })
     setScoredCandidates(results)
+    setScoresLoaded(true)
   }, [students, employerShifts, shiftPreference, preferredJobs, distances, recommendations, activeShifts])
-
   useEffect(() => {
     if (statusParam === "new" || statusParam === "contacted" || statusParam === "hired") {
       setActiveStatus(statusParam)
@@ -576,7 +580,9 @@ export default function MatchingPage() {
     )
     if (firstAvailableTab) setActiveStatus(firstAvailableTab)
   }, [filteredCandidates, activeStatus, statusParam])
-
+  useEffect(() => {
+    if (studentsLoaded && distancesLoaded && scoresLoaded) setLoading(false)
+  }, [studentsLoaded, distancesLoaded, scoresLoaded])
   const clearFilters = () => {
     setMinGpa([1.0])
     setSelectedDays([])
@@ -593,6 +599,17 @@ export default function MatchingPage() {
     verifiedOnly,
     ageMode === "range" ? (ageMin > 14 || ageMax < 21) : specificAges.length > 0,
   ].filter(Boolean).length
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+          <p className="text-muted-foreground text-sm">Loading candidates...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -1022,12 +1039,7 @@ export default function MatchingPage() {
               })}
             </div>
 
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <p className="text-muted-foreground text-sm">Loading candidates...</p>
-              </div>
-            ) : students.length === 0 ? (
+            {students.length === 0 ? (
               <Card className="border-dashed"><CardContent className="py-12 text-center"><p className="font-medium">No students in database</p></CardContent></Card>
             ) : filteredCandidates.length === 0 ? (
               <Card className="border-dashed">

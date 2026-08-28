@@ -208,8 +208,13 @@ useEffect(() => {
                         <p className="text-sm leading-snug">{n.message}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{n.created_at ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Just now"}</p>
                       </div>
-                      <button onClick={async () => { setStudentNotifications(prev => prev.filter(x => x.id !== n.id)); await supabase.from("student_notifications").update({ read: true }).eq("id", n.id) }}
-                        className="text-xs text-muted-foreground hover:text-foreground shrink-0">Dismiss</button>
+                      <div className="flex flex-col gap-1.5 shrink-0">
+                        <Link href="/student/activity" className="text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+                          View
+                        </Link>
+                        <button onClick={async () => { setStudentNotifications(prev => prev.filter(x => x.id !== n.id)); await supabase.from("student_notifications").update({ read: true }).eq("id", n.id) }}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors">Dismiss</button>
+                      </div>
                     </div>
                   ))}
                 </div>

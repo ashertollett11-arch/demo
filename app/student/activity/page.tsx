@@ -20,7 +20,7 @@ export default function StudentActivityPage() {
   const [loading, setLoading] = useState(true)
   const [contacted, setContacted] = useState<ContactedEmployer[]>([])
   const [name, setName] = useState("")
-
+  const [studentNotifications, setStudentNotifications] = useState<any[]>([])
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -31,6 +31,13 @@ export default function StudentActivityPage() {
         .from("Students").select("id, name, profile_complete").eq("user_id", user.id).maybeSingle()
       if (!studentData?.profile_complete) { router.replace("/student/onboarding"); return }
       setName(studentData.name || "")
+      const { data: notifs } = await supabase
+        .from("student_notifications")
+        .select("*")
+        .eq("student_user_id", user.id)
+        .eq("read", false)
+        .order("created_at", { ascending: false })
+      setStudentNotifications(notifs || [])
       const { data: statuses } = await supabase
         .from("student_statuses")
         .select("id, employer_id, status, updated_at")
@@ -99,6 +106,44 @@ export default function StudentActivityPage() {
       </header>
 
       <div className="max-w-lg mx-auto px-4 pt-5">
+
+{/* NOTIFICATIONS */}
+{studentNotifications.length > 0 && (
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Notifications</p>
+            <div className="space-y-2">
+              {studentNotifications.map((n) => (
+                <div key={n.id} className="rounded-2xl border border-border/60 bg-card p-4 flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-base">📲</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground leading-snug">{n.message}</p>
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatTime(n.created_at)}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <Link
+                      href="/student/activity"
+                      className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                    >
+                      View
+                    </Link>
+                    <button
+                      onClick={async () => {
+                        setStudentNotifications(prev => prev.filter(x => x.id !== n.id))
+                        await supabase.from("student_notifications").update({ read: true }).eq("id", n.id)
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* GREETING */}
         <div className="mb-5">

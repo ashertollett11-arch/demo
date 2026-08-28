@@ -644,9 +644,9 @@ export default function ProfilePage() {
               router.push("/matching/student?from=profile&saved=true")
             }}
             className={`w-full h-14 rounded-2xl text-base font-semibold shadow-lg transition-all ${
-              saving ? "bg-primary/70 text-primary-foreground cursor-not-allowed" :
-              isProfileComplete ? "bg-primary text-primary-foreground active:scale-[0.98]" :
-              "bg-primary/50 text-primary-foreground"
+              saving ? "bg-foreground/70 text-background cursor-not-allowed" :
+              isProfileComplete ? "bg-foreground text-background active:scale-[0.98]" :
+              "bg-foreground/50 text-background"
             }`}
           >
             {saving ? "Saving your profile..." : "Save Profile"}

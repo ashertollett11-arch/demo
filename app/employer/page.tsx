@@ -36,7 +36,10 @@ export default function EmployerDashboard() {
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [selectedLocationMaxMiles, setSelectedLocationMaxMiles] = useState<number>(10)
   const [pageLoading, setPageLoading] = useState(true)
-  // MULTI-LOCATION
+  const [companyLoaded, setCompanyLoaded] = useState(false)
+  const [studentsLoaded, setStudentsLoaded] = useState(false)
+  const [statusesLoaded, setStatusesLoaded] = useState(false)
+  const [distancesLoaded, setDistancesLoaded] = useState(false)  // MULTI-LOCATION
   const [allLocations, setAllLocations] = useState<any[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   // DISTANCES + RECOMMENDATIONS for scoring
@@ -103,9 +106,9 @@ export default function EmployerDashboard() {
         .select("company, owner_name")
         .eq("user_id", userId)
         .single()
-      if (!data) { setPageLoading(false); return }
-      setCompanyName(data.company || "Your Company")
-      setPageLoading(false)
+        if (!data) { setCompanyLoaded(true); return }
+        setCompanyName(data.company || "Your Company")
+        setCompanyLoaded(true)
     }
     loadCompany()
   }, [userId])
@@ -119,9 +122,10 @@ export default function EmployerDashboard() {
       .select("*")
       .eq("profile_complete", true)
       .neq("is_looking", false)
-    setStudents(data || [])
-    }
-    loadStudents()
+      setStudents(data || [])
+      setStudentsLoaded(true)
+      }
+      loadStudents()
   }, [userId])
 
   // LOAD RECOMMENDATIONS
@@ -148,6 +152,7 @@ export default function EmployerDashboard() {
     const map: Record<string, number> = {}
     ;(data || []).forEach((d) => { map[d.student_user_id] = d.distance_meters })
     setDistances(map)
+    setDistancesLoaded(true)
   }
 
   // LOAD ALL LOCATIONS
@@ -256,12 +261,17 @@ export default function EmployerDashboard() {
         .from("student_statuses")
         .select("*")
         .eq("employer_id", userId)
-      if (error) return
-      setStatuses(data || [])
-    }
-    loadStatuses()
+        if (error) { setStatusesLoaded(true); return }
+        setStatuses(data || [])
+        setStatusesLoaded(true)
+      }
+      loadStatuses()
   }, [userId])
-
+  useEffect(() => {
+    if (companyLoaded && studentsLoaded && statusesLoaded && distancesLoaded) {
+      setPageLoading(false)
+    }
+  }, [companyLoaded, studentsLoaded, statusesLoaded, distancesLoaded])
   const dismissNotification = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id))
     await supabase.from("notifications").update({ read: true }).eq("id", id)
@@ -438,8 +448,35 @@ const recentActivity = notifications.slice(0, 4)
             </Link>
           </CardContent>
         </Card>
-
+{/* HOW IT WORKS */}
+<Card className="border-border bg-card">
+          <CardHeader><CardTitle className="text-base">How SimplyApply Works</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">1</div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Browse matched candidates</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Go to Find Candidates to see students near your location, sorted by match score based on their availability, GPA, and preferences.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">2</div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Reach out directly</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Click a student's profile to see their contact info — phone and email. Reach out to them directly however works best for you.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">3</div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Mark their status</p>
+                <p className="text-xs text-muted-foreground mt-0.5">After you've contacted a student, mark them as <span className="font-medium text-foreground">Contacted</span> on their profile. This notifies them to check their phone and email, and keeps your pipeline organized. Mark as <span className="font-medium text-foreground">Hired</span> once you've made a decision.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
         <Card className="cursor-pointer hover:bg-muted/40 transition" onClick={() => window.location.href = "/matching/employer"}>
+        
           <CardContent className="p-6 flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-primary" />
             <div className="flex flex-col gap-1">
