@@ -349,7 +349,7 @@ export default function ProfilePage() {
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
-          <button onClick={() => router.push("/student")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <button onClick={() => router.push("/matching/student")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-5 w-5" />
             Back
           </button>
