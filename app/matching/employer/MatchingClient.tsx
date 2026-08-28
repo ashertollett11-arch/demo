@@ -298,9 +298,10 @@ export default function MatchingPage() {
       setLoading(true)
       try {
         const { data, error } = await supabase
-          .from("Students")
-          .select("*")
-          .eq("profile_complete", true)
+        .from("Students")
+        .select("*")
+        .eq("profile_complete", true)
+        .neq("is_looking", false)
         if (error) { setStudents([]); return }
         setStudents((data ?? []).map((s) => ({ ...s, availability: s.availability ?? [], gpa: s.gpa ?? 0 })))
       } catch {

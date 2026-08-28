@@ -115,10 +115,11 @@ export default function EmployerDashboard() {
     if (!userId) return
     const loadStudents = async () => {
       const { data } = await supabase
-        .from("Students")
-        .select("*")
-        .eq("profile_complete", true)
-      setStudents(data || [])
+      .from("Students")
+      .select("*")
+      .eq("profile_complete", true)
+      .neq("is_looking", false)
+    setStudents(data || [])
     }
     loadStudents()
   }, [userId])

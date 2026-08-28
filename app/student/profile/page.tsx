@@ -21,31 +21,10 @@ export default function ProfilePage() {
   const [showSwitchDialog, setShowSwitchDialog] = useState(false)
   const [switching, setSwitching] = useState(false)
   const [deleting, setDeleting] = useState(false)
-
-  useEffect(() => {
-    const missing = window.location.search.includes("missing=true")
-    if (missing) setTimeout(() => { toast.error("Please complete your profile before continuing") }, 300)
-  }, [])
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getUser()
-      const user = data?.user
-      if (!user) { router.replace("/login"); return }
-      const { data: roleData } = await supabase
-        .from("users")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle()
-      if (!roleData?.role) { router.replace("/choose-role"); return }
-      if (roleData.role !== "student") { router.replace("/login"); return }
-    }
-    checkAuth()
-  }, [router])
-
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [saving, setSaving] = useState(false)
+  const [isLooking, setIsLooking] = useState(true)
   const MAX_INTERESTS = 3
   const MAX_JOBS = 3
   const [newInterest, setNewInterest] = useState("")
@@ -67,7 +46,6 @@ export default function ProfilePage() {
   const [sendingRec, setSendingRec] = useState(false)
 
   const JOB_OPTIONS = ["Cashier","Server","Busser","Barista","Cook","Dishwasher","Host","Sales Associate","Stock Associate","Customer Service","Store Associate"]
-
   const DEFAULT_AVAILABILITY = [
     { day: "Monday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
     { day: "Tuesday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
@@ -120,6 +98,27 @@ export default function ProfilePage() {
     return `${hour}:00 ${ampm}`
   })
 
+  useEffect(() => {
+    const missing = window.location.search.includes("missing=true")
+    if (missing) setTimeout(() => { toast.error("Please complete your profile before continuing") }, 300)
+  }, [])
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getUser()
+      const user = data?.user
+      if (!user) { router.replace("/login"); return }
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle()
+      if (!roleData?.role) { router.replace("/choose-role"); return }
+      if (roleData.role !== "student") { router.replace("/login"); return }
+    }
+    checkAuth()
+  }, [router])
+
   // LOAD PROFILE
   useEffect(() => {
     const loadProfile = async () => {
@@ -132,7 +131,7 @@ export default function ProfilePage() {
       if (authUser.email) setEmail(authUser.email)
       const { data: profileData, error } = await supabase
         .from("Students")
-        .select(`user_id, name, age, gpa, location, zip_code, email, school, phone, interests, preferred_jobs, availability, shift_preference, gpa_proof_url, gpa_verification_status`)
+        .select(`user_id, name, age, gpa, location, zip_code, email, school, phone, interests, preferred_jobs, availability, shift_preference, gpa_proof_url, gpa_verification_status, is_looking`)
         .eq("user_id", authUser.id)
         .single()
       if (error) { setLoading(false); return }
@@ -149,6 +148,7 @@ export default function ProfilePage() {
         setPreferredJobs(profileData.preferred_jobs || [])
         setInterests(profileData.interests || [])
         setGpaStatus(profileData.gpa_verification_status || "none")
+        setIsLooking(profileData.is_looking !== false)
         const safeAvailability = Array.isArray(profileData.availability) && profileData.availability.length === 7
           ? profileData.availability : DEFAULT_AVAILABILITY
         setAvailability(safeAvailability)
@@ -175,7 +175,6 @@ export default function ProfilePage() {
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
     if (!user) { toast.error("Not logged in"); return false }
-
     const { error } = await supabase
       .from("Students")
       .upsert(
@@ -185,21 +184,19 @@ export default function ProfilePage() {
           name, age: Number(age), location, zip_code: zipCode, email, school, phone,
           interests, preferred_jobs: preferredJobs, availability,
           shift_preference: shiftPreference,
+          is_looking: isLooking,
           ...(gpaStatus !== "pending" && gpaStatus !== "approved" ? { gpa: Number(gpa) } : {}),
           ...(gpaStatus === "rejected" || gpaStatus === "none" ? { gpa_proof_url: gpaProofUrl, gpa_verification_status: gpaStatus } : {}),
         },
         { onConflict: "user_id" }
       )
-
     if (error) { toast.error(error.message); return false }
-
-// Wait for distances to recalculate before navigating
-await fetch("/api/calculate-distances", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ studentUserId: user.id }),
-}).catch(() => {})
-return true
+    await fetch("/api/calculate-distances", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ studentUserId: user.id }),
+    }).catch(() => {})
+    return true
   }
 
   // SEND RECOMMENDATION REQUEST
@@ -395,6 +392,45 @@ return true
       </div>
 
       <h1 className="text-2xl font-bold mb-4">My Profile</h1>
+
+      {/* JOB SEARCH STATUS */}
+      <Card className="border-border bg-card mb-4">
+        <CardHeader><CardTitle className="text-lg">Job Search Status</CardTitle></CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-3">
+            Control whether employers can see your profile in their candidate list.
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIsLooking(true)}
+              className={`flex-1 py-2.5 text-sm rounded-xl border font-medium transition-all ${
+                isLooking
+                  ? "bg-green-100 text-green-700 border-green-300 shadow-sm"
+                  : "bg-gray-100 text-gray-500 border-gray-200"
+              }`}
+            >
+              ✅ Available
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsLooking(false)}
+              className={`flex-1 py-2.5 text-sm rounded-xl border font-medium transition-all ${
+                !isLooking
+                  ? "bg-red-100 text-red-700 border-red-300 shadow-sm"
+                  : "bg-gray-100 text-gray-500 border-gray-200"
+              }`}
+            >
+              🚫 No Longer Looking
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            {isLooking
+              ? "Your profile is visible to employers."
+              : "Your profile is hidden from all employers. Switch back to Available when you're ready to be found again."}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* PROFILE INFO */}
       <Card className="border-border bg-card mb-4">
