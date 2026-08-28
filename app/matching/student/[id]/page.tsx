@@ -166,8 +166,7 @@ export default function JobPage() {
   const activeShifts = (job.available_shifts ?? []).filter((s: any) => s.active === true || s.active === "true" || s.active === 1)
 
   return (
-    <div className="min-h-screen bg-background pb-28">
-
+<div className="min-h-screen bg-background pb-48">
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/40">
         <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
