@@ -118,7 +118,7 @@ export default function StudentActivityPage() {
       {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
         <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/student")} className="h-9 w-9">
+          <Button variant="ghost" size="icon" onClick={() => router.push("/student/matching")} className="h-9 w-9">
             <ChevronLeft className="h-5 w-5" />
           </Button>
           <span className="text-base font-semibold text-foreground">Employer Activity</span>
