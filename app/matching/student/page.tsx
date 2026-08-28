@@ -445,14 +445,19 @@ export default function MatchesPage() {
           </div>
         </div>
 {/* ACTIVITY LINK */}
-<div className="mb-4 flex justify-end">
-          <Button asChild variant="outline" size="sm" className="gap-2 rounded-xl">
-            <Link href="/student/activity">
-              <Briefcase className="h-4 w-4" />
-              Employer Activity
-            </Link>
-          </Button>
-        </div>
+{/* ACTIVITY LINK */}
+<Link href="/student/activity" className="mb-6 flex items-center justify-between rounded-2xl border border-primary/20 bg-primary/5 px-6 py-4 hover:bg-primary/10 transition-colors">
+  <div className="flex items-center gap-3">
+    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+      <Bell className="h-5 w-5 text-primary" />
+    </div>
+    <div>
+      <p className="font-semibold text-foreground text-sm">Employer Activity</p>
+      <p className="text-xs text-muted-foreground">See which employers have contacted you</p>
+    </div>
+  </div>
+  <ArrowRight className="h-5 w-5 text-primary shrink-0" />
+</Link>
 
         {/* FILTERS */}
         {/* FILTERS */}

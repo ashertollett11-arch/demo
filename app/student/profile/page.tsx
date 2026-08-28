@@ -1,10 +1,8 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, Briefcase, Calendar, AlertTriangle, Star } from "lucide-react"
+import { CheckCircle2, Briefcase, AlertTriangle, Star, ChevronRight, ChevronLeft, X, Check } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import {
@@ -25,6 +23,11 @@ export default function ProfilePage() {
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [saving, setSaving] = useState(false)
   const [isLooking, setIsLooking] = useState(true)
+
+  // Editing state — which field is open
+  const [editingField, setEditingField] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState("")
+
   const MAX_INTERESTS = 3
   const MAX_JOBS = 3
   const [newInterest, setNewInterest] = useState("")
@@ -63,16 +66,7 @@ export default function ProfilePage() {
   const isEmailValid = emailRegex.test(email)
 
   const nameRef = useRef<HTMLInputElement>(null)
-  const ageRef = useRef<HTMLInputElement>(null)
-  const gpaRef = useRef<HTMLInputElement>(null)
-  const locationRef = useRef<HTMLInputElement>(null)
-  const zipRef = useRef<HTMLInputElement>(null)
-  const emailRef = useRef<HTMLInputElement>(null)
-  const phoneRef = useRef<HTMLInputElement>(null)
-  const schoolRef = useRef<HTMLInputElement>(null)
-  const interestsRef = useRef<HTMLInputElement>(null)
-
-  const [interests, setInterests] = useState<string[]>(["Music", "Sports", "Gaming"])
+  const [interests, setInterests] = useState<string[]>([])
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [availability, setAvailability] = useState(DEFAULT_AVAILABILITY)
   const [phone, setPhone] = useState("")
@@ -108,18 +102,13 @@ export default function ProfilePage() {
       const { data } = await supabase.auth.getUser()
       const user = data?.user
       if (!user) { router.replace("/login"); return }
-      const { data: roleData } = await supabase
-        .from("users")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle()
+      const { data: roleData } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle()
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "student") { router.replace("/login"); return }
     }
     checkAuth()
   }, [router])
 
-  // LOAD PROFILE
   useEffect(() => {
     const loadProfile = async () => {
       setLoading(true)
@@ -154,11 +143,7 @@ export default function ProfilePage() {
         setAvailability(safeAvailability)
         setShiftPreference(profileData.shift_preference || "flexible")
       }
-      const { data: rec } = await supabase
-        .from("recommendations")
-        .select("*")
-        .eq("student_user_id", authUser.id)
-        .maybeSingle()
+      const { data: rec } = await supabase.from("recommendations").select("*").eq("student_user_id", authUser.id).maybeSingle()
       if (rec) {
         setRecommendation(rec)
         setRecommenderName(rec.recommender_name || "")
@@ -170,26 +155,20 @@ export default function ProfilePage() {
     loadProfile()
   }, [])
 
-  // SAVE PROFILE
   const saveStudentProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
     if (!user) { toast.error("Not logged in"); return false }
-    const { error } = await supabase
-      .from("Students")
-      .upsert(
-        {
-          user_id: user.id,
-          profile_complete: isProfileComplete,
-          name, age: Number(age), location, zip_code: zipCode, email, school, phone,
-          interests, preferred_jobs: preferredJobs, availability,
-          shift_preference: shiftPreference,
-          is_looking: isLooking,
-          ...(gpaStatus !== "pending" && gpaStatus !== "approved" ? { gpa: Number(gpa) } : {}),
-          ...(gpaStatus === "rejected" || gpaStatus === "none" ? { gpa_proof_url: gpaProofUrl, gpa_verification_status: gpaStatus } : {}),
-        },
-        { onConflict: "user_id" }
-      )
+    const { error } = await supabase.from("Students").upsert({
+      user_id: user.id,
+      profile_complete: isProfileComplete,
+      name, age: Number(age), location, zip_code: zipCode, email, school, phone,
+      interests, preferred_jobs: preferredJobs, availability,
+      shift_preference: shiftPreference,
+      is_looking: isLooking,
+      ...(gpaStatus !== "pending" && gpaStatus !== "approved" ? { gpa: Number(gpa) } : {}),
+      ...(gpaStatus === "rejected" || gpaStatus === "none" ? { gpa_proof_url: gpaProofUrl, gpa_verification_status: gpaStatus } : {}),
+    }, { onConflict: "user_id" })
     if (error) { toast.error(error.message); return false }
     await fetch("/api/calculate-distances", {
       method: "POST",
@@ -199,7 +178,6 @@ export default function ProfilePage() {
     return true
   }
 
-  // SEND RECOMMENDATION REQUEST
   const sendRecommendationRequest = async () => {
     if (!recommenderName.trim()) { toast.error("Enter recommender name"); return }
     if (!recommenderEmail.trim()) { toast.error("Enter recommender email"); return }
@@ -210,72 +188,78 @@ export default function ProfilePage() {
     const res = await fetch("/api/send-recommendation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        studentUserId: user.id,
-        studentName: name,
-        recommenderName,
-        recommenderEmail,
-        relationship: recommenderRelationship,
-      }),
+      body: JSON.stringify({ studentUserId: user.id, studentName: name, recommenderName, recommenderEmail, relationship: recommenderRelationship }),
     })
     const data = await res.json()
     if (!res.ok) { toast.error(data.error || "Failed to send request."); setSendingRec(false); return }
     toast.success(`Recommendation request sent to ${recommenderName}!`)
-    const { data: rec } = await supabase
-      .from("recommendations")
-      .select("*")
-      .eq("student_user_id", user.id)
-      .maybeSingle()
+    const { data: rec } = await supabase.from("recommendations").select("*").eq("student_user_id", user.id).maybeSingle()
     if (rec) setRecommendation(rec)
     setSendingRec(false)
   }
 
-  // DELETE ACCOUNT
   const handleDeleteAccount = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setDeleting(true)
     try {
-      const res = await fetch("/api/delete-account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error || "Failed to delete account.")
-        setDeleting(false)
-        return
-      }
+      const res = await fetch("/api/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: user.id }) })
+      if (!res.ok) { const data = await res.json(); toast.error(data.error || "Failed to delete account."); setDeleting(false); return }
       supabase.auth.signOut().finally(() => { window.location.href = "/login" })
-    } catch {
-      toast.error("Something went wrong. Please try again.")
-      setDeleting(false)
-    }
+    } catch { toast.error("Something went wrong."); setDeleting(false) }
   }
 
-  // SWITCH ROLE
   const handleSwitchRole = async () => {
     setSwitching(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSwitching(false); return }
     try {
-      const res = await fetch("/api/delete-account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      })
-      if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error || "Failed to switch role.")
-        setSwitching(false)
-        return
-      }
+      const res = await fetch("/api/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: user.id }) })
+      if (!res.ok) { const data = await res.json(); toast.error(data.error || "Failed to switch role."); setSwitching(false); return }
       supabase.auth.signOut().finally(() => { window.location.href = "/choose-role" })
-    } catch {
-      toast.error("Something went wrong. Please try again.")
-      setSwitching(false)
+    } catch { toast.error("Something went wrong."); setSwitching(false) }
+  }
+
+  // Open a field for inline editing
+  const openEdit = (field: string, currentValue: string) => {
+    setEditingField(field)
+    setEditValue(currentValue)
+  }
+
+  const closeEdit = () => { setEditingField(null); setEditValue("") }
+
+  const commitEdit = (field: string, value: string) => {
+    switch (field) {
+      case "name":
+        if (!value.trim()) { toast.error("Name can't be empty"); return }
+        setName(value.trim()); break
+      case "age":
+        const numAge = parseInt(value)
+        if (isNaN(numAge) || numAge < 14 || numAge > 21) { toast.error("Age must be between 14 and 21"); return }
+        setAge(String(numAge)); break
+      case "gpa":
+        const gpaNum = parseFloat(value)
+        if (isNaN(gpaNum) || gpaNum < 0 || gpaNum > 4) { toast.error("GPA must be between 0 and 4"); return }
+        setGpa(value); break
+      case "location":
+        if (!value.trim()) { toast.error("Address can't be empty"); return }
+        setLocation(value.trim()); break
+      case "zipCode":
+        const cleanZip = value.replace(/\D/g, "")
+        if (!/^\d{5}$/.test(cleanZip)) { toast.error("Zip code must be 5 digits"); return }
+        setZipCode(cleanZip); break
+      case "email":
+        if (!emailRegex.test(value.trim())) { toast.error("Enter a valid email address"); return }
+        setEmail(value.trim().toLowerCase()); break
+      case "phone":
+        const cleanPhone = value.replace(/\D/g, "")
+        if (cleanPhone.length !== 10) { toast.error("Phone number must be 10 digits"); return }
+        setPhone(cleanPhone); break
+      case "school":
+        if (!value.trim()) { toast.error("School can't be empty"); return }
+        setSchool(value.trim()); break
     }
+    closeEdit()
   }
 
   if (loading) {
@@ -289,357 +273,309 @@ export default function ProfilePage() {
     )
   }
 
+  // Row component
+  const Row = ({ label, value, field, placeholder, inputType = "text", editValue: initialEditValue }: { label: string; value: string; field: string; placeholder?: string; inputType?: string; editValue?: string }) => {
+    const isEditing = editingField === field
+    const [localVal, setLocalVal] = useState(initialEditValue ?? value)
+    useEffect(() => { setLocalVal(initialEditValue ?? value) }, [value, initialEditValue])
+    return (
+      <div className="border-b border-border last:border-0">
+        {isEditing ? (
+          <div className="px-4 py-3 flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground mb-1">{label}</p>
+              <input
+                autoFocus
+                type={inputType}
+                value={localVal}
+                onChange={(e) => setLocalVal(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") commitEdit(field, localVal) }}
+                className="w-full bg-transparent text-sm text-foreground outline-none border-b border-primary pb-1"
+                placeholder={placeholder}
+              />
+            </div>
+            <button onClick={() => commitEdit(field, localVal)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Check className="h-4 w-4" />
+            </button>
+            <button onClick={closeEdit} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
+              <X className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => openEdit(field, value)} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-secondary/30 transition-colors text-left">
+            <div>
+              <p className="text-xs text-muted-foreground">{label}</p>
+              <p className={`text-sm mt-0.5 ${value ? "text-foreground" : "text-muted-foreground/60"}`}>
+                {value || placeholder || "Not set"}
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+          </button>
+        )}
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-background p-4 overflow-x-hidden">
-      {/* SWITCH ROLE DIALOG */}
+    <div className="min-h-screen bg-background pb-28">
+
+      {/* DIALOGS */}
       <Dialog open={showSwitchDialog} onOpenChange={setShowSwitchDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Switch to Employer Role?
-            </DialogTitle>
-            <DialogDescription className="pt-2 space-y-2">
-              <span className="block">This will <span className="font-semibold text-foreground">permanently delete</span> your student account and all associated data including:</span>
-              <ul className="list-disc pl-5 space-y-1 text-sm mt-2">
-                <li>Your student profile</li>
-                <li>GPA verification</li>
-                <li>Job applications and matches</li>
-                <li>All availability and preferences</li>
-              </ul>
-              <span className="block font-medium text-foreground mt-2">This cannot be undone.</span>
-            </DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="h-5 w-5" />Switch to Employer Role?</DialogTitle>
+            <DialogDescription className="pt-2">This will permanently delete your student account including your profile, GPA verification, and all job applications. This cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowSwitchDialog(false)} disabled={switching}>Cancel</Button>
-            <Button variant="destructive" onClick={handleSwitchRole} disabled={switching}>
-              {switching ? "Deleting account..." : "Yes, delete my account"}
-            </Button>
+            <button onClick={() => setShowSwitchDialog(false)} className="flex-1 py-2 rounded-xl border text-sm font-medium" disabled={switching}>Cancel</button>
+            <button onClick={handleSwitchRole} className="flex-1 py-2 rounded-xl bg-red-600 text-white text-sm font-medium" disabled={switching}>{switching ? "Deleting..." : "Yes, delete my account"}</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* DELETE DIALOG */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Delete Account?
-            </DialogTitle>
-            <DialogDescription className="pt-2 space-y-2">
-              <span className="block">This will <span className="font-semibold text-foreground">permanently delete</span> your account and all associated data including:</span>
-              <ul className="list-disc pl-5 space-y-1 text-sm mt-2">
-                <li>Your student profile</li>
-                <li>All job applications</li>
-                <li>Your recommendation</li>
-                <li>All availability and preferences</li>
-              </ul>
-              <span className="block font-medium text-foreground mt-2">This cannot be undone.</span>
-            </DialogDescription>
+            <DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="h-5 w-5" />Delete Account?</DialogTitle>
+            <DialogDescription className="pt-2">This will permanently delete your account and all data. This cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleting}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleting}>
-              {deleting ? "Deleting..." : "Yes, delete my account"}
-            </Button>
+            <button onClick={() => setShowDeleteDialog(false)} className="flex-1 py-2 rounded-xl border text-sm font-medium" disabled={deleting}>Cancel</button>
+            <button onClick={handleDeleteAccount} className="flex-1 py-2 rounded-xl bg-red-600 text-white text-sm font-medium" disabled={deleting}>{deleting ? "Deleting..." : "Yes, delete"}</button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* STICKY SAVE HEADER */}
-      <div className="sticky top-0 z-50 mb-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-white px-4 py-3 shadow-lg backdrop-blur gap-3">
-            <div className="flex flex-col min-w-0">
-              <h2 className="text-base sm:text-xl font-bold text-gray-900 truncate">Complete Your Profile</h2>
-              <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Finish your profile so employers can discover you.</p>
-            </div>
-            <Button
-              disabled={saving}
-              className={`shrink-0 h-10 px-4 text-sm font-semibold shadow-md transition-all ${!isProfileComplete ? "opacity-60" : "hover:scale-[1.03]"}`}
-              onClick={async () => {
-                if (!isProfileComplete) {
-                  const missingFields = []
-                  if (!name.trim()) missingFields.push("name")
-                  if (!age.trim()) missingFields.push("age")
-                  if (!gpa.trim()) missingFields.push("GPA")
-                  if (!location.trim()) missingFields.push("location")
-                  if (!zipRegex.test(zipCode)) missingFields.push("zip code")
-                  if (!emailRegex.test(email)) missingFields.push("valid email")
-                  if (!school.trim()) missingFields.push("school")
-                  if (phone.length !== 10) missingFields.push("phone number")
-                  if (preferredJobs.length === 0) missingFields.push("preferred jobs")
-                  if (interests.length === 0) missingFields.push("interests")
-                  if (!availability.some((d) => d.available)) missingFields.push("availability")
-                  toast.error("Profile incomplete", { description: `Please complete: ${missingFields.join(", ")}` })
-                  return
-                }
-                try {
-                  setSaving(true)
-                  const success = await saveStudentProfile()
-                  if (!success) return
-                  router.push("/matching/student?from=profile&saved=true")
-                } finally {
-                  setSaving(false)
-                }
-              }}
-            >
-              {saving ? "Saving..." : "Save Profile"}
-            </Button>
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
+        <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
+          <button onClick={() => router.push("/student")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <ChevronLeft className="h-5 w-5" />
+            Back
+          </button>
+          <span className="text-base font-semibold text-foreground">My Profile</span>
+          <div className="w-12" />
+        </div>
+      </header>
+
+      <div className="max-w-lg mx-auto">
+
+        {/* AVATAR + NAME HERO */}
+        <div className="flex flex-col items-center py-8 px-4 border-b border-border">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-3xl font-bold text-primary mb-3">
+            {name.trim().split(" ").filter(Boolean).slice(0, 2).map(n => n[0]?.toUpperCase()).join("") || "?"}
+          </div>
+          <p className="text-xl font-bold text-foreground">{name || "Your Name"}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{school || "Your School"}</p>
+          <div className="mt-3">
+            {isLooking ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                Available for work
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                Not currently looking
+              </span>
+            )}
           </div>
         </div>
-      </div>
 
-      <h1 className="text-2xl font-bold mb-4">My Profile</h1>
-
-      {/* JOB SEARCH STATUS */}
-      <Card className="border-border bg-card mb-4">
-        <CardHeader><CardTitle className="text-lg">Job Search Status</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-3">
-            Control whether employers can see your profile in their candidate list.
-          </p>
-          <div className="flex gap-2">
+        {/* JOB SEARCH STATUS */}
+        <div className="px-4 pt-6 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Visibility</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          <div className="flex items-center justify-between px-4 py-4">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Job Search Status</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isLooking ? "Visible to employers" : "Hidden from employers"}
+              </p>
+            </div>
             <button
-              type="button"
-              onClick={() => setIsLooking(true)}
-              className={`flex-1 py-2.5 text-sm rounded-xl border font-medium transition-all ${
-                isLooking
-                  ? "bg-green-100 text-green-700 border-green-300 shadow-sm"
-                  : "bg-gray-100 text-gray-500 border-gray-200"
-              }`}
+              onClick={() => setIsLooking(!isLooking)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isLooking ? "bg-primary" : "bg-gray-300"}`}
             >
-               Available
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsLooking(false)}
-              className={`flex-1 py-2.5 text-sm rounded-xl border font-medium transition-all ${
-                !isLooking
-                  ? "bg-red-100 text-red-700 border-red-300 shadow-sm"
-                  : "bg-gray-100 text-gray-500 border-gray-200"
-              }`}
-            >
-               No Longer Looking
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${isLooking ? "translate-x-6" : "translate-x-1"}`} />
             </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            {isLooking
-              ? "Your profile is visible to employers."
-              : "Your profile is hidden from all employers. Switch back to Available when you're ready to be found again."}
-          </p>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* PROFILE INFO */}
-      <Card className="border-border bg-card mb-4">
-        <CardHeader><CardTitle>Profile Info</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          <input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Full Name" />
-          <input type="text" ref={ageRef} value={age}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === "") { setAge(""); return }
-              if (!/^\d+$/.test(value)) return
-              if (value.length > 2) return
-              if (parseInt(value) > 21) return
-              setAge(value)
-            }}
-            onBlur={() => {
-              const num = parseInt(age)
-              if (isNaN(num)) { setAge(""); return }
-              if (num < 14) setAge("14")
-              if (num > 21) setAge("21")
-            }}
-            className="w-full border rounded px-3 py-2 text-sm" placeholder="Age"
-          />
-          <input ref={locationRef} value={location} onChange={(e) => setLocation(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Street Address" />
-          <input ref={zipRef} value={zipCode}
-            onChange={(e) => { const value = e.target.value.replace(/\D/g, ""); if (value.length <= 5) setZipCode(value) }}
-            className="w-full border rounded px-3 py-2 text-sm" placeholder="Zip Code (5 digits)" maxLength={5}
-          />
-          <input ref={emailRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="Email" />
-          <input type="tel" ref={phoneRef} value={phone}
-            onChange={(e) => { const value = e.target.value; if (value === "") { setPhone(""); return }; if (/^\d{0,10}$/.test(value)) setPhone(value) }}
-            className="w-full border rounded px-3 py-2 text-sm" placeholder="Phone Number"
-          />
-          <input ref={schoolRef} value={school} onChange={(e) => setSchool(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="School" />
-          <input type="number" step="0.01" min="0" max="4" ref={gpaRef} value={gpa}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === "") { setGpa(""); return }
-              if (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 4) setGpa(value)
-            }}
-            className="w-full border rounded px-3 py-2 text-sm" placeholder="GPA (Unweighted)"
-          />
-        </CardContent>
-      </Card>
+        {/* PERSONAL INFO */}
+        <div className="px-4 pt-2 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Personal Info</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          <Row label="Full Name" value={name} field="name" placeholder="Add your name" />
+          <Row label="Age" value={age} field="age" placeholder="14–21" inputType="number" />
+          <Row label="School" value={school} field="school" placeholder="Your school name" />
+          <Row label="GPA (Unweighted)" value={gpa} field="gpa" placeholder="e.g. 3.5" inputType="number" />
+        </div>
 
-      {/* PREFERRED JOBS */}
-      <Card className="border-border bg-card mb-4">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Briefcase className="h-5 w-5 text-primary" />
-            Preferred Positions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {JOB_OPTIONS.map((job) => {
-              const selected = preferredJobs.includes(job)
-              return (
-                <button key={job}
-                  onClick={() => {
-                    setPreferredJobs((prev) => {
-                      if (prev.includes(job)) return prev.filter((j) => j !== job)
-                      if (prev.length >= MAX_JOBS) { toast.error(`You can only select up to ${MAX_JOBS} positions`); return prev }
+        {/* CONTACT */}
+        <div className="px-4 pt-2 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Contact</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          <Row label="Email" value={email} field="email" placeholder="your@email.com" inputType="email" />
+          <Row label="Phone" value={phone ? `(${phone.slice(0,3)}) ${phone.slice(3,6)}-${phone.slice(6)}` : ""} field="phone" placeholder="10-digit number" inputType="tel" editValue={phone} />
+                    <Row label="Street Address" value={location} field="location" placeholder="123 Main St" />
+          <Row label="Zip Code" value={zipCode} field="zipCode" placeholder="5-digit zip" />
+        </div>
+
+        {/* PREFERRED JOBS */}
+        <div className="px-4 pt-2 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Preferred Positions</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          <div className="p-4">
+            <p className="text-xs text-muted-foreground mb-3">Select up to 3 roles you're interested in.</p>
+            <div className="flex flex-wrap gap-2">
+              {JOB_OPTIONS.map((job) => {
+                const selected = preferredJobs.includes(job)
+                return (
+                  <button key={job}
+                    onClick={() => setPreferredJobs(prev => {
+                      if (prev.includes(job)) return prev.filter(j => j !== job)
+                      if (prev.length >= MAX_JOBS) { toast.error(`Max ${MAX_JOBS} positions`); return prev }
                       return [...prev, job]
-                    })
+                    })}
+                    className={`px-3 py-1.5 text-xs rounded-full border font-medium transition-all ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
+                    {job}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* INTERESTS */}
+        <div className="px-4 pt-2 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Interests</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          <div className="p-4">
+            <div className="flex flex-wrap gap-2 mb-3">
+              {interests.map((interest, index) => (
+                <span key={index} className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground">
+                  {interest}
+                  <button onClick={() => setInterests(interests.filter((_, i) => i !== index))} className="text-muted-foreground hover:text-foreground ml-0.5">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            {interests.length < MAX_INTERESTS && (
+              <div className="flex gap-2">
+                <input
+                  value={newInterest}
+                  onChange={(e) => setNewInterest(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const trimmed = newInterest.trim()
+                      if (!trimmed || interests.includes(trimmed) || interests.length >= MAX_INTERESTS) return
+                      setInterests([...interests, trimmed]); setNewInterest("")
+                    }
                   }}
-                  className={`px-3 py-1 text-xs rounded-full border transition-all ${selected ? "bg-blue-100 text-blue-700 border-blue-200 shadow-sm" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
-                  {job}
+                  placeholder="Add interest (e.g. Coding)"
+                  className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+                <button
+                  onClick={() => {
+                    const trimmed = newInterest.trim()
+                    if (!trimmed || interests.includes(trimmed) || interests.length >= MAX_INTERESTS) return
+                    setInterests([...interests, trimmed]); setNewInterest("")
+                  }}
+                  className="px-3 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium"
+                >
+                  Add
                 </button>
-              )
-            })}
+              </div>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground mt-2">Select all job types you're interested in.</p>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* INTERESTS */}
-      <Card className="border-border bg-card mb-4">
-        <CardHeader><CardTitle className="text-lg">Interests</CardTitle></CardHeader>
-        <CardContent>
-          <input ref={interestsRef} value={newInterest}
-            onChange={(e) => setNewInterest(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault()
-                const trimmed = newInterest.trim()
-                if (!trimmed) return
-                if (interests.includes(trimmed)) { toast.error("Interest already added"); return }
-                if (interests.length >= MAX_INTERESTS) { toast.error(`Max ${MAX_INTERESTS} interests`); return }
-                setInterests([...interests, trimmed])
-                setNewInterest("")
-              }
-            }}
-            onBlur={() => {
-              const trimmed = newInterest.trim()
-              if (!trimmed || interests.includes(trimmed) || interests.length >= MAX_INTERESTS) { setNewInterest(""); return }
-              setInterests([...interests, trimmed])
-              setNewInterest("")
-            }}
-            placeholder={interests.length >= MAX_INTERESTS ? `Max ${MAX_INTERESTS} interests reached` : "Add interest (e.g. Coding)"}
-            disabled={interests.length >= MAX_INTERESTS}
-            className="w-full border rounded px-3 py-2 text-sm"
-          />
-          <Button className="mt-2 w-full" disabled={interests.length >= MAX_INTERESTS}
-            onClick={() => {
-              const trimmed = newInterest.trim()
-              if (!trimmed) return
-              if (interests.includes(trimmed)) { toast.error("Interest already added"); return }
-              if (interests.length >= MAX_INTERESTS) { toast.error(`Max ${MAX_INTERESTS} interests`); return }
-              setInterests([...interests, trimmed])
-              setNewInterest("")
-            }}>
-            {interests.length >= MAX_INTERESTS ? "Max interests reached" : "Add Interest"}
-          </Button>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {interests.map((interest, index) => (
-              <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                {interest}
-                <button className="ml-1 text-xs text-red-500" onClick={() => setInterests(interests.filter((_, i) => i !== index))}>×</button>
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* AVAILABILITY */}
-      <Card className="border-border bg-card mb-4">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="h-5 w-5 text-primary" /> Availability
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="mt-2 mb-4">
-            <label className="text-sm font-medium mb-2 block">Shift Preference</label>
+        {/* AVAILABILITY */}
+        <div className="px-4 pt-2 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          {/* SHIFT PREFERENCE */}
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-xs text-muted-foreground mb-2">Shift Preference</p>
             <div className="flex gap-2">
               {["morning", "night", "flexible"].map((type) => (
-                <Button key={type} variant={shiftPreference === type ? "default" : "outline"} className="flex-1 text-xs h-9" onClick={() => setShiftPreference(type as any)}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </Button>
+                <button key={type}
+                  onClick={() => setShiftPreference(type as any)}
+                  className={`flex-1 py-1.5 text-xs rounded-full border font-medium capitalize transition-all ${shiftPreference === type ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
+                  {type}
+                </button>
               ))}
             </div>
           </div>
-          <div className="space-y-2">
-            {availability.map((day, index) => (
-              <div key={day.day} className="flex flex-wrap items-center gap-2 rounded-xl p-3 border bg-white hover:bg-gray-50 transition-all">
-                <span className="text-sm font-medium text-gray-700 w-10">{day.day.slice(0, 3)}</span>
-                <div className="flex flex-wrap gap-1 flex-1">
-                  <select value={day.start} disabled={!day.available}
-                    onChange={(e) => { const n = [...availability]; n[index].start = e.target.value; setAvailability(n) }}
-                    className="w-20 text-xs px-1 py-1 rounded-full border bg-white text-gray-700">
-                    {timeOptions.map(time => <option key={time} value={time}>{time}</option>)}
-                  </select>
-                  <select value={day.end} disabled={!day.available}
-                    onChange={(e) => { const n = [...availability]; n[index].end = e.target.value; setAvailability(n) }}
-                    className="w-20 text-xs px-1 py-1 rounded-full border bg-white text-gray-700">
-                    {timeOptions.map(time => <option key={time} value={time}>{time}</option>)}
-                  </select>
-                  <button
-                    onClick={() => { const n = [...availability]; n[index].available = !n[index].available; if (!n[index].available) n[index].hours = "-"; setAvailability(n) }}
-                    className={`text-xs px-3 py-1 rounded-full border transition-all ${day.available ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-gray-100 text-gray-500 border-gray-200"}`}>
-                    {day.available ? "Available" : "Unavailable"}
-                  </button>
-                </div>
+          {/* DAYS */}
+          {availability.map((day, index) => (
+            <div key={day.day} className="flex items-center justify-between px-4 py-3 border-b border-border last:border-0">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">{day.day}</p>
+                {day.available && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <select value={day.start}
+                      onChange={(e) => { const n = [...availability]; n[index].start = e.target.value; setAvailability(n) }}
+                      className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
+                      {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <select value={day.end}
+                      onChange={(e) => { const n = [...availability]; n[index].end = e.target.value; setAvailability(n) }}
+                      className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
+                      {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <button
+                onClick={() => { const n = [...availability]; n[index].available = !n[index].available; if (!n[index].available) n[index].hours = "-"; setAvailability(n) }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-3 shrink-0 ${day.available ? "bg-primary" : "bg-gray-300"}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${day.available ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+          ))}
+        </div>
 
-      {/* RECOMMENDATION */}
-      <Card className="border-border bg-card mb-4">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Star className="h-5 w-5 text-primary" />
-            Recommendation
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        {/* RECOMMENDATION */}
+        <div className="px-4 pt-2 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recommendation</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
           {recommendation?.submitted ? (
-            <div className="rounded-xl border border-green-200 bg-green-50 p-4 space-y-2">
-              <div className="flex items-center gap-2 text-green-700 font-semibold text-sm">
-                <CheckCircle2 className="h-4 w-4" />
-                Recommendation received!
+            <div className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                <p className="text-sm font-semibold text-green-700">Recommendation received!</p>
               </div>
-              <p className="text-sm text-green-700">
-                From: <strong>{recommendation.recommender_name}</strong> ({recommendation.recommender_relationship})
-              </p>
-              <p className="text-sm text-muted-foreground italic">"{recommendation.description}"</p>
-              <p className="text-xs text-muted-foreground">Would recommend: {recommendation.would_recommend}</p>
+              <p className="text-sm text-foreground">From <strong>{recommendation.recommender_name}</strong> · {recommendation.recommender_relationship}</p>
+              <p className="text-sm text-muted-foreground italic mt-2">"{recommendation.description}"</p>
             </div>
           ) : recommendation && !recommendation.submitted ? (
-            <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4 space-y-2">
-              <p className="text-sm font-medium text-yellow-700">
-                ⏳ Waiting for {recommendation.recommender_name} to submit their recommendation.
-              </p>
-              <p className="text-xs text-muted-foreground">Sent to: {recommendation.recommender_email}</p>
-              <Button size="sm" variant="outline" onClick={sendRecommendationRequest} disabled={sendingRec}>
+            <div className="p-4">
+              <p className="text-sm font-medium text-yellow-700">⏳ Waiting for {recommendation.recommender_name} to submit.</p>
+              <p className="text-xs text-muted-foreground mt-1">Sent to: {recommendation.recommender_email}</p>
+              <button onClick={sendRecommendationRequest} disabled={sendingRec} className="mt-3 w-full py-2 rounded-xl border border-border text-sm font-medium text-foreground">
                 {sendingRec ? "Resending..." : "Resend Email"}
-              </Button>
+              </button>
             </div>
           ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                Ask a teacher, coach, or employer to recommend you. This shows up on your profile and means a lot to local employers.
-              </p>
-              <input value={recommenderName} onChange={(e) => setRecommenderName(e.target.value)} placeholder="Recommender's full name" className="w-full border rounded px-3 py-2 text-sm" />
-              <input type="email" value={recommenderEmail} onChange={(e) => setRecommenderEmail(e.target.value)} placeholder="Recommender's email" className="w-full border rounded px-3 py-2 text-sm" />
-              <select value={recommenderRelationship} onChange={(e) => setRecommenderRelationship(e.target.value)} className="w-full border rounded px-3 py-2 text-sm bg-background">
+            <div className="p-4 space-y-3">
+              <p className="text-xs text-muted-foreground">Ask a teacher, coach, or employer to recommend you. It shows on your profile and helps you stand out.</p>
+              <input value={recommenderName} onChange={(e) => setRecommenderName(e.target.value)} placeholder="Recommender's full name"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary" />
+              <input type="email" value={recommenderEmail} onChange={(e) => setRecommenderEmail(e.target.value)} placeholder="Recommender's email"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary" />
+              <select value={recommenderRelationship} onChange={(e) => setRecommenderRelationship(e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary">
                 <option value="">Select relationship...</option>
                 <option value="Teacher">Teacher</option>
                 <option value="Coach">Coach</option>
@@ -648,47 +584,76 @@ export default function ProfilePage() {
                 <option value="Mentor">Mentor</option>
                 <option value="Other">Other</option>
               </select>
-              <Button className="w-full" onClick={sendRecommendationRequest} disabled={sendingRec}>
+              <button onClick={sendRecommendationRequest} disabled={sendingRec}
+                className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold">
                 {sendingRec ? "Sending..." : "Send Recommendation Request"}
-              </Button>
+              </button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* SWITCH ROLE */}
-      <Card className="border-red-100 bg-red-50/30">
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-semibold text-foreground">Switch to Employer Role</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Want to hire students instead? Switch your account to an employer. This will permanently delete all your student data.
-              </p>
+        {/* DANGER ZONE */}
+        <div className="px-4 pt-2 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          <button onClick={() => setShowSwitchDialog(true)} className="w-full flex items-center justify-between px-4 py-3.5 border-b border-border hover:bg-secondary/30 transition-colors">
+            <div className="text-left">
+              <p className="text-sm font-medium text-foreground">Switch to Employer</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Permanently deletes your student data</p>
             </div>
-            <Button variant="outline" className="shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700" onClick={() => setShowSwitchDialog(true)}>
-              Switch Role
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+          </button>
+          <button onClick={() => setShowDeleteDialog(true)} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-red-50/50 transition-colors">
+            <div className="text-left">
+              <p className="text-sm font-medium text-red-600">Delete Account</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Permanently deletes everything</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-red-400/60" />
+          </button>
+        </div>
 
-      {/* DELETE CARD */}
-      <Card className="border-red-200 bg-red-50/20 mt-4">
-        <CardContent className="p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-semibold text-red-700">Delete Account</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Permanently delete your account and all associated data. This cannot be undone.
-              </p>
-            </div>
-            <Button variant="destructive" className="shrink-0" onClick={() => setShowDeleteDialog(true)}>
-              Delete Account
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
+
+      {/* FLOATING SAVE BUTTON */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent">
+        <div className="max-w-lg mx-auto">
+          <button
+            disabled={saving}
+            onClick={async () => {
+              if (!isProfileComplete) {
+                const missingFields = []
+                if (!name.trim()) missingFields.push("name")
+                if (!age.trim()) missingFields.push("age")
+                if (!gpa.trim()) missingFields.push("GPA")
+                if (!location.trim()) missingFields.push("location")
+                if (!zipRegex.test(zipCode)) missingFields.push("zip code")
+                if (!emailRegex.test(email)) missingFields.push("valid email")
+                if (!school.trim()) missingFields.push("school")
+                if (phone.length !== 10) missingFields.push("phone number")
+                if (preferredJobs.length === 0) missingFields.push("preferred jobs")
+                if (interests.length === 0) missingFields.push("interests")
+                if (!availability.some((d) => d.available)) missingFields.push("availability")
+                toast.error("Profile incomplete", { description: `Missing: ${missingFields.join(", ")}` })
+                return
+              }
+              setSaving(true)
+              const success = await saveStudentProfile()
+              setSaving(false)
+              if (!success) return
+              router.push("/matching/student?from=profile&saved=true")
+            }}
+            className={`w-full h-14 rounded-2xl text-base font-semibold shadow-lg transition-all ${
+              saving ? "bg-primary/70 text-primary-foreground cursor-not-allowed" :
+              isProfileComplete ? "bg-primary text-primary-foreground active:scale-[0.98]" :
+              "bg-primary/50 text-primary-foreground"
+            }`}
+          >
+            {saving ? "Saving your profile..." : "Save Profile"}
+          </button>
+        </div>
+      </div>
+
     </div>
   )
 }
