@@ -4,13 +4,64 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { Toaster } from "sonner"
+
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'SimplyApply - The easiest way to land your first job',
-  description: 'No resumes. No stress. Just opportunity. The employment platform designed for first-time workers ages 14-18 and entry-level employers.',
-  generator: 'v0.app',
+  title: {
+    default: 'SimplyApply — Local Jobs for Students',
+    template: '%s | SimplyApply',
+  },
+  description: 'SimplyApply connects students ages 14–21 with local part-time jobs matched to their schedule, availability, and interests. No resume needed.',
+  keywords: [
+    'SimplyApply', 'Simply Apply', 'student jobs', 'teen jobs', 'part time jobs for teens',
+    'jobs for 14 year olds', 'jobs for 15 year olds', 'jobs for 16 year olds',
+    'local jobs for students', 'first job', 'entry level jobs near me',
+    'hiring teenagers', 'part time work', 'youth employment',
+  ],
+  authors: [{ name: 'SimplyApply', url: 'https://simplyapply.app' }],
+  creator: 'SimplyApply',
+  publisher: 'SimplyApply',
+  metadataBase: new URL('https://simplyapply.app'),
+  alternates: {
+    canonical: 'https://simplyapply.app',
+  },
+  openGraph: {
+    title: 'SimplyApply — Local Jobs for Students',
+    description: 'Find local part-time jobs matched to your schedule, availability, and interests. Built for students ages 14–21.',
+    url: 'https://simplyapply.app',
+    siteName: 'SimplyApply',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'SimplyApply — Local Jobs for Students',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'SimplyApply — Local Jobs for Students',
+    description: 'Find local part-time jobs matched to your schedule, availability, and interests. Built for students ages 14–21.',
+    images: ['/og-image.png'],
+    creator: '@simplyapply',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  generator: 'Next.js',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -19,18 +70,9 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
+      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
+      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
     ],
     apple: '/apple-icon.png',
   },
@@ -50,21 +92,32 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="SimplyApply" />
         <meta name="theme-color" content="#ffffff" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "SimplyApply",
+              "alternateName": "Simply Apply",
+              "url": "https://simplyapply.app",
+              "description": "SimplyApply connects students ages 14–21 with local part-time jobs matched to their schedule and interests.",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://simplyapply.app/matching/student?search={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
       </head>
       <body className="font-sans antialiased">
-  <Providers>
-    {/* 👇 ADD IT RIGHT HERE (GLOBAL BANNER) */}
-
-    {children}
-  </Providers>
-
-  <Analytics />
-  <Toaster
-    position="top-right"
-    richColors
-    closeButton
-  />
-</body>
+        <Providers>
+          {children}
+        </Providers>
+        <Analytics />
+        <Toaster position="top-right" richColors closeButton />
+      </body>
     </html>
   )
 }
