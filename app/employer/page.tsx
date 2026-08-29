@@ -274,6 +274,11 @@ export default function EmployerDashboard() {
                     <CreditCard className="h-4 w-4 text-muted-foreground" /> Billing
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/contact" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                    <HelpCircle className="h-4 w-4 text-muted-foreground" /> Help & Support
+                  </Link>
+                </DropdownMenuItem>
               </div>
               <DropdownMenuSeparator />
               <div className="py-1">

@@ -1,7 +1,7 @@
 "use client"
 import { useParams, useRouter } from "next/navigation"
 import { MapPin, ChevronLeft, Clock, Briefcase, Home, Activity, User } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 import { calculateMatch } from "@/lib/matchScore"
 import { toast } from "sonner"
@@ -24,7 +24,7 @@ export default function JobPage() {
   const [distance, setDistance] = useState<{ distanceText: string; durationText: string } | null>(null)
   const [studentUserId, setStudentUserId] = useState<string | null>(null)
   const [isLooking, setIsLooking] = useState(true)
-
+  const applyingRef = useRef(false)
   useEffect(() => {
     const run = async () => {
       const { data } = await supabase.auth.getUser()
@@ -111,19 +111,21 @@ export default function JobPage() {
 
   const handleApply = async () => {
     if (hasApplied) { toast.error("You've already applied to this location."); return }
+    if (applyingRef.current) return
+    applyingRef.current = true
     const { data: authData } = await supabase.auth.getUser()
     const studentId = authData?.user?.id
-    if (!studentId) return
+    if (!studentId) { applyingRef.current = false; return }
     setApplying(true)
     const { data: existing } = await supabase.from("location_applications").select("id").eq("student_user_id", studentId).eq("location_id", job.id).maybeSingle()
     if (existing) { toast.error("You've already applied to this location."); setHasApplied(true); setApplying(false); return }
     const { error: appError } = await supabase.from("location_applications").insert({ student_user_id: studentId, location_id: job.id })
-    if (appError) { toast.error("Failed to apply. Please try again."); setApplying(false); return }
+    if (appError) { toast.error("Failed to apply. Please try again."); applyingRef.current = false; setApplying(false); return }
     const { data: studentData } = await supabase.from("Students").select("name, id").eq("user_id", studentId).single()
     const studentName = studentData?.name || "A student"
     const studentDbId = studentData?.id
     const employerId = job.employer_user_id
-    if (!employerId) { toast.error("Could not find employer."); setApplying(false); return }
+    if (!employerId) { toast.success(`Applied to ${job.title} at ${job.company}!`); setHasApplied(true); setApplying(false); applyingRef.current = false; return }
     await supabase.from("notifications").insert({
       employer_id: employerId, student_user_id: studentId, type: "application",
       title: "New Applicant", message: `${studentName} applied to ${job.title} — ${job.company}`,
@@ -139,6 +141,7 @@ export default function JobPage() {
     toast.success(`Applied to ${job.title} at ${job.company}!`)
     setHasApplied(true)
     setApplying(false)
+    applyingRef.current = false
   }
 
   if (loading) {

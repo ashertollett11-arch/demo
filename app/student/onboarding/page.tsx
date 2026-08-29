@@ -14,7 +14,7 @@ export default function StudentOnboarding() {
   const [autoSaving, setAutoSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const finishedRef = useRef(false)
-
+  const navigatingRef = useRef(false)
   const [name, setName] = useState("")
   const [age, setAge] = useState("")
   const [gender, setGender] = useState<"male" | "female" | "">("")
@@ -123,8 +123,15 @@ export default function StudentOnboarding() {
 
   const next = async () => {
     if (!canProceed()) { toast.error("Please fill out all fields before continuing."); return }
-    if (step === TOTAL_STEPS) { handleFinish() }
-    else { await saveProgress(); setStep(s => s + 1) }
+    if (navigatingRef.current || saving) return
+    navigatingRef.current = true
+    if (step === TOTAL_STEPS) {
+      await handleFinish()
+    } else {
+      await saveProgress()
+      setStep(s => s + 1)
+    }
+    navigatingRef.current = false
   }
 
   const back = () => setStep(s => s - 1)

@@ -35,7 +35,7 @@ export default function StudentPage() {
   const [allLocations, setAllLocations] = useState<any[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("")
-
+  const [notificationSent, setNotificationSent] = useState(false)
   useEffect(() => {
     if (!studentId) return
     const loadStudent = async () => {
@@ -380,6 +380,7 @@ export default function StudentPage() {
                   <p className="text-sm font-semibold text-foreground mb-1">Already reached out?</p>
                   <p className="text-xs text-muted-foreground mb-3 leading-relaxed">Send them an in-app nudge so they know to check for your message.</p>
                   <Button className="w-full" variant="outline" size="sm"
+                    disabled={notificationSent}
                     onClick={async () => {
                       const { data: userData } = await supabase.auth.getUser()
                       const employerId = userData?.user?.id
@@ -390,9 +391,9 @@ export default function StudentPage() {
                         student_user_id: student.user_id, employer_id: employerId,
                         message: `Check your phone and email — ${company} is interested in hiring you!`, read: false,
                       })
-                      if (error) { toast.error("Failed to send notification.") } else { toast.success("Student notified!") }
+                      if (error) { toast.error("Failed to send notification.") } else { toast.success("Student notified!")  }setNotificationSent(true)
                     }}>
-                    <Bell className="h-4 w-4 mr-2" /> Send Notification
+<Bell className="h-4 w-4 mr-2" /> {notificationSent ? "Notification Sent ✓" : "Send Notification"}
                   </Button>
                 </div>
 

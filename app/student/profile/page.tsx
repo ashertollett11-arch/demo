@@ -385,7 +385,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
           <button onClick={() => router.push("/matching/student")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-5 w-5" />
-            Back
+            Cancel
           </button>
           <span className="text-base font-semibold text-foreground">My Profile</span>
           <div className="w-12" />

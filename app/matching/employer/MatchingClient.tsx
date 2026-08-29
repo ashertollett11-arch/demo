@@ -15,8 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, Bell, MapPin, Building2, CreditCard, LogOut } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { ChevronDown, Bell, MapPin, Building2, CreditCard, LogOut, HelpCircle } from "lucide-react"import { useRouter, useSearchParams } from "next/navigation"
 import {
   Star,
   Filter,
@@ -223,7 +222,8 @@ export default function MatchingPage() {
   const [studentsLoaded, setStudentsLoaded] = useState(false)
   const [distancesLoaded, setDistancesLoaded] = useState(false)
   const [scoresLoaded, setScoresLoaded] = useState(false)
-    const [statuses, setStatuses] = useState<any[]>([])
+  const [visibleCount, setVisibleCount] = useState(12)  
+  const [statuses, setStatuses] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [allLocations, setAllLocations] = useState<any[]>([])
@@ -738,6 +738,12 @@ export default function MatchingPage() {
                       Billing
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/contact" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                      Help & Support
+                    </Link>
+                  </DropdownMenuItem>
                 </div>
                 <DropdownMenuSeparator />
                 <div className="py-1">
@@ -946,17 +952,16 @@ export default function MatchingPage() {
                 <Button
                   key={status}
                   variant={activeStatus === status ? "default" : "outline"}
-                  onClick={() => setActiveStatus(status)}
+                  onClick={() => { setActiveStatus(status); setVisibleCount(12) }}
                   className="capitalize"
-                >
-                  {status} ({groupedCandidates[status].length})
+                >                  {status} ({groupedCandidates[status].length})
                 </Button>
               ))}
             </div>
 
             {/* CANDIDATE CARDS */}
             <div className="grid gap-4 sm:grid-cols-2">
-              {(groupedCandidates[activeStatus] ?? []).map((candidate) => {
+            {(groupedCandidates[activeStatus] ?? []).slice(0, visibleCount).map((candidate) => { 
                 const dist = distances[candidate.user_id]
                 return (
                   <Card key={candidate.id} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer">
@@ -1055,10 +1060,19 @@ export default function MatchingPage() {
                   </Card>
                 )
               })}
-            </div>
-
-            {students.length === 0 ? (
-              <Card className="border-dashed"><CardContent className="py-12 text-center"><p className="font-medium">No students in database</p></CardContent></Card>
+   </div>
+            {(groupedCandidates[activeStatus]?.length ?? 0) > visibleCount && (
+              <div className="flex justify-center mt-6">
+                <Button variant="outline" onClick={() => setVisibleCount(v => v + 12)}>
+                  Load more ({(groupedCandidates[activeStatus]?.length ?? 0) - visibleCount} remaining)
+                </Button>
+              </div>
+            )}
+            {students.length === 0 && !loading ? (
+              <Card className="border-dashed"><CardContent className="py-12 text-center">
+                <p className="font-medium text-foreground">No students in your area yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Check back soon — students are signing up regularly. You can also try increasing your hiring distance in your location settings.</p>
+              </CardContent></Card>
             ) : filteredCandidates.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="py-12 text-center">

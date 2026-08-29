@@ -156,9 +156,9 @@ export default function EmployerOnboarding() {
     // Mark profile complete
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      await supabase.from("profiles")
-        .upsert({ id: user.id, email: user.email, profile_complete: true }, { onConflict: "id" })
-    }
+        await supabase.from("profiles")
+          .upsert({ id: user.id, email: user.email, profile_complete: true, subscription_status: "freeactive" }, { onConflict: "id" })
+      }
 
     // Calculate distances in background
    // Calculate distances before moving on

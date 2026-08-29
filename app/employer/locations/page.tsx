@@ -15,8 +15,7 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Building2, CreditCard, LogOut, ChevronDown } from "lucide-react"
-
+import { ChevronDown, Bell, Building2, CreditCard, LogOut, HelpCircle } from "lucide-react"
 type Location = {
   id: string
   employer_id: string
@@ -230,6 +229,11 @@ export default function LocationsPage() {
                 <DropdownMenuItem asChild>
                   <Link href="/pricing/mobile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
                     <CreditCard className="h-4 w-4 text-muted-foreground" /> Billing
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/contact" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                    <HelpCircle className="h-4 w-4 text-muted-foreground" /> Help & Support
                   </Link>
                 </DropdownMenuItem>
               </div>
