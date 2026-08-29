@@ -1,4 +1,5 @@
 "use client"
+import Link from "next/link"
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
@@ -625,6 +626,15 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3.5">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Help & Support</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Questions or feedback? We're here.</p>
+              </div>
+              <Link href="/contact" className="text-sm font-medium text-primary">Contact us</Link>
+            </div>
+
 
         {/* DANGER ZONE */}
         <div className="px-4 pt-2 pb-2">
