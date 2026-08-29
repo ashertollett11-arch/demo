@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase"
 import Image from "next/image"
 import {
   ChevronDown, ArrowRight, Sparkles, Building2, MapPin, CreditCard, LogOut,
-  Users, TrendingUp, CheckCircle2, Bell, ChevronRight,
+  Users, TrendingUp, CheckCircle2, Bell, ChevronRight, HelpCircle,
 } from "lucide-react"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
