@@ -228,11 +228,22 @@ export default function ChooseRolePage() {
         </div>
 
         {/* BOTTOM */}
-        <div className="mt-10 flex items-center gap-2 text-sm text-muted-foreground">
-          <Users className="h-4 w-4" />
-          Trusted by students and employers looking for better local hiring
+     {/* BOTTOM */}
+     <div className="mt-10 flex flex-col items-center gap-4">
+          <button
+            onClick={async () => {
+              await supabase.auth.signOut()
+              router.replace("/")
+            }}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← Back to home
+          </button>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Users className="h-4 w-4" />
+            Trusted by students and employers looking for better local hiring
+          </div>
         </div>
-
       </div>
     </div>
   )

@@ -259,6 +259,20 @@ export default function EmployerOnboarding() {
                   {saving ? "Saving..." : "Continue to Location"}
                   {!saving && <ArrowRight className="ml-2 h-4 w-4" />}
                 </Button>
+                <button
+                  onClick={async () => {
+                    const { data: { user } } = await supabase.auth.getUser()
+                    if (user) {
+                      await supabase.from("job").delete().eq("user_id", user.id)
+                      await supabase.from("users").delete().eq("id", user.id)
+                    }
+                    await supabase.auth.signOut()
+                    router.replace("/choose-role")
+                  }}
+                  className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors mt-2 py-2"
+                >
+                  ← Wrong role? Go back to choose role
+                </button>
               </CardContent>
             </Card>
           </div>

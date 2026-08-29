@@ -288,7 +288,26 @@ export default function StudentOnboarding() {
         </div>
 
         {/* NAVIGATION */}
-        <div className="flex gap-3 mt-10">
+   {/* NAVIGATION */}
+   {step === 1 && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={async () => {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                  await supabase.from("Students").delete().eq("user_id", user.id)
+                  await supabase.from("users").delete().eq("id", user.id)
+                }
+                await supabase.auth.signOut()
+                router.replace("/choose-role")
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Wrong role? Go back to choose role
+            </button>
+          </div>
+        )}
+        <div className="flex gap-3 mt-4">
           {step > 1 && (
             <button onClick={back}
               className="flex items-center justify-center h-14 px-5 rounded-2xl border border-border bg-secondary/40 text-foreground font-semibold transition-all active:scale-[0.97]">
