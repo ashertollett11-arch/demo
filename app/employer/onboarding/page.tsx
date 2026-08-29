@@ -266,7 +266,6 @@ export default function EmployerOnboarding() {
                       await supabase.from("job").delete().eq("user_id", user.id)
                       await supabase.from("users").delete().eq("id", user.id)
                     }
-                    await supabase.auth.signOut()
                     router.replace("/choose-role")
                   }}
                   className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors mt-2 py-2"
