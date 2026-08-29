@@ -97,8 +97,8 @@ function LoginContent() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       {/* BACK BUTTON */}
-      <div className="absolute left-6 top-6 z-20">
-        <Button
+      <div className="absolute left-4 top-4 z-20 sm:left-6 sm:top-6">
+                <Button
           variant="outline"
           className="gap-2 rounded-xl border-border bg-card/80 backdrop-blur"
           onClick={() => router.push("/")}
@@ -109,13 +109,13 @@ function LoginContent() {
       </div>
       {/* BACKGROUND */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-12">
         <div className="w-full flex justify-center">
           <Card className="w-full max-w-md border-border bg-card/95 shadow-2xl backdrop-blur">
-            <CardContent className="p-10">
+            <CardContent className="p-6 sm:p-10">
               <div className="mb-8 text-center">
-                <h1 className="text-3xl font-bold text-foreground">Welcome back</h1>
-                <p className="mt-2 text-muted-foreground">Log in to your SimplyApply account.</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Welcome back</h1>
+                              <p className="mt-2 text-muted-foreground">Log in to your SimplyApply account.</p>
               </div>
               {/* EMAIL */}
               <div className="space-y-2">
