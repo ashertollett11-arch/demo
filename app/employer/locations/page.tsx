@@ -45,8 +45,41 @@ const TIME_OPTIONS = Array.from({ length: 24 }, (_, i) => {
   return `${hour}:00 ${ampm}`
 })
 
-const JOB_ROLES = ["Cashier","Server","Busser","Barista","Cook","Dishwasher","Host","Sales Associate","Stock Associate","Customer Service","Store Associate"]
-
+const JOB_ROLES = [
+    // Food & Beverage
+    "Cashier",
+    "Server",
+    "Busser",
+    "Barista",
+    "Cook",
+    "Dishwasher",
+    "Host/Hostess",
+    "Food Runner",
+    "Ice Cream Scooper",
+    // Retail
+    "Sales Associate",
+    "Stock Associate",
+    "Bagger",
+    "Fitting Room Attendant",
+    "Cart Attendant",
+    // Customer Service
+    "Customer Service",
+    "Front Desk",
+    "Receptionist",
+    // Recreation & Hospitality
+    "Lifeguard",
+    "Camp Counselor",
+    "Theme Park Attendant",
+    "Movie Theater Attendant",
+    "Bowling Alley Attendant",
+    // Outdoor & Physical
+    "Car Wash Attendant",
+    "Car Detailer",
+    // Other
+    "Tutor",
+    "Library Assistant",
+    "Office Assistant",
+  ]
 export default function LocationsPage() {
   const router = useRouter()
   const [jobId, setJobId] = useState<string | null>(null)

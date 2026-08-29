@@ -48,8 +48,42 @@ export default function ProfilePage() {
   const [recommendation, setRecommendation] = useState<any>(null)
   const [sendingRec, setSendingRec] = useState(false)
 
-  const JOB_OPTIONS = ["Cashier","Server","Busser","Barista","Cook","Dishwasher","Host","Sales Associate","Stock Associate","Customer Service","Store Associate"]
-  const DEFAULT_AVAILABILITY = [
+  const JOB_OPTIONS = [
+    // Food & Beverage
+    "Cashier",
+    "Server",
+    "Busser",
+    "Barista",
+    "Cook",
+    "Dishwasher",
+    "Host/Hostess",
+    "Food Runner",
+    "Ice Cream Scooper",
+    // Retail
+    "Sales Associate",
+    "Stock Associate",
+    "Bagger",
+    "Fitting Room Attendant",
+    "Cart Attendant",
+    // Customer Service
+    "Customer Service",
+    "Front Desk",
+    "Receptionist",
+    // Recreation & Hospitality
+    "Lifeguard",
+    "Camp Counselor",
+    "Theme Park Attendant",
+    "Movie Theater Attendant",
+    "Bowling Alley Attendant",
+    // Outdoor & Physical
+    "Car Wash Attendant",
+    "Car Detailer",
+    // Other
+    "Tutor",
+    "Library Assistant",
+    "Office Assistant",
+  ]
+    const DEFAULT_AVAILABILITY = [
     { day: "Monday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
     { day: "Tuesday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
     { day: "Wednesday", start: "9:00 AM", end: "5:00 PM", available: true, hours: "8" },
