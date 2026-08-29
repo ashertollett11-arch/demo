@@ -130,8 +130,13 @@ function LoginContent() {
               </div>
               {/* PASSWORD */}
               <div className="mt-5 space-y-2">
-                <label className="text-sm font-medium text-foreground">Password</label>
-                <input
+              <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">Password</label>
+                  <Link href="/forgot-password" className="text-xs text-primary hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
+                                <input
                   className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                   type="password"
                   placeholder="Enter your password"
