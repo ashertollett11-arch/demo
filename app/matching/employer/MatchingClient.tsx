@@ -791,17 +791,35 @@ export default function MatchingPage() {
           </div>
         )}
 
-        <Card className="mb-8 border-primary/20 bg-gradient-to-r from-primary/5 to-accent/5">
+<Card className="mb-8 border-border bg-card">
           <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <Zap className="h-5 w-5 text-primary" />
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Star className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Match Score</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Each student gets a % score based on how well their availability, GPA, and job preferences align with yours.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-foreground">Smart Matching</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Filter by GPA, age, availability, and distance. Sort by best match, GPA, or age.
-                </p>
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Filter className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Filters</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Narrow by GPA, age, and availability. Distance is set per location — change it in your location settings.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                  <Zap className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">How to hire</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">View a student's profile to see their contact info. Reach out directly, then mark them as <span className="font-medium text-foreground">Contacted</span> so they know to expect your call.</p>
+                </div>
               </div>
             </div>
           </CardContent>

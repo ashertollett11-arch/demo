@@ -282,7 +282,23 @@ export default function LocationsPage() {
           </div>
           <div className="flex justify-end">
             {locations.length > 0 && (
-              <Button onClick={() => router.push("/employer")} className="flex items-center gap-2">
+              <Button
+                onClick={async () => {
+                  if (showForm) {
+                    const isValid =
+                      formName.trim().length > 0 &&
+                      formAddress.trim().length > 0 &&
+                      /^\d{5}$/.test(formZip) &&
+                      Number(formPay) > 0 &&
+                      formJobs.length > 0
+                    if (isValid) {
+                      await saveLocation()
+                    }
+                  }
+                  router.push("/employer")
+                }}
+                className="flex items-center gap-2"
+              >
                 Dashboard
                 <ChevronRight className="h-4 w-4" />
               </Button>
