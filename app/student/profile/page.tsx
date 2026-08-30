@@ -24,7 +24,9 @@ export default function ProfilePage() {
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [saving, setSaving] = useState(false)
   const [isLooking, setIsLooking] = useState(true)
-
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
+  const [suppressUnsavedWarning, setSuppressUnsavedWarning] = useState(false)
   // Editing state — which field is open
   const [editingField, setEditingField] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
@@ -101,6 +103,7 @@ export default function ProfilePage() {
   const isEmailValid = emailRegex.test(email)
 
   const nameRef = useRef<HTMLInputElement>(null)
+  const initialLoadDone = useRef(false)
   const [interests, setInterests] = useState<string[]>([])
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [availability, setAvailability] = useState(DEFAULT_AVAILABILITY)
@@ -190,6 +193,19 @@ export default function ProfilePage() {
     loadProfile()
   }, [])
 
+  useEffect(() => {
+    const suppressed = localStorage.getItem("suppress_unsaved_warning") === "true"
+    setSuppressUnsavedWarning(suppressed)
+  }, [])
+
+  useEffect(() => {
+    if (loading) return
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true
+      return
+    }
+    setHasUnsavedChanges(true)
+  }, [name, age, gpa, location, zipCode, email, school, phone, preferredJobs, interests, availability, shiftPreference, isLooking])
   const saveStudentProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
@@ -355,6 +371,61 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-background pb-28">
 
       {/* DIALOGS */}
+      <Dialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <DialogContent className="sm:max-w-sm mx-4 rounded-2xl">
+          <DialogHeader className="text-center items-center pb-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 mb-3">
+              <AlertTriangle className="h-6 w-6 text-yellow-600" />
+            </div>
+            <DialogTitle className="text-lg font-bold text-foreground">Unsaved changes</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground mt-1">
+              You have unsaved changes that will be lost if you leave.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-2">
+            <button
+              onClick={() => {
+                setShowUnsavedDialog(false)
+                router.push("/matching/student")
+              }}
+              className="w-full py-3.5 rounded-2xl bg-foreground text-background text-sm font-semibold active:scale-[0.98] transition-all">
+              Leave without saving
+            </button>
+            <button
+              onClick={() => setShowUnsavedDialog(false)}
+              className="w-full py-3.5 rounded-2xl border border-border bg-secondary/40 text-foreground text-sm font-semibold active:scale-[0.98] transition-all">
+              Keep editing
+            </button>
+            <button
+              onClick={() => {
+                setShowUnsavedDialog(false)
+                // trigger save then navigate
+                document.getElementById("profile-save-btn")?.click()
+              }}
+              className="w-full py-3.5 rounded-2xl border border-primary/30 bg-primary/5 text-primary text-sm font-semibold active:scale-[0.98] transition-all">
+              Save & leave
+            </button>
+          </div>
+          <div className="mt-3 flex items-center gap-2.5 px-1">
+            <button
+              type="button"
+              onClick={() => {
+                const newVal = !suppressUnsavedWarning
+                setSuppressUnsavedWarning(newVal)
+                if (newVal) {
+                  localStorage.setItem("suppress_unsaved_warning", "true")
+                } else {
+                  localStorage.removeItem("suppress_unsaved_warning")
+                }
+              }}
+              className={`relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-all ${suppressUnsavedWarning ? "bg-primary border-primary" : "border-border bg-background"}`}>
+              {suppressUnsavedWarning && <Check className="h-3 w-3 text-primary-foreground" />}
+            </button>
+            <span className="text-xs text-muted-foreground">Don't show this again</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+     
       <Dialog open={showSwitchDialog} onOpenChange={setShowSwitchDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -384,7 +455,15 @@ export default function ProfilePage() {
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
-          <button onClick={() => router.push("/matching/student")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <button
+            onClick={() => {
+              if (hasUnsavedChanges && !suppressUnsavedWarning) {
+                setShowUnsavedDialog(true)
+              } else {
+                router.push("/matching/student")
+              }
+            }}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-5 w-5" />
             Cancel
           </button>
@@ -662,7 +741,8 @@ export default function ProfilePage() {
       {/* FLOATING SAVE BUTTON */}
       <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent">
         <div className="max-w-lg mx-auto">
-          <button
+        <button
+            id="profile-save-btn"
             disabled={saving}
             onClick={async () => {
               if (!isProfileComplete) {
@@ -685,6 +765,7 @@ export default function ProfilePage() {
               const success = await saveStudentProfile()
               setSaving(false)
               if (!success) return
+              setHasUnsavedChanges(false)
               router.push("/matching/student?from=profile&saved=true")
             }}
             className={`w-full h-14 rounded-2xl text-base font-semibold shadow-lg transition-all ${
