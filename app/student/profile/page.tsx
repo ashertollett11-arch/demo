@@ -723,13 +723,7 @@ export default function ProfilePage() {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
-          <button onClick={() => setShowSwitchDialog(true)} className="w-full flex items-center justify-between px-4 py-3.5 border-b border-border hover:bg-secondary/30 transition-colors">
-            <div className="text-left">
-              <p className="text-sm font-medium text-foreground">Switch to Employer</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Permanently deletes your student data</p>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
-          </button>
+         
           <button onClick={() => setShowDeleteDialog(true)} className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-red-50/50 transition-colors">
             <div className="text-left">
               <p className="text-sm font-medium text-red-600">Delete Account</p>

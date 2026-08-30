@@ -207,18 +207,7 @@ export default function EmployerProfilePage() {
     <div className="min-h-screen bg-background">
 
       {/* DIALOGS */}
-      <Dialog open={showSwitchDialog} onOpenChange={setShowSwitchDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="h-5 w-5" />Switch to Student Role?</DialogTitle>
-            <DialogDescription className="pt-2">This will permanently delete your employer account including your company profile, all locations, and candidate pipeline. This cannot be undone.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowSwitchDialog(false)} disabled={switching}>Cancel</Button>
-            <Button variant="destructive" onClick={handleSwitchRole} disabled={switching}>{switching ? "Deleting..." : "Yes, delete my account"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="sm:max-w-md">
@@ -493,15 +482,7 @@ export default function EmployerProfilePage() {
          <Card className="border-border bg-card">
               <CardContent className="p-5 space-y-4">
                 <p className="text-sm font-semibold text-foreground">Account</p>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Switch to Student</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Permanently deletes your employer data</p>
-                  </div>
-                  <Button variant="outline" size="sm" className="shrink-0 border-red-200 text-red-600 hover:bg-red-50" onClick={() => setShowSwitchDialog(true)}>
-                    Switch
-                  </Button>
-                </div>
+              
                 <div className="border-t border-border pt-4 flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-red-700">Delete Account</p>

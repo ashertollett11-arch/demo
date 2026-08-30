@@ -11,7 +11,7 @@ export default function JobPage() {
   const router = useRouter()
   const params = useParams()
   const jobId = params.id as string
-
+  const [showScoreInfo, setShowScoreInfo] = useState(false)
   const [distanceMeters, setDistanceMeters] = useState<number | undefined>(undefined)
   const [hasRecommendation, setHasRecommendation] = useState(false)
   const [studentShiftPreference, setStudentShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
@@ -193,13 +193,25 @@ export default function JobPage() {
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold text-foreground">{job.company}</h1>
               <p className="text-sm text-muted-foreground mt-0.5">{job.title}</p>
-              <div className="flex flex-wrap items-center gap-2 mt-2">
+              <div className="flex items-center gap-3 mt-2">
                 <span className="text-lg font-bold text-foreground">{job.pay}</span>
                 {job.tips && <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 font-medium">+ Tips</span>}
-                <span className={`text-sm font-bold ${jobMatchScore >= 75 ? "text-primary" : jobMatchScore >= 50 ? "text-yellow-600" : "text-muted-foreground"}`}>
-                  {jobMatchScore}% match
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className={`text-sm font-bold ${jobMatchScore >= 75 ? "text-primary" : jobMatchScore >= 50 ? "text-yellow-600" : "text-muted-foreground"}`}>
+                    {jobMatchScore}% match
+                  </span>
+                  <button
+                    onClick={() => setShowScoreInfo(prev => !prev)}
+                    className="flex h-4 w-4 items-center justify-center rounded-full bg-secondary text-muted-foreground text-[10px] font-bold hover:bg-secondary/80 transition-colors">
+                    ?
+                  </button>
+                </div>
               </div>
+              {showScoreInfo && (
+                <div className="mt-3 rounded-xl border border-border bg-secondary/30 px-4 py-3 text-xs text-muted-foreground leading-relaxed">
+                  Your match score is based on <span className="font-medium text-foreground">how many of your available days overlap</span> with this job's shifts, your <span className="font-medium text-foreground">shift preference</span>, how close you are, and whether your <span className="font-medium text-foreground">preferred job roles</span> align. Update your availability and preferred positions in your profile to improve your score.
+                </div>
+              )}
             </div>
           </div>
 
@@ -225,6 +237,48 @@ export default function JobPage() {
             <div className="rounded-2xl border border-border/60 bg-card px-4 py-4">
               <p className="text-sm text-foreground leading-relaxed">{job.details}</p>
             </div>
+          </div>
+        )}
+
+        {/* SHIFTS */}
+       
+{/* AVAILABILITY MATCH INSIGHT */}
+{activeShifts.length > 0 && availability.length > 0 && (
+          <div className="rounded-2xl border border-border/60 bg-card px-4 py-4">
+            {(() => {
+              const jobDays = activeShifts.map((s: any) => s.day)
+              const studentDays = availability.filter((a: any) => a.available).map((a: any) => a.day)
+              const matchingDays = studentDays.filter(d => jobDays.includes(d))
+              const missingDays = jobDays.filter(d => !studentDays.includes(d))
+              return (
+                <div className="space-y-2">
+                  {matchingDays.length > 0 ? (
+                    <div className="flex items-start gap-2">
+                      <span className="text-green-500 mt-0.5">✓</span>
+                      <p className="text-xs text-foreground">
+                        <span className="font-semibold">You match</span> on {matchingDays.join(", ")}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <span className="text-red-400 mt-0.5">✗</span>
+                      <p className="text-xs text-foreground">
+                        <span className="font-semibold">No overlapping days</span> — this job needs days you're not available
+                      </p>
+                    </div>
+                  )}
+                  {missingDays.length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-yellow-500 mt-0.5">!</span>
+                      <p className="text-xs text-muted-foreground">
+                        This job also needs <span className="font-medium text-foreground">{missingDays.join(", ")}</span> — you're not available {missingDays.length === 1 ? "that day" : "those days"}.{" "}
+                        <button onClick={() => router.push("/student/profile")} className="text-primary underline">Update availability</button>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
         )}
 

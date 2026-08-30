@@ -313,7 +313,7 @@ useEffect(() => {
           {[
             { key: "matchScore", label: "Best Match" },
             { key: "pay", label: "Highest Pay" },
-            { key: "tips", label: "has Tips" },
+            { key: "tips", label: "Has Tips" },
             { key: "distance", label: "Closest" },
           ].map(({ key, label }) => (
             <button key={key}
