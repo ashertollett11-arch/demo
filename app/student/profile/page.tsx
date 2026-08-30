@@ -372,7 +372,7 @@ export default function ProfilePage() {
 
       {/* DIALOGS */}
       <Dialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
-        <DialogContent className="sm:max-w-sm mx-4 rounded-2xl">
+      <DialogContent className="sm:max-w-sm w-[calc(100%-2rem)] rounded-2xl left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] fixed">
           <DialogHeader className="text-center items-center pb-2">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 mb-3">
               <AlertTriangle className="h-6 w-6 text-yellow-600" />
