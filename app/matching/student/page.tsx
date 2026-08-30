@@ -15,6 +15,7 @@ import {
   Clock,
   Home,
   Activity,
+  ChevronRight,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
@@ -57,7 +58,15 @@ export default function MatchesPage() {
   const pathname = usePathname()
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set())
   const [studentNotifications, setStudentNotifications] = useState<any[]>([])
+  const [isFirstVisit, setIsFirstVisit] = useState(false)
 
+  useEffect(() => {
+    const seen = localStorage.getItem("jobs_page_visited")
+    if (!seen) {
+      setIsFirstVisit(true)
+      localStorage.setItem("jobs_page_visited", "true")
+    }
+  }, [])
   useEffect(() => {
     const checkProfile = async () => {
       const { data } = await supabase.auth.getUser()
@@ -293,7 +302,16 @@ useEffect(() => {
             <p className="text-xs text-muted-foreground mt-0.5">Applied</p>
           </div>
         </div>
-
+        {matchedJobs.length > 0 && (isFirstVisit || Math.max(...matchedJobs.map(j => j.matchScore)) < 65) && (
+        <Link href="/student/profile" className="mb-5 flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-4 active:scale-[0.98] transition-all">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-lg">💡</div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-yellow-900">Boost your match score</p>
+            <p className="text-xs text-yellow-700 mt-0.5 leading-relaxed">Your top match is {Math.max(...matchedJobs.map(j => j.matchScore))}%. Update your availability and preferred jobs to get better matches.</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-yellow-500 shrink-0" />
+        </Link>
+      )}
         {/* EMPLOYER ACTIVITY BANNER */}
         <Link href="/student/activity" className="mb-5 flex items-center justify-between rounded-2xl bg-primary px-5 py-4 hover:bg-primary/90 transition-colors">
           <div className="flex items-center gap-3">
