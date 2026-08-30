@@ -4,7 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { Toaster } from "sonner"
-
+import NextTopLoader from "nextjs-toploader"
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
@@ -112,7 +112,8 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased">
-        <Providers>
+      <Providers>
+          <NextTopLoader color="#000000" showSpinner={false} height={2} />
           {children}
         </Providers>
         <Analytics />

@@ -35,6 +35,9 @@ export default function StudentPage() {
   const [allLocations, setAllLocations] = useState<any[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("")
+  const [notes, setNotes] = useState("")
+  const [savingNotes, setSavingNotes] = useState(false)
+  const [notesSaved, setNotesSaved] = useState(false)
   const [notificationSent, setNotificationSent] = useState(false)
   useEffect(() => {
     if (!studentId) return
@@ -71,7 +74,15 @@ export default function StudentPage() {
       setStudent({ ...data, status: statusRow?.status || "new" })
       const { data: rec } = await supabase.from("recommendations").select("*").eq("student_user_id", data.user_id).eq("submitted", true).maybeSingle()
       if (rec) setRecommendation(rec)
-      setLoading(false)
+        const { data: existingNotes } = await supabase
+      .from("student_statuses")
+      .select("notes")
+      .eq("student_id", studentId)
+      .eq("employer_id", userId)
+      .maybeSingle()
+    if (existingNotes?.notes) setNotes(existingNotes.notes)
+     
+        setLoading(false)
     }
     loadStudent()
   }, [studentId, router])
@@ -126,6 +137,21 @@ export default function StudentPage() {
       fetch("/api/send-contacted-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ studentEmail: student.email, studentName: student.name, companyName: jobData?.company || "An employer", businessType: jobData?.business_type || "" }) }).catch(() => {})
     }
   }
+
+  const saveNotes = async (value: string) => {
+    const { data: userData } = await supabase.auth.getUser()
+    const employerId = userData?.user?.id
+    if (!employerId) return
+    setSavingNotes(true)
+    await supabase.from("student_statuses").upsert(
+      { student_id: studentId, employer_id: employerId, notes: value },
+      { onConflict: "student_id,employer_id" }
+    )
+    setSavingNotes(false)
+    setNotesSaved(true)
+    setTimeout(() => setNotesSaved(false), 2000)
+  }
+
 
   if (loading) {
     return (
@@ -395,6 +421,32 @@ export default function StudentPage() {
                     }}>
 <Bell className="h-4 w-4 mr-2" /> {notificationSent ? "Notification Sent ✓" : "Send Notification"}
                   </Button>
+                </div>
+
+
+{/* NOTES */}
+<div>
+                  <p className="text-sm font-semibold text-foreground mb-2">Private Notes</p>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => {
+                      setNotes(e.target.value)
+                      setNotesSaved(false)
+                    }}
+                    onBlur={(e) => saveNotes(e.target.value)}
+                    placeholder="e.g. Called Tuesday, no answer. Try again Thursday..."
+                    rows={3}
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary resize-none transition-all"
+                  />
+                  <p className="text-xs mt-1 transition-all">
+                    {savingNotes ? (
+                      <span className="text-muted-foreground">Saving...</span>
+                    ) : notesSaved ? (
+                      <span className="text-green-600">Saved ✓</span>
+                    ) : (
+                      <span className="text-muted-foreground">Auto-saves when you click away.</span>
+                    )}
+                  </p>
                 </div>
 
                 {/* STATUS */}

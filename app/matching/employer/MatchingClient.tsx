@@ -1005,8 +1005,14 @@ export default function MatchingPage() {
                           .join(", ") || "None"}
                       </div>
                       <div className="mt-5 flex gap-2">
-                        <Button variant="outline" className="flex-1" size="sm"
-                          onClick={(e) => { e.stopPropagation(); router.push(`/matching/employer/${candidate.id}`) }}
+                      <Button variant="outline" className="flex-1" size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const btn = e.currentTarget
+                            btn.textContent = "Loading..."
+                            btn.setAttribute("disabled", "true")
+                            router.push(`/matching/employer/${candidate.id}`)
+                          }}
                         >
                           View Profile
                         </Button>

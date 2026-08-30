@@ -414,8 +414,11 @@ export default function EmployerDashboard() {
                           <p className="text-sm text-foreground truncate">{n.message}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <Button size="sm" variant="outline" className="text-xs h-7"
-                            onClick={async () => {
+                        <Button size="sm" variant="outline" className="text-xs h-7"
+                            onClick={async (e) => {
+                              const btn = e.currentTarget
+                              btn.textContent = "..."
+                              btn.setAttribute("disabled", "true")
                               if (n.student_user_id) {
                                 const { data } = await supabase.from("Students").select("id").eq("user_id", n.student_user_id).maybeSingle()
                                 if (data?.id) window.location.href = `/matching/employer/${data.id}`
