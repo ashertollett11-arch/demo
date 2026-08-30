@@ -268,13 +268,17 @@ export default function StudentPage() {
                         <p className="text-muted-foreground mt-0.5">{student.school}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-lg font-bold ${matchScore >= 75 ? "text-primary" : matchScore >= 50 ? "text-yellow-600" : "text-muted-foreground"}`}>
-                          {matchScore}% match
-                        </span>
-                        {student.is_looking === false && (
-                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Not looking</Badge>
-                        )}
-                      </div>
+                        {locationLoading ? (
+                          <div className="h-6 w-24 rounded bg-secondary animate-pulse" />
+                        ) : (
+                          <span className={`text-lg font-bold ${matchScore >= 75 ? "text-primary" : matchScore >= 50 ? "text-yellow-600" : "text-muted-foreground"}`}>
+                            {matchScore}% match
+                          </span>
+                    )}
+                    {student.is_looking === false && (
+                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Not looking</Badge>
+                    )}
+                  </div>
                     </div>
                     <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{student.location}</span>
