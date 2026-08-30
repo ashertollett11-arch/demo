@@ -410,7 +410,7 @@ export default function EmployerProfilePage() {
                           )}
                           <span className="text-xs text-muted-foreground bg-secondary rounded-full px-2 py-0.5 capitalize">{loc.shift_preference}</span>
                         </div>
-                        <button onClick={goToLocations} className="mt-2 text-xs text-primary hover:underline flex items-center gap-1">
+                        <button onClick={() => router.push(`/employer/locations?edit=${loc.id}`)} className="mt-2 text-xs text-primary hover:underline flex items-center gap-1">
                           <Pencil className="h-3 w-3" /> Edit
                         </button>
                       </div>

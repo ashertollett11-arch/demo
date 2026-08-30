@@ -199,8 +199,9 @@ export default function StudentPage() {
           </div>
           <div className="hidden items-center gap-6 md:flex">
             <Link href="/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">Dashboard</Link>
-            <Link href="/matching/employer" className="text-sm font-medium text-foreground">Find Candidates</Link>
+            <Link href="/matching/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">Find Candidates</Link>
             <Link href="/employer/locations" className="text-sm font-medium text-muted-foreground hover:text-foreground">Locations</Link>
+            <Link href="/pricing/mobile" className="text-sm font-medium text-muted-foreground hover:text-foreground">Billing</Link>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

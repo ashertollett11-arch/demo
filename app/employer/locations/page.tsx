@@ -92,6 +92,18 @@ export default function LocationsPage() {
       setJobId(job.id)
       setCompanyName(job.company || "")
       await loadLocations(job.id)
+      // Auto-open edit form if ?edit=locationId is in the URL
+      const editId = new URLSearchParams(window.location.search).get("edit")
+      if (editId) {
+        const { data: locToEdit } = await supabase.from("locations").select("*").eq("id", editId).single()
+        if (locToEdit) {
+          setFormName(locToEdit.name); setFormAddress(locToEdit.address || ""); setFormZip(locToEdit.zip_code || "")
+          setFormMaxDistance(locToEdit.max_distance_miles ?? 10); setFormShiftPref(locToEdit.shift_preference || "flexible")
+          setFormShifts(locToEdit.available_shifts?.length ? locToEdit.available_shifts : DEFAULT_SHIFTS)
+          setFormPay(locToEdit.hourly_pay ? String(locToEdit.hourly_pay) : ""); setFormTips(locToEdit.has_tips || false)
+          setFormJobs(locToEdit.preferred_jobs || []); setEditingId(editId); setShowForm(true)
+        }
+      }
       setLoading(false)
     }
     load()
