@@ -181,7 +181,7 @@ export default function StudentActivityPage() {
             <div className="space-y-2">
               {studentNotifications.map(n => (
                 <div key={n.id} className="rounded-2xl border border-border/60 bg-card p-4 flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-base">📲</div>
+<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">🎉</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground leading-snug">{n.message}</p>
                     <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">

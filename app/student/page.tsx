@@ -151,6 +151,18 @@ export default function StudentDashboard() {
       if (!user) return
       const { data } = await supabase.from("student_notifications").select("*").eq("student_user_id", user.id).eq("read", false).order("created_at", { ascending: false })
       setStudentNotifications(data || [])
+      const channel = supabase
+        .channel("student-notifications-dashboard")
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "student_notifications",
+          filter: `student_user_id=eq.${user.id}`,
+        }, (payload) => {
+          setStudentNotifications(prev => [payload.new, ...prev])
+        })
+        .subscribe()
+      return () => { supabase.removeChannel(channel) }
     }
     loadStudentNotifications()
   }, [])
@@ -170,7 +182,6 @@ export default function StudentDashboard() {
 
   return (
     <>
-      <Toaster richColors position="top-right" />
       <div className="min-h-screen bg-background pb-28" suppressHydrationWarning>
 
         {/* HEADER */}
@@ -202,7 +213,7 @@ export default function StudentDashboard() {
                   <div className="max-h-72 overflow-y-auto divide-y divide-border">
                     {studentNotifications.map((n) => (
                       <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/30">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">📲</div>
+<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">🎉</div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm leading-snug">{n.message}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{n.created_at ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Just now"}</p>

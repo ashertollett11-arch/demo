@@ -421,7 +421,17 @@ export default function EmployerDashboard() {
                               btn.setAttribute("disabled", "true")
                               if (n.student_user_id) {
                                 const { data } = await supabase.from("Students").select("id").eq("user_id", n.student_user_id).maybeSingle()
-                                if (data?.id) window.location.href = `/matching/employer/${data.id}`
+                                if (data?.id) {
+                                  window.location.href = `/matching/employer/${data.id}`
+                                } else {
+                                  toast.error("Couldn't find that student profile.")
+                                  btn.textContent = "View"
+                                  btn.removeAttribute("disabled")
+                                }
+                              } else {
+                                toast.error("No student linked to this notification.")
+                                btn.textContent = "View"
+                                btn.removeAttribute("disabled")
                               }
                             }}>
                             View

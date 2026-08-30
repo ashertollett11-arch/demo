@@ -415,8 +415,7 @@ export default function StudentPage() {
                       const company = jobData?.company || "An employer"
                       const { error } = await supabase.from("student_notifications").insert({
                         student_user_id: student.user_id, employer_id: employerId,
-                        message: `Check your phone and email — ${company} is interested in hiring you!`, read: false,
-                      })
+                        message: `🎉 Congrats! ${company} thinks you're a great match — check your phone and email, they've reached out to start the hiring process!`, read: false,                      })
                       if (error) { toast.error("Failed to send notification.") } else { toast.success("Student notified!")  }setNotificationSent(true)
                     }}>
 <Bell className="h-4 w-4 mr-2" /> {notificationSent ? "Notification Sent ✓" : "Send Notification"}

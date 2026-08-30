@@ -667,19 +667,26 @@ export default function MatchingPage() {
                           </p>
                         </div>
                         <div className="flex flex-col gap-1.5 shrink-0">
-                        <button
-                            onClick={async () => {
+                        <button onClick={async (e) => {
+                              const btn = e.currentTarget
+                              btn.textContent = "..."
                               if (n.student_user_id) {
                                 const { data } = await supabase
                                   .from("Students")
                                   .select("id")
                                   .eq("user_id", n.student_user_id)
                                   .maybeSingle()
-                                if (data?.id) router.push(`/matching/employer/${data.id}`)
+                                if (data?.id) {
+                                  router.push(`/matching/employer/${data.id}`)
+                                } else {
+                                  toast.error("Couldn't find that student profile.")
+                                  btn.textContent = "View"
+                                }
+                              } else {
+                                toast.error("No student linked to this notification.")
+                                btn.textContent = "View"
                               }
-                            }}
-                            className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
-                          >
+                            }} className="text-xs font-medium text-primary hover:text-primary/80 transition-colors">
                             View
                           </button>
                           <button
