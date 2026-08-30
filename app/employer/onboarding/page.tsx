@@ -23,8 +23,14 @@ const TIME_OPTIONS = Array.from({ length: 24 }, (_, i) => {
   return `${hour}:00 ${ampm}`
 })
 
-const JOB_ROLES = ["Cashier", "Server", "Busser", "Barista", "Cook", "Dishwasher", "Host", "Sales Associate", "Stock Associate", "Customer Service", "Store Associate"]
-
+const JOB_ROLES = [
+    "Cashier", "Server", "Busser", "Barista", "Cook", "Dishwasher", "Host/Hostess", "Food Runner", "Ice Cream Scooper",
+    "Sales Associate", "Stock Associate", "Bagger", "Fitting Room Attendant", "Cart Attendant",
+    "Customer Service", "Front Desk", "Receptionist",
+    "Lifeguard", "Camp Counselor", "Theme Park Attendant", "Movie Theater Attendant", "Bowling Alley Attendant",
+    "Car Wash Attendant", "Car Detailer",
+    "Tutor", "Library Assistant", "Office Assistant",
+  ]
 const emailRegex = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|us|gov|io|co)$/i
 
 export default function EmployerOnboarding() {
