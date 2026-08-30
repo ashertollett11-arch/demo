@@ -64,8 +64,8 @@ export async function POST(request: Request) {
                         <table width="100%" cellpadding="0" cellspacing="0">
                           <tr>
                             <td align="center">
-                              <a href="https://simplyapply.app/matching/student" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 8px;">
-                                View Jobs on SimplyApply
+                              <a href="https://simplyapply.app/student/activity" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 8px;">
+                                View Information on SimplyApply
                               </a>
                             </td>
                           </tr>
