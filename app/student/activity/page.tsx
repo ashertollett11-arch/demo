@@ -4,7 +4,14 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Clock, Building2, Bell, Home, Briefcase, User, Activity, CheckCircle2, MapPin } from "lucide-react"
 import Link from "next/link"
-
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+  } from "@/components/ui/dropdown-menu"
+  import { LogOut } from "lucide-react"
 type ContactedEmployer = {
   id: string
   employer_id: string
@@ -140,8 +147,8 @@ export default function StudentActivityPage() {
         return <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-600">✅ Hired</span>
       case "contacted":
         return <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-600">📬 Employer reached out</span>
-      default:
-        return <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">⏳ Under review</span>
+        default:
+            return <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground"> Application sent</span>
     }
   }
 
@@ -166,9 +173,38 @@ export default function StudentActivityPage() {
         <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
           <div className="w-9" />
           <p className="text-base font-bold text-foreground">Activity</p>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-1 ring-primary/20">
-            {initials}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-1 ring-primary/20">
+                {initials}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <div className="px-3 py-2.5 border-b">
+                <p className="text-sm font-semibold truncate">{name}</p>
+                <p className="text-xs text-muted-foreground">Student Account</p>
+              </div>
+              <div className="py-1">
+                <DropdownMenuItem asChild>
+                  <Link href="/student/profile" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                    <User className="h-4 w-4 text-muted-foreground" /> My Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/matching/student" className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer">
+                    <Briefcase className="h-4 w-4 text-muted-foreground" /> Jobs Near You
+                  </Link>
+                </DropdownMenuItem>
+              </div>
+              <DropdownMenuSeparator />
+              <div className="py-1">
+                <DropdownMenuItem onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer">
+                  <LogOut className="h-4 w-4" /> Log out
+                </DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 

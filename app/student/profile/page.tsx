@@ -455,7 +455,7 @@ export default function ProfilePage() {
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
-        <button
+          <button
             onClick={() => {
               if (hasUnsavedChanges && !suppressUnsavedWarning) {
                 setShowUnsavedDialog(true)
@@ -468,10 +468,13 @@ export default function ProfilePage() {
             Cancel
           </button>
           <span className="text-base font-semibold text-foreground">My Profile</span>
-          <div className="w-12" />
+          <button
+            onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}
+            className="text-sm text-red-500 hover:text-red-600 font-medium transition-colors">
+            Log out
+          </button>
         </div>
       </header>
-
       <div className="max-w-lg mx-auto">
 
         {/* AVATAR + NAME HERO */}

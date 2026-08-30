@@ -489,7 +489,8 @@ export default function EmployerProfilePage() {
             </Card>
 
             {/* DANGER ZONE */}
-            <Card className="border-border bg-card">
+         {/* DANGER ZONE */}
+         <Card className="border-border bg-card">
               <CardContent className="p-5 space-y-4">
                 <p className="text-sm font-semibold text-foreground">Account</p>
                 <div className="flex items-start justify-between gap-3">
@@ -508,6 +509,15 @@ export default function EmployerProfilePage() {
                   </div>
                   <Button variant="destructive" size="sm" className="shrink-0" onClick={() => setShowDeleteDialog(true)}>
                     Delete
+                  </Button>
+                </div>
+                <div className="border-t border-border pt-4 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Log Out</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Sign out of your account</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="shrink-0" onClick={async () => { await supabase.auth.signOut(); window.location.href = "/" }}>
+                    <LogOut className="h-3.5 w-3.5 mr-1.5" /> Log out
                   </Button>
                 </div>
               </CardContent>

@@ -233,8 +233,20 @@ export default function StudentPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {allLocations.length > 1 && (
+          <div className="mb-6 flex items-center gap-3 flex-wrap">
+            <p className="text-sm text-muted-foreground shrink-0">Scoring for:</p>
+            <div className="flex flex-wrap gap-2">
+              {allLocations.map(loc => (
+                <button key={loc.id} onClick={() => handleLocationChange(loc.id)}
+                  className={`px-3 py-1.5 text-xs rounded-full border transition-all ${selectedLocationId === loc.id ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                  {loc.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="grid gap-8 lg:grid-cols-3">
-
           {/* LEFT — student info */}
           <div className="lg:col-span-2 space-y-6">
 
@@ -285,20 +297,7 @@ export default function StudentPage() {
                   </div>
                 )}
 
-                {/* LOCATION SELECTOR */}
-                {allLocations.length > 1 && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <p className="text-xs text-muted-foreground mb-2">Scoring match % for location:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {allLocations.map(loc => (
-                        <button key={loc.id} onClick={() => handleLocationChange(loc.id)}
-                          className={`px-3 py-1 text-xs rounded-full border transition-all ${selectedLocationId === loc.id ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
-                          {loc.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+            
               </CardContent>
             </Card>
 
@@ -317,14 +316,37 @@ export default function StudentPage() {
                 {availableDays.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No availability set</p>
                 ) : (
-                  <div className="rounded-xl border border-border overflow-hidden">
-                    {availableDays.map((a: any, i: number) => (
-                      <div key={i} className={`flex items-center justify-between px-4 py-2.5 text-sm ${i < availableDays.length - 1 ? "border-b border-border" : ""}`}>
-                        <span className="font-medium text-foreground w-24">{a.day}</span>
-                        <span className="text-muted-foreground">{a.start} – {a.end}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <>
+                    <div className="rounded-xl border border-border overflow-hidden">
+                      {availableDays.map((a: any, i: number) => {
+                        const activeShifts = employerShifts.filter(s => s.active === true || s.active === "true" || s.active === 1)
+                        const employerDays = activeShifts.map(s => s.day)
+                        const isMatch = employerDays.includes(a.day)
+                        return (
+                          <div key={i} className={`flex items-center justify-between px-4 py-2.5 text-sm ${i < availableDays.length - 1 ? "border-b border-border" : ""} ${isMatch ? "bg-green-50/50" : ""}`}>
+                            <div className="flex items-center gap-2 w-24">
+                              <span className="font-medium text-foreground">{a.day}</span>
+                              {isMatch && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Match</span>}
+                            </div>
+                            <span className="text-muted-foreground">{a.start} – {a.end}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {(() => {
+                      const activeShifts = employerShifts.filter(s => s.active === true || s.active === "true" || s.active === 1)
+                      const employerDays = activeShifts.map(s => s.day)
+                      const matchingDays = availableDays.filter((a: any) => employerDays.includes(a.day))
+                      if (matchingDays.length === 0) return (
+                        <p className="text-xs text-muted-foreground mt-2">No overlapping days with your location's shifts.</p>
+                      )
+                      return (
+                        <p className="text-xs text-green-700 font-medium mt-2">
+                          {matchingDays.length} day{matchingDays.length !== 1 ? "s" : ""} overlap with your schedule: {matchingDays.map((a: any) => a.day).join(", ")}
+                        </p>
+                      )
+                    })()}
+                  </>
                 )}
               </CardContent>
             </Card>

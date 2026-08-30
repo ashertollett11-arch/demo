@@ -170,7 +170,14 @@ useEffect(() => {
       default: return b.matchScore - a.matchScore
     }
   })
-
+  const getMatchColor = (score: number) => {
+    // Below 70: red (0°) to yellow (45°)
+    // Above 70: yellow (45°) to green (120°)
+    const hue = score < 70
+      ? Math.round((score / 70) * 45)
+      : Math.round(45 + ((score - 70) / 30) * 75)
+    return { color: `hsl(${hue}, 85%, 38%)` }
+  }
   if (pageLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -348,7 +355,7 @@ useEffect(() => {
                             <p className="font-semibold text-foreground text-sm">{job.company}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">{job.title}</p>
                           </div>
-                          <span className={`shrink-0 text-sm font-bold ${job.matchScore >= 75 ? "text-primary" : job.matchScore >= 50 ? "text-yellow-600" : "text-muted-foreground"}`}>
+                          <span className="shrink-0 text-sm font-bold" style={getMatchColor(job.matchScore)}>
                             {job.matchScore}%
                           </span>
                         </div>

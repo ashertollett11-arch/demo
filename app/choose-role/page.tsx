@@ -100,10 +100,19 @@ export default function ChooseRolePage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
-
+<div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
+      {/* BACK BUTTON */}
+      <div className="relative z-10 px-6 pt-6">
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut()
+            router.replace("/")
+          }}
+          className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground shadow-sm hover:bg-secondary transition-colors">
+          ← Back to home
+        </button>
+      </div>
       <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-6 py-12">
-
         {/* TOP */}
         <div className="mb-14 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground shadow-sm">
@@ -226,19 +235,9 @@ export default function ChooseRolePage() {
           </Card>
 
         </div>
-
-        {/* BOTTOM */}
      {/* BOTTOM */}
      <div className="mt-10 flex flex-col items-center gap-4">
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-              router.replace("/")
-            }}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ← Back to home
-          </button>
+        
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
             Trusted by students and employers looking for better local hiring

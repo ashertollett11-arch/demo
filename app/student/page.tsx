@@ -58,7 +58,15 @@ export default function StudentDashboard() {
   const topMatch = matchedJobsWithScore.length > 0 ? Math.max(...matchedJobsWithScore.map(j => j.matchScore)) : 0
   const firstName = name.trim().split(" ")[0] || "there"
   const initials = (name || "").trim().split(" ").filter(Boolean).slice(0, 2).map(n => n[0]?.toUpperCase()).join("") || "?"
+  const [isFirstVisit, setIsFirstVisit] = useState(false)
 
+  useEffect(() => {
+    const seen = localStorage.getItem("dashboard_visited")
+    if (!seen) {
+      setIsFirstVisit(true)
+      localStorage.setItem("dashboard_visited", "true")
+    }
+  }, [])
   useEffect(() => {
     const checkProfile = async () => {
       const { data } = await supabase.auth.getUser()
@@ -169,6 +177,15 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (jobsLoaded && studentLoaded) setPageLoading(false)
   }, [jobsLoaded, studentLoaded])
+  const getMatchColor = (score: number) => {
+    // Below 70: red (0°) to yellow (45°)
+    // Above 70: yellow (45°) to green (120°)
+    const hue = score < 70
+      ? Math.round((score / 70) * 45)
+      : Math.round(45 + ((score - 70) / 30) * 75)
+    return { color: `hsl(${hue}, 85%, 38%)` }
+  }
+
   if (pageLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -299,6 +316,18 @@ export default function StudentDashboard() {
             </div>
           </div>
 
+     {/* MATCH TIP — only show if top match is low */}
+     {matchedJobsWithScore.length > 0 && (isFirstVisit || topMatch < 65) && (
+                  <Link href="/student/profile" className="mb-5 flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-4 active:scale-[0.98] transition-all">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-lg">💡</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-yellow-900">Boost your match score</p>
+                <p className="text-xs text-yellow-700 mt-0.5 leading-relaxed">Your top match is {topMatch}%. Update your availability and preferred jobs to get better matches.</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-yellow-500 shrink-0" />
+            </Link>
+          )}
+
           {/* EMPLOYER ACTIVITY BANNER */}
           <Link href="/student/activity" className="mb-5 flex items-center justify-between rounded-2xl bg-primary px-5 py-4 hover:bg-primary/90 transition-colors">
             <div className="flex items-center gap-3">
@@ -348,7 +377,7 @@ export default function StudentDashboard() {
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
-                      <span className={`text-sm font-bold ${job.matchScore >= 75 ? "text-primary" : job.matchScore >= 50 ? "text-yellow-600" : "text-muted-foreground"}`}>
+                    <span className="text-sm font-bold" style={getMatchColor(job.matchScore)}>
                         {job.matchScore}%
                       </span>
                       <p className="text-[10px] text-muted-foreground">match</p>
@@ -360,8 +389,10 @@ export default function StudentDashboard() {
             </div>
           )}
 
+    
           {/* PROFILE STRENGTH */}
           <p className="text-base font-bold text-foreground mb-3">Profile</p>
+       
           <div className="rounded-2xl border border-border bg-card overflow-hidden mb-6">
             {/* RECOMMENDATION */}
             <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border">
