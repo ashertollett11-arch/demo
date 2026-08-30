@@ -117,8 +117,24 @@ export default function RootLayout({
           {children}
         </Providers>
         <Analytics />
-        <Toaster position="top-right" richColors closeButton />
-      </body>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: "hsl(var(--background))",
+              color: "hsl(var(--foreground))",
+              border: "1px solid hsl(var(--border))",
+              borderRadius: "16px",
+              fontSize: "14px",
+              fontWeight: "500",
+            },
+            classNames: {
+              success: "border-green-200 bg-green-50 text-green-900",
+              error: "border-red-200 bg-red-50 text-red-900",
+            },
+          }}
+          closeButton
+        />      </body>
     </html>
   )
 }
