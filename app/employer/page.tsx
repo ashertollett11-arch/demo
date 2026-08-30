@@ -213,7 +213,6 @@ export default function EmployerDashboard() {
     )
   }
 
-  const firstName = companyName.split(" ")[0] || companyName
 
   return (
     <div className="min-h-screen bg-background">
@@ -297,8 +296,8 @@ export default function EmployerDashboard() {
         {/* PAGE HEADER */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Welcome back, {firstName}</h1>
-            <p className="mt-1 text-muted-foreground">Here's your hiring overview for today.</p>
+          <h1 className="text-3xl font-bold text-foreground">Welcome back, {companyName}</h1>
+                      <p className="mt-1 text-muted-foreground">Here's your hiring overview for today.</p>
           </div>
           <Button asChild>
             <Link href="/matching/employer">

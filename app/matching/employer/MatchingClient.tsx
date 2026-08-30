@@ -230,7 +230,7 @@ export default function MatchingPage() {
   const [allLocations, setAllLocations] = useState<any[]>([])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [distances, setDistances] = useState<Record<string, { distance_text: string; duration_text: string; distance_meters: number }>>({})
-
+  const [locationLoading, setLocationLoading] = useState(false)
   // Filter students by distance using stored distances
   const matchesDistance = (studentUserId: string): boolean => {
     const dist = distances[studentUserId]
@@ -388,12 +388,14 @@ export default function MatchingPage() {
   const handleLocationChange = async (locationId: string) => {
     const loc = allLocations.find(l => l.id === locationId)
     if (!loc) return
+    setLocationLoading(true)
     setSelectedLocationId(locationId)
     setEmployerShifts(loc.available_shifts ?? [])
     setShiftPreference(loc.shift_preference ?? "flexible")
     setSelectedLocationMaxMiles(loc.max_distance_miles ?? 10)
     if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
     await loadDistances(locationId)
+    setLocationLoading(false)
   }
 
   const activeShifts = useMemo(() => {
@@ -622,8 +624,9 @@ export default function MatchingPage() {
             Back
           </Button>
           <div className="hidden items-center gap-6 md:flex">
-            <Link href="/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">Dashboard</Link>
-            <Link href="/matching/employer" className="text-sm font-medium text-foreground">Find Candidates</Link>
+            <Link href="/employer" className="text-sm font-medium text-foreground">Dashboard</Link>
+            <Link href="/matching/employer" className="text-sm font-medium text-muted-foreground hover:text-foreground">Find Candidates</Link>
+            <Link href="/employer/locations" className="text-sm font-medium text-muted-foreground hover:text-foreground">Locations</Link>
             <Link href="/pricing/mobile" className="text-sm font-medium text-muted-foreground hover:text-foreground">Billing</Link>
           </div>
           <div className="flex items-center gap-4">
@@ -966,10 +969,33 @@ export default function MatchingPage() {
                 </Button>
               ))}
             </div>
-
-            {/* CANDIDATE CARDS */}
+{/* CANDIDATE CARDS */}
+{locationLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="border-border bg-card">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="h-12 w-12 rounded-full bg-secondary animate-pulse shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-32 rounded bg-secondary animate-pulse" />
+                          <div className="h-3 w-24 rounded bg-secondary animate-pulse" />
+                          <div className="h-3 w-20 rounded bg-secondary animate-pulse" />
+                        </div>
+                        <div className="h-6 w-16 rounded-full bg-secondary animate-pulse" />
+                      </div>
+                      <div className="h-3 w-48 rounded bg-secondary animate-pulse mb-4" />
+                      <div className="flex gap-2">
+                        <div className="h-8 flex-1 rounded bg-secondary animate-pulse" />
+                        <div className="h-8 flex-1 rounded bg-secondary animate-pulse" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
             <div className="grid gap-4 sm:grid-cols-2">
-            {(groupedCandidates[activeStatus] ?? []).slice(0, visibleCount).map((candidate) => { 
+            {(groupedCandidates[activeStatus] ?? []).slice(0, visibleCount).map((candidate) => {
                 const dist = distances[candidate.user_id]
                 return (
                   <Card key={candidate.id} className="border-border bg-card transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer">
@@ -1074,7 +1100,8 @@ export default function MatchingPage() {
                   </Card>
                 )
               })}
-   </div>
+</div>
+            )}
             {(groupedCandidates[activeStatus]?.length ?? 0) > visibleCount && (
               <div className="flex justify-center mt-6">
                 <Button variant="outline" onClick={() => setVisibleCount(v => v + 12)}>

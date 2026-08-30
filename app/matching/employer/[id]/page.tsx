@@ -39,6 +39,8 @@ export default function StudentPage() {
   const [savingNotes, setSavingNotes] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
   const [notificationSent, setNotificationSent] = useState(false)
+  const [locationLoading, setLocationLoading] = useState(false)
+  
   useEffect(() => {
     if (!studentId) return
     const loadStudent = async () => {
@@ -107,12 +109,14 @@ export default function StudentPage() {
     loadDistance(selectedLocationId, student.user_id)
   }, [student?.user_id, selectedLocationId, allLocations])
 
-  const handleLocationChange = (locationId: string) => {
+  const handleLocationChange = async (locationId: string) => {
     const loc = allLocations.find(l => l.id === locationId)
     if (!loc) return
+    setLocationLoading(true)
     setSelectedLocationId(locationId); setEmployerShifts(loc.available_shifts ?? []); setShiftPreference(loc.shift_preference ?? "flexible")
     if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
-    if (student?.user_id) loadDistance(locationId, student.user_id)
+    if (student?.user_id) await loadDistance(locationId, student.user_id)
+    setLocationLoading(false)
   }
 
   const matchScore = useMemo(() => {
@@ -313,7 +317,16 @@ export default function StudentPage() {
                   <span className="text-xs text-muted-foreground">Shift preference:</span>
                   <span className="text-xs font-medium text-foreground capitalize bg-secondary rounded-full px-2 py-0.5">{student.shift_preference}</span>
                 </div>
-                {availableDays.length === 0 ? (
+                {locationLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="flex items-center justify-between px-4 py-2.5 rounded-xl border border-border">
+                        <div className="h-3 w-20 rounded bg-secondary animate-pulse" />
+                        <div className="h-3 w-28 rounded bg-secondary animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                ) : availableDays.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No availability set</p>
                 ) : (
                   <>
