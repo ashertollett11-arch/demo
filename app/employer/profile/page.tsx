@@ -233,8 +233,8 @@ export default function EmployerProfilePage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center">
-              <Image src="/icon-192x192.png" alt="SimplyApply logo" width={28} height={28} className="object-contain" />
-            </div>
+            <Image src="/icon-192x192.png" alt="SimplyApply logo" width={42} height={42} className="object-contain rounded-lg" />
+                        </div>
             <span className="text-xl font-bold text-foreground">SimplyApply</span>
           </Link>
           <div className="hidden items-center gap-6 md:flex">
