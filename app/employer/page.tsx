@@ -36,8 +36,8 @@ export default function EmployerDashboard() {
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [distances, setDistances] = useState<Record<string, number>>({})
   const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
-
-  useEffect(() => {
+  const [locationLoading, setLocationLoading] = useState(false)
+    useEffect(() => {
     const checkAccess = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -120,15 +120,17 @@ export default function EmployerDashboard() {
     loadJob()
   }, [userId])
 
-  const handleLocationChange = (locationId: string) => {
+  const handleLocationChange = async (locationId: string) => {
     const loc = allLocations.find(l => l.id === locationId)
     if (!loc) return
+    setLocationLoading(true)
     setSelectedLocationId(locationId)
     setEmployerShifts(loc.available_shifts ?? [])
     setShiftPreference(loc.shift_preference ?? "flexible")
     setSelectedLocationMaxMiles(loc.max_distance_miles ?? 10)
     if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
-    loadDistances(locationId)
+    await loadDistances(locationId)
+    setLocationLoading(false)
   }
 
   useEffect(() => {
@@ -332,8 +334,8 @@ export default function EmployerDashboard() {
                   </div>
                   <span className="text-sm text-muted-foreground font-medium">New</span>
                 </div>
-                <p className="text-3xl font-bold text-foreground">{visibleStatuses.filter((s) => s.status === "new").length}</p>
-                <p className="text-xs text-muted-foreground mt-1">candidates to review</p>
+                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{visibleStatuses.filter((s) => s.status === "new").length}</p>}
+                                <p className="text-xs text-muted-foreground mt-1">candidates to review</p>
               </CardContent>
             </Card>
           </Link>
@@ -346,8 +348,8 @@ export default function EmployerDashboard() {
                   </div>
                   <span className="text-sm text-muted-foreground font-medium">Contacted</span>
                 </div>
-                <p className="text-3xl font-bold text-foreground">{visibleStatuses.filter((s) => s.status === "contacted").length}</p>
-                <p className="text-xs text-muted-foreground mt-1">awaiting response</p>
+                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{visibleStatuses.filter((s) => s.status === "contacted").length}</p>}
+                                <p className="text-xs text-muted-foreground mt-1">awaiting response</p>
               </CardContent>
             </Card>
           </Link>
@@ -360,8 +362,8 @@ export default function EmployerDashboard() {
                   </div>
                   <span className="text-sm text-muted-foreground font-medium">Hired</span>
                 </div>
-                <p className="text-3xl font-bold text-foreground">{visibleStatuses.filter((s) => s.status === "hired").length}</p>
-                <p className="text-xs text-muted-foreground mt-1">students hired</p>
+                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{visibleStatuses.filter((s) => s.status === "hired").length}</p>}
+                                <p className="text-xs text-muted-foreground mt-1">students hired</p>
               </CardContent>
             </Card>
           </Link>
@@ -374,8 +376,8 @@ export default function EmployerDashboard() {
                   </div>
                   <span className="text-sm text-muted-foreground font-medium">Top Match</span>
                 </div>
-                <p className="text-3xl font-bold text-foreground">{topMatch}%</p>
-                <p className="text-xs text-muted-foreground mt-1">{greatCandidates} strong candidates</p>
+                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{topMatch}%</p>}
+                {locationLoading ? <div className="h-3 w-28 rounded bg-secondary animate-pulse mt-2" /> : <p className="text-xs text-muted-foreground mt-1">{greatCandidates} strong candidates</p>}
               </CardContent>
             </Card>
           </Link>
@@ -478,9 +480,10 @@ export default function EmployerDashboard() {
                   <Sparkles className="h-4 w-4 text-primary" />
                   <p className="text-sm font-semibold text-foreground">Strong Candidates</p>
                 </div>
-                <p className="text-3xl font-bold text-foreground">{greatCandidates}</p>
+                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{greatCandidates}</p>}
                 <p className="text-xs text-muted-foreground mt-1 mb-4">75%+ match score ready to review</p>
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+                  <span>Top match: <b className="text-foreground">{locationLoading ? "..." : `${topMatch}%`}</b></span>
                   <span>Top match: <b className="text-foreground">{topMatch}%</b></span>
                   <Link href="/matching/employer?perfect=true" className="text-primary hover:underline">
                     {perfectMatches} perfect matches
