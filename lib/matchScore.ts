@@ -145,7 +145,7 @@ export function calculateMatch(
   // ── TOTAL ──
   // Max possible: 60 + 12 + 8 + 8 + 6 = 94 — scale to 100
   const total = dayHourScore + distanceScore + shiftScore + jobRoleScore + recScore
-  const scaled = Math.round((total / 82) * 100)
+  const scaled = Math.round((total / 75) * 100)
 
   return Math.min(100, Math.max(0, scaled))
 }
