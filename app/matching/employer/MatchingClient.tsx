@@ -195,6 +195,7 @@ function FilterContent({
     </div>
   )
 }
+
 export default function MatchingPage() {
   const [customMaxMiles, setCustomMaxMiles] = useState<number | null>(null)
   const router = useRouter()
