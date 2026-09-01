@@ -9,9 +9,7 @@ import { CheckCircle2, Briefcase, Calendar } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import { useMobileAuth } from "@/hooks/useMobileAuth"
-export const metadata = {
-  robots: { index: false, follow: false }
-}
+
 export default function ProfilePage() {
   const router = useRouter()
   useEffect(() => {
