@@ -791,6 +791,10 @@ export default function MatchingPage() {
               onChange={async (e) => {
                 const miles = Number(e.target.value)
                 setCustomMaxMiles(miles)
+                setSelectedLocationMaxMiles(miles)
+                setAllLocations(prev => prev.map(l =>
+                  l.id === selectedLocationId ? { ...l, max_distance_miles: miles } : l
+                ))
                 if (selectedLocationId) {
                   await supabase
                     .from("locations")
