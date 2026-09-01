@@ -74,10 +74,10 @@ function FilterContent({
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Showing students within{" "}
-            <span className="font-medium text-foreground">{selectedLocationMaxMiles} miles</span>{" "}
+            <span className="font-medium text-foreground">{customMaxMiles ?? selectedLocationMaxMiles} miles</span>{" "}
             of this location.
           </p>
-          <p className="text-[11px] text-muted-foreground mt-1">Changes with selected location.</p>
+          <p className="text-[11px] text-muted-foreground mt-1">Adjust using the dropdown on the main page.</p>
         </div>
       )}
       <div>
@@ -197,6 +197,7 @@ function FilterContent({
 }
 
 export default function MatchingPage() {
+  const [customMaxMiles, setCustomMaxMiles] = useState<number | null>(null)
   const router = useRouter()
   const [name, setName] = useState("Employer")
   const [selectedLocationMaxMiles, setSelectedLocationMaxMiles] = useState<number>(10)
@@ -236,7 +237,8 @@ export default function MatchingPage() {
   const matchesDistance = (studentUserId: string): boolean => {
     const dist = distances[studentUserId]
     if (!dist?.distance_meters) return false
-    return dist.distance_meters <= selectedLocationMaxMiles * 1609.34
+    const maxMiles = customMaxMiles ?? selectedLocationMaxMiles
+    return dist.distance_meters <= maxMiles * 1609.34
   }
 
   const matchesAge = (age: number | null): boolean => {
@@ -394,6 +396,7 @@ export default function MatchingPage() {
     setEmployerShifts(loc.available_shifts ?? [])
     setShiftPreference(loc.shift_preference ?? "flexible")
     setSelectedLocationMaxMiles(loc.max_distance_miles ?? 10)
+    setCustomMaxMiles(null)
     if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
     await loadDistances(locationId)
     setLocationLoading(false)
@@ -777,10 +780,26 @@ export default function MatchingPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Find Your Perfect Match</h1>
           <p className="mt-2 text-muted-foreground">Browse verified students filtered by availability, GPA, age, and distance.</p>
-          <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-1.5 text-sm">
-            <MapPin className="h-3.5 w-3.5 text-primary" />
-            <span className="text-muted-foreground">Showing students within</span>
-            <span className="font-semibold text-foreground">{selectedLocationMaxMiles} miles</span>
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
+            <div className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-1.5 text-sm">
+              <MapPin className="h-3.5 w-3.5 text-primary" />
+              <span className="text-muted-foreground">Showing students within</span>
+              <span className="font-semibold text-foreground">{customMaxMiles ?? selectedLocationMaxMiles} miles</span>
+            </div>
+            <select
+              value={customMaxMiles ?? selectedLocationMaxMiles}
+              onChange={(e) => setCustomMaxMiles(Number(e.target.value))}
+              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
+            >
+              {[1, 3, 5, 10, 15, 20, 25, 35, 50].map(m => (
+                <option key={m} value={m}>{m} miles</option>
+              ))}
+            </select>
+            {customMaxMiles !== null && customMaxMiles !== selectedLocationMaxMiles && (
+              <button onClick={() => setCustomMaxMiles(null)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <X className="h-3 w-3" /> Reset to location default ({selectedLocationMaxMiles} mi)
+              </button>
+            )}
           </div>
         </div>
 
@@ -855,6 +874,7 @@ export default function MatchingPage() {
               </CardHeader>
               <CardContent>
                 <FilterContent
+                                    selectedLocationMaxMiles={customMaxMiles ?? selectedLocationMaxMiles}
                   minGpa={minGpa} setMinGpa={setMinGpa}
                   selectedDays={selectedDays} setSelectedDays={setSelectedDays}
                   verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}
@@ -900,6 +920,7 @@ export default function MatchingPage() {
                   <SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader>
                   <div className="mt-6">
                     <FilterContent
+                                        selectedLocationMaxMiles={customMaxMiles ?? selectedLocationMaxMiles}
                       minGpa={minGpa} setMinGpa={setMinGpa}
                       selectedDays={selectedDays} setSelectedDays={setSelectedDays}
                       verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}

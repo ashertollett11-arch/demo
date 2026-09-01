@@ -351,7 +351,7 @@ export default function LocationsPage() {
                       <p className="text-xs text-muted-foreground mt-1">Only students within this distance see your listing.</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium block mb-1.5">Tips?</label>
+                      <label className="text-sm font-medium block mb-1.5">Does this role earn tips in addition to hourly wage?</label>
                       <div className="flex gap-2 mt-1">
                         <button type="button" onClick={() => setFormTips(true)}
                           className={`flex-1 py-2 text-sm rounded-lg border font-medium transition-all ${formTips ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
