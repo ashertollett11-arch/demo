@@ -401,7 +401,17 @@ export default function MatchingPage() {
     await loadDistances(locationId)
     setLocationLoading(false)
   }
-
+  // Sync custom distance filter to DB when changed
+  useEffect(() => {
+    if (!selectedLocationId || customMaxMiles === null) return
+    const timer = setTimeout(async () => {
+      await supabase
+        .from("locations")
+        .update({ max_distance_miles: customMaxMiles })
+        .eq("id", selectedLocationId)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [customMaxMiles, selectedLocationId])
   const activeShifts = useMemo(() => {
     return Array.isArray(employerShifts)
       ? employerShifts.filter((s) => s.active === true || s.active === "true" || s.active === 1)

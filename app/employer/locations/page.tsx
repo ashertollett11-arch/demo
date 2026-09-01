@@ -123,7 +123,14 @@ export default function LocationsPage() {
 
   const openAddForm = () => { resetForm(); setShowForm(true); window.scrollTo({ top: 0, behavior: "smooth" }) }
 
-  const openEditForm = (loc: Location) => {
+  const openEditForm = async (loc: Location) => {
+    // Auto-save current form if editing another location and form is valid
+    if (editingId && editingId !== loc.id && showForm) {
+      const isValid = formName.trim().length > 0 && formAddress.trim().length > 0 && /^\d{5}$/.test(formZip) && Number(formPay) > 0 && formJobs.length > 0
+      if (isValid) {
+        await saveLocation()
+      }
+    }
     setFormName(loc.name); setFormAddress(loc.address || ""); setFormZip(loc.zip_code || "")
     setFormMaxDistance(loc.max_distance_miles ?? 10); setFormShiftPref((loc.shift_preference as any) || "flexible")
     setFormShifts(loc.available_shifts?.length ? loc.available_shifts : DEFAULT_SHIFTS)

@@ -1,5 +1,4 @@
 // lib/matchScore.ts
-
 const dayMap: Record<string, string> = {
   Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed",
   Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun",
@@ -7,7 +6,6 @@ const dayMap: Record<string, string> = {
   Thu: "Thu", Fri: "Fri", Sat: "Sat", Sun: "Sun",
 }
 
-// Parse "3:00 PM" → minutes since midnight
 function parseTime(timeStr: string): number {
   if (!timeStr) return 0
   const [time, period] = timeStr.trim().split(" ")
@@ -19,7 +17,6 @@ function parseTime(timeStr: string): number {
   return hour * 60 + min
 }
 
-// Returns overlapping minutes between two time ranges
 function getOverlapMinutes(
   startA: string, endA: string,
   startB: string, endB: string
@@ -54,7 +51,6 @@ export function calculateMatch(
 ): number {
   if (!student?.availability?.length || !job?.shifts?.length) return 0
 
-  // Normalize job shifts to objects with day/start/end
   const jobShifts = (job.shifts as any[]).map((s) => {
     if (typeof s === "string") {
       const cleanDay = s.split(" ")[0].trim()
@@ -67,7 +63,6 @@ export function calculateMatch(
     }
   })
 
-  // Normalize student availability
   const studentDays = student.availability
     .filter((a) => a.available)
     .map((a) => ({
@@ -79,19 +74,16 @@ export function calculateMatch(
   if (studentDays.length === 0) return 0
 
   // ── DAYS + HOURS SCORE (60 points max) ──
-  // Day match = 6pts base, hour overlap = up to 4pts bonus per day
-  // Only penalized if student doesn't have the day at all
   let dayHourScore = 0
-  const totalJobDays = jobShifts.length || 1
+  const totalStudentDays = studentDays.length || 1
+  let matchingDays = 0
 
   jobShifts.forEach((jobShift) => {
     const studentDay = studentDays.find((s) => s.day === jobShift.day)
-    if (!studentDay) return // no match on this day — no points
+    if (!studentDay) return
 
-    // Day matches — base points
+    matchingDays++
     const dayPoints = 6
-
-    // Hour overlap bonus — up to 4 extra points
     let hourBonus = 0
     if (studentDay.start && studentDay.end && jobShift.start && jobShift.end) {
       const employerMinutes = parseTime(jobShift.end) - parseTime(jobShift.start)
@@ -102,21 +94,21 @@ export function calculateMatch(
       const overlapRatio = employerMinutes > 0 ? overlap / employerMinutes : 0
       hourBonus = overlapRatio * 4
     } else {
-      hourBonus = 4 // no time data — assume full overlap
+      hourBonus = 4
     }
-
     dayHourScore += dayPoints + hourBonus
   })
 
-  // Scale to 60 points max based on how many job days are covered
-  dayHourScore = Math.min(60, (dayHourScore / (totalJobDays * 10)) * 60)
-
-  // ── DISTANCE SCORE (up to 12 points) ──
+  const studentCoverageRatio = matchingDays / totalStudentDays
+  const curvedRatio = Math.sqrt(studentCoverageRatio)
+  dayHourScore = Math.min(60, curvedRatio * 60)
+  // ── DISTANCE SCORE (up to 20 points) ──
   let distanceScore = 0
   if (student.distanceMeters !== undefined && student.distanceMeters !== null) {
     const miles = student.distanceMeters / 1609.34
-    if (miles <= 5) distanceScore = 12
-    else if (miles <= 10) distanceScore = 8
+    if (miles <= 2) distanceScore = 20
+    else if (miles <= 5) distanceScore = 16
+    else if (miles <= 10) distanceScore = 10
     else if (miles <= 15) distanceScore = 5
   }
 
@@ -143,9 +135,8 @@ export function calculateMatch(
   const recScore = student.hasRecommendation ? 6 : 0
 
   // ── TOTAL ──
-  // Max possible: 60 + 12 + 8 + 8 + 6 = 94 — scale to 100
+  // Max possible: 60 + 20 + 8 + 8 + 6 = 102 — scale to 100
   const total = dayHourScore + distanceScore + shiftScore + jobRoleScore + recScore
-  const scaled = Math.round((total / 75) * 100)
-
+  const scaled = Math.round((total / 86) * 100)
   return Math.min(100, Math.max(0, scaled))
 }
