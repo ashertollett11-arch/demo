@@ -252,7 +252,7 @@ export default function EmployerOnboarding() {
                   <div className="space-y-3">
                     {[
                       { icon: "🏢", text: "Your company name and type help students understand where they'd be working." },
-                      { icon: "📞", text: "Phone and email let our teak contact you directly, you will also recieve emails whenever students apply." },
+                      { icon: "📞", text: "Phone and email let our team contact you directly, you will also recieve emails whenever students apply." },
                       { icon: "✍️", text: "Your description is the first thing students read — make it welcoming." },
                     ].map((item, i) => (
                       <div key={i} className="flex items-start gap-2.5 text-xs text-muted-foreground">

@@ -74,8 +74,8 @@ function FilterContent({
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Showing students within{" "}
-            <span className="font-medium text-foreground">{customMaxMiles ?? selectedLocationMaxMiles} miles</span>{" "}
-            of this location.
+            <span className="font-medium text-foreground">{selectedLocationMaxMiles} miles</span>{" "}
+                        of this location.
           </p>
           <p className="text-[11px] text-muted-foreground mt-1">Adjust using the dropdown on the main page.</p>
         </div>
@@ -195,7 +195,6 @@ function FilterContent({
     </div>
   )
 }
-
 export default function MatchingPage() {
   const [customMaxMiles, setCustomMaxMiles] = useState<number | null>(null)
   const router = useRouter()
@@ -920,7 +919,6 @@ export default function MatchingPage() {
                   <SheetHeader><SheetTitle>Filters</SheetTitle></SheetHeader>
                   <div className="mt-6">
                     <FilterContent
-                                        selectedLocationMaxMiles={customMaxMiles ?? selectedLocationMaxMiles}
                       minGpa={minGpa} setMinGpa={setMinGpa}
                       selectedDays={selectedDays} setSelectedDays={setSelectedDays}
                       verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}

@@ -26,6 +26,7 @@ function parseTime(t: string) {
 // --------------------
 // Page
 // --------------------
+
 export default function JobPage() {
   const router = useRouter()
 

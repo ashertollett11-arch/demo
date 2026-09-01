@@ -39,11 +39,11 @@ type Job = {
   pay: string
   tips?: boolean
   status?: string
-  shiftPreference?: string
+    shiftPreference?: string
   preferredJobs?: string[]
 }
 
-export default function StudentDashboard() {
+export default function StudentDasShboard() {
   const router = useRouter()
   const [studentNotifications, setStudentNotifications] = useState<any[]>([])
   const [name, setName] = useState("")

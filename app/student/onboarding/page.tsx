@@ -6,7 +6,9 @@ import { supabase } from "@/lib/supabase"
 import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
 
 const TOTAL_STEPS = 4
-
+export const metadata = {
+  robots: { index: false, follow: false }
+}
 export default function StudentOnboarding() {
   const router = useRouter()
   const [step, setStep] = useState(1)
