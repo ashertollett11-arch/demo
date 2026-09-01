@@ -65,8 +65,8 @@ const { data, error } = await supabase
           <Image
   src="/icon-192x192.png"
   alt="SimplyApply logo"
-  width={28}
-  height={28}
+  width={42}
+  height={42}
   className="object-contain"
 />
 </div>
