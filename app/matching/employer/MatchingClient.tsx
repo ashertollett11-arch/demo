@@ -401,17 +401,7 @@ export default function MatchingPage() {
     await loadDistances(locationId)
     setLocationLoading(false)
   }
-  // Sync custom distance filter to DB when changed
-  useEffect(() => {
-    if (!selectedLocationId || customMaxMiles === null) return
-    const timer = setTimeout(async () => {
-      await supabase
-        .from("locations")
-        .update({ max_distance_miles: customMaxMiles })
-        .eq("id", selectedLocationId)
-    }, 1000)
-    return () => clearTimeout(timer)
-  }, [customMaxMiles, selectedLocationId])
+
   const activeShifts = useMemo(() => {
     return Array.isArray(employerShifts)
       ? employerShifts.filter((s) => s.active === true || s.active === "true" || s.active === 1)
@@ -798,7 +788,16 @@ export default function MatchingPage() {
             </div>
             <select
               value={customMaxMiles ?? selectedLocationMaxMiles}
-              onChange={(e) => setCustomMaxMiles(Number(e.target.value))}
+              onChange={async (e) => {
+                const miles = Number(e.target.value)
+                setCustomMaxMiles(miles)
+                if (selectedLocationId) {
+                  await supabase
+                    .from("locations")
+                    .update({ max_distance_miles: miles })
+                    .eq("id", selectedLocationId)
+                }
+              }}
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
             >
               {[1, 3, 5, 10, 15, 20, 25, 35, 50].map(m => (
