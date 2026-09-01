@@ -6,9 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { calculateMatch } from "@/lib/matchScore"
 import { toast } from "sonner"
 import Link from "next/link"
-export const metadata = {
-  robots: { index: false, follow: false }
-}
+
 export default function JobPage() {
   const router = useRouter()
   const params = useParams()

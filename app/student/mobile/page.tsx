@@ -97,9 +97,7 @@ function MatchCircle({ score }: { score: number }) {
     </svg>
   )
 }
-export const metadata = {
-  robots: { index: false, follow: false }
-}
+
 export default function MobileStudentPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<any[]>([])
