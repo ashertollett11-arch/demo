@@ -360,11 +360,10 @@ const { data, error } = await supabase
       {/* Stats Section */}
       <section className="border-t border-border bg-primary px-4 py-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="grid gap-8 text-center sm:grid-cols-2 lg:grid-cols-4">
+        <div className="flex flex-col items-center justify-center gap-12 text-center sm:flex-row sm:gap-24">
             {[
               { stat: "Local Students", label: "Looking to work for you" },
               { stat: "Local Employers", label: "Looking to hire you" },
-          
             ].map((item) => (
               <div key={item.label}>
                 <p className="text-4xl font-bold text-primary-foreground">{item.stat}</p>
