@@ -316,7 +316,7 @@ export default function EmployerOnboarding() {
                       <p className="text-xs text-muted-foreground mt-1">Only students within this distance will see your listing.</p>
                     </div>
                     <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
-                      <span className="text-sm font-medium">Tips included?</span>
+                      <span className="text-sm font-medium">Does this role earn tips in addition to hourly wage?</span>
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setLocTips(true)}
                           className={`px-4 py-1 text-xs rounded-lg border font-semibold transition-all ${locTips ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
