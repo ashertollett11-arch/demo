@@ -25,6 +25,7 @@ export default function JobPage() {
   const [studentUserId, setStudentUserId] = useState<string | null>(null)
   const [isLooking, setIsLooking] = useState(true)
   const applyingRef = useRef(false)
+  const [studentLoaded, setStudentLoaded] = useState(false)
   useEffect(() => {
     const run = async () => {
       const { data } = await supabase.auth.getUser()
@@ -51,8 +52,9 @@ export default function JobPage() {
       setIsLooking(data.is_looking !== false)
       const { data: existing } = await supabase.from("location_applications").select("id").eq("student_user_id", user.id).eq("location_id", jobId).maybeSingle()
       if (existing) setHasApplied(true)
-    }
-    fetchStudent()
+        setStudentLoaded(true)
+      }
+      fetchStudent()
   }, [jobId])
 
   useEffect(() => {
@@ -333,6 +335,9 @@ export default function JobPage() {
       {isLooking && (
         <div className="fixed bottom-24 left-0 right-0 z-40 px-4">
           <div className="max-w-lg mx-auto">
+            {!studentLoaded ? (
+              <div className="w-full h-14 rounded-2xl bg-secondary animate-pulse" />
+            ) : (
             <button
               onClick={handleApply}
               disabled={hasApplied || applying}
@@ -350,7 +355,8 @@ export default function JobPage() {
                   Applying...
                 </span>
               ) : hasApplied ? "Already Applied ✓" : "Apply Now"}
-            </button>
+                    </button>
+            )}
           </div>
         </div>
       )}

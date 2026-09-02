@@ -204,7 +204,7 @@ export default function ProfilePage() {
       document.getElementById(hash.replace("#", ""))?.scrollIntoView({ behavior: "smooth", block: "start" })
     }, 500)
   }, [loading])
-  
+
   useEffect(() => {
     if (loading) return
     if (!initialLoadDone.current) {
@@ -534,9 +534,9 @@ export default function ProfilePage() {
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
           <Row label="Full Name" value={name} field="name" placeholder="Add your name" />
           <Row label="Age" value={age} field="age" placeholder="14–21" inputType="number" />
-          <Row label="School" value={school} field="school" placeholder="Your school name" />
-          <div id="gpa"><Row label="GPA (Unweighted)" value={gpa} field="gpa" placeholder="e.g. 3.5" inputType="number" /></div>
-                  </div>
+          <div id="gpa"><Row label="School" value={school} field="school" placeholder="Your school name" /></div>
+          <Row label="GPA (Unweighted)" value={gpa} field="gpa" placeholder="e.g. 3.5" inputType="number" />
+                            </div>
 
         {/* CONTACT */}
         <div className="px-4 pt-2 pb-2">
