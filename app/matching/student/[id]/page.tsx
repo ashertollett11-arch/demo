@@ -257,7 +257,7 @@ export default function JobPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground">{shift.day}</span>
                       {isFree && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">You're free</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">You're free this day</span>
                       )}
                     </div>
                     <span className="text-sm text-muted-foreground">{shift.start} – {shift.end}</span>
