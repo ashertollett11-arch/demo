@@ -244,57 +244,26 @@ export default function JobPage() {
 
         {/* SHIFTS */}
        
-{/* AVAILABILITY MATCH INSIGHT */}
-{activeShifts.length > 0 && availability.length > 0 && (
-          <div className="rounded-2xl border border-border/60 bg-card px-4 py-4">
-            {(() => {
-              const jobDays = activeShifts.map((s: any) => s.day)
-              const studentDays = availability.filter((a: any) => a.available).map((a: any) => a.day)
-              const matchingDays = studentDays.filter(d => jobDays.includes(d))
-              const missingDays = jobDays.filter(d => !studentDays.includes(d))
-              return (
-                <div className="space-y-2">
-                               {matchingDays.length > 0 ? (
-                    <div className="flex items-start gap-2">
-                      <span className="text-green-500 mt-0.5">✓</span>
-                      <p className="text-xs text-foreground">
-                        <span className="font-semibold">You match</span> on {matchingDays.join(", ")} — {matchingDays.length} of your {availability.filter((a: any) => a.available).length} available days covered
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      <span className="text-red-400 mt-0.5">✗</span>
-                      <p className="text-xs text-foreground">
-                        <span className="font-semibold">No overlapping days</span> — this job needs days you're not available
-                      </p>
-                    </div>
-                  )}
-                  {missingDays.length > 0 && (
-                    <div className="flex items-start gap-2">
-                      <span className="text-yellow-500 mt-0.5">!</span>
-                      <p className="text-xs text-muted-foreground">
-                        This job also needs <span className="font-medium text-foreground">{missingDays.join(", ")}</span> — you're not available {missingDays.length === 1 ? "that day" : "those days"}.{" "}
-                        <button onClick={() => router.push("/student/profile#availability")} className="text-primary underline">Update availability</button>
-                                              </p>
-                    </div>
-                  )}
-                </div>
-              )
-            })()}
-          </div>
-        )}
-
-        {/* SHIFTS */}
+        {/* SHIFTS with availability indicator */}
         {activeShifts.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Available Shifts</p>
             <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-              {activeShifts.map((shift: any, i: number) => (
-                <div key={i} className={`flex items-center justify-between px-4 py-3 ${i < activeShifts.length - 1 ? "border-b border-border/60" : ""}`}>
-                  <span className="text-sm font-medium text-foreground">{shift.day}</span>
-                  <span className="text-sm text-muted-foreground">{shift.start} – {shift.end}</span>
-                </div>
-              ))}
+              {activeShifts.map((shift: any, i: number) => {
+                const studentDays = availability.filter((a: any) => a.available).map((a: any) => a.day)
+                const isFree = studentDays.includes(shift.day)
+                return (
+                  <div key={i} className={`flex items-center justify-between px-4 py-3 ${i < activeShifts.length - 1 ? "border-b border-border/60" : ""} ${isFree ? "bg-green-50/50" : ""}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-foreground">{shift.day}</span>
+                      {isFree && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">You're free</span>
+                      )}
+                    </div>
+                    <span className="text-sm text-muted-foreground">{shift.start} – {shift.end}</span>
+                  </div>
+                )
+              })}
               <div className="px-4 py-3 border-t border-border/60 flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Shift preference</span>
                 <span className="text-sm font-medium text-foreground capitalize">{job.shift_preference}</span>
@@ -302,7 +271,6 @@ export default function JobPage() {
             </div>
           </div>
         )}
-
         {/* HIRING FOR */}
         {job.preferred_jobs?.length > 0 && (
           <div>
