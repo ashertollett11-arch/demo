@@ -302,16 +302,30 @@ useEffect(() => {
             <p className="text-xs text-muted-foreground mt-0.5">Applied</p>
           </div>
         </div>
-        {matchedJobs.length > 0 && (isFirstVisit || Math.max(...matchedJobs.map(j => j.matchScore)) < 75) && (
-        <Link href="/student/profile#availability" className="mb-5 flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-4 active:scale-[0.98] transition-all">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-lg">💡</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-yellow-900">Boost your match score</p>
-            <p className="text-xs text-yellow-700 mt-0.5 leading-relaxed">Your top match is {Math.max(...matchedJobs.map(j => j.matchScore))}%. Update your availability and preferred jobs to get better matches.</p>
-          </div>
-          <ChevronRight className="h-4 w-4 text-yellow-500 shrink-0" />
-        </Link>
-      )}
+        {matchedJobs.length > 0 && (() => {
+          const topMatch = Math.max(...matchedJobs.map(j => j.matchScore))
+          const isHigh = topMatch >= 85
+          const showBanner = isFirstVisit || !isHigh
+          if (!showBanner) return null
+          return (
+            <Link href="/student/profile#availability" className={`mb-5 flex items-center gap-3 rounded-2xl border px-4 py-4 active:scale-[0.98] transition-all ${isHigh ? "border-green-200 bg-green-50" : "border-yellow-200 bg-yellow-50"}`}>
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${isHigh ? "bg-green-100" : "bg-yellow-100"}`}>
+                {isHigh ? "🎯" : "💡"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold ${isHigh ? "text-green-900" : "text-yellow-900"}`}>
+                  {isHigh ? "Nice match score!" : "Boost your match score"}
+                </p>
+                <p className={`text-xs mt-0.5 leading-relaxed ${isHigh ? "text-green-700" : "text-yellow-700"}`}>
+                  {isHigh
+                    ? `Your top match is ${topMatch}% — dial it in further by fine-tuning your availability, shift preference, and preferred jobs.`
+                    : `Your top match is ${topMatch}%. Update your availability and preferred jobs to get better matches.`}
+                </p>
+              </div>
+              <ChevronRight className={`h-4 w-4 shrink-0 ${isHigh ? "text-green-500" : "text-yellow-500"}`} />
+            </Link>
+          )
+        })()}
         {/* EMPLOYER ACTIVITY BANNER */}
         <Link href="/student/activity" className="mb-5 flex items-center justify-between rounded-2xl bg-primary px-5 py-4 hover:bg-primary/90 transition-colors">
           <div className="flex items-center gap-3">
