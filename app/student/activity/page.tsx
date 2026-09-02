@@ -283,7 +283,7 @@ export default function StudentActivityPage() {
                 {app.employer_status === "contacted" && (
                   <div className="mt-3 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
                     <p className="text-xs text-blue-700 leading-relaxed">
-                      Check your <span className="font-semibold">phone and email</span> — this employer may have already reached out!
+                      Check your <span className="font-semibold">phone and email</span> — this employer already reached out!
                     </p>
                   </div>
                 )}
