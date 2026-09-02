@@ -317,9 +317,9 @@ export default function StudentDasShboard() {
           </div>
 
      {/* MATCH TIP — only show if top match is low */}
-     {matchedJobsWithScore.length > 0 && (isFirstVisit || topMatch < 65) && (
-                  <Link href="/student/profile" className="mb-5 flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-4 active:scale-[0.98] transition-all">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-lg">💡</div>
+     {matchedJobsWithScore.length > 0 && (isFirstVisit || topMatch < 75) && (
+        <Link href="/student/profile#availability" className="mb-5 flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-4 active:scale-[0.98] transition-all">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-lg">💡</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-yellow-900">Boost your match score</p>
                 <p className="text-xs text-yellow-700 mt-0.5 leading-relaxed">Your top match is {topMatch}%. Update your availability and preferred jobs to get better matches.</p>

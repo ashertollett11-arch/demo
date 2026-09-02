@@ -302,9 +302,9 @@ useEffect(() => {
             <p className="text-xs text-muted-foreground mt-0.5">Applied</p>
           </div>
         </div>
-        {matchedJobs.length > 0 && (isFirstVisit || Math.max(...matchedJobs.map(j => j.matchScore)) < 65) && (
-        <Link href="/student/profile" className="mb-5 flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-4 active:scale-[0.98] transition-all">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-lg">💡</div>
+        {matchedJobs.length > 0 && (isFirstVisit || Math.max(...matchedJobs.map(j => j.matchScore)) < 75) && (
+        <Link href="/student/profile#availability" className="mb-5 flex items-center gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 px-4 py-4 active:scale-[0.98] transition-all">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100 text-lg">💡</div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-yellow-900">Boost your match score</p>
             <p className="text-xs text-yellow-700 mt-0.5 leading-relaxed">Your top match is {Math.max(...matchedJobs.map(j => j.matchScore))}%. Update your availability and preferred jobs to get better matches.</p>

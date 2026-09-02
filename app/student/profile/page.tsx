@@ -197,7 +197,13 @@ export default function ProfilePage() {
     const suppressed = localStorage.getItem("suppress_unsaved_warning") === "true"
     setSuppressUnsavedWarning(suppressed)
   }, [])
-
+  useEffect(() => {
+    if (window.location.hash === "#availability") {
+      setTimeout(() => {
+        document.getElementById("availability")?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 500)
+    }
+  }, [loading])
   useEffect(() => {
     if (loading) return
     if (!initialLoadDone.current) {
@@ -615,7 +621,7 @@ export default function ProfilePage() {
         </div>
 
         {/* AVAILABILITY */}
-        <div className="px-4 pt-2 pb-2">
+        <div id="availability" className="px-4 pt-2 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
