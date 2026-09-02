@@ -254,11 +254,11 @@ export default function JobPage() {
               const missingDays = jobDays.filter(d => !studentDays.includes(d))
               return (
                 <div className="space-y-2">
-                  {matchingDays.length > 0 ? (
+                               {matchingDays.length > 0 ? (
                     <div className="flex items-start gap-2">
                       <span className="text-green-500 mt-0.5">✓</span>
                       <p className="text-xs text-foreground">
-                        <span className="font-semibold">You match</span> on {matchingDays.join(", ")}
+                        <span className="font-semibold">You match</span> on {matchingDays.join(", ")} — {matchingDays.length} of your {availability.filter((a: any) => a.available).length} available days covered
                       </p>
                     </div>
                   ) : (
