@@ -198,12 +198,13 @@ export default function ProfilePage() {
     setSuppressUnsavedWarning(suppressed)
   }, [])
   useEffect(() => {
-    if (window.location.hash === "#availability") {
-      setTimeout(() => {
-        document.getElementById("availability")?.scrollIntoView({ behavior: "smooth", block: "start" })
-      }, 500)
-    }
+    const hash = window.location.hash
+    if (!hash) return
+    setTimeout(() => {
+      document.getElementById(hash.replace("#", ""))?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }, 500)
   }, [loading])
+  
   useEffect(() => {
     if (loading) return
     if (!initialLoadDone.current) {
@@ -527,15 +528,15 @@ export default function ProfilePage() {
         </div>
 
         {/* PERSONAL INFO */}
-        <div className="px-4 pt-2 pb-2">
+        <div id="personal" className="px-4 pt-2 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Personal Info</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
           <Row label="Full Name" value={name} field="name" placeholder="Add your name" />
           <Row label="Age" value={age} field="age" placeholder="14–21" inputType="number" />
           <Row label="School" value={school} field="school" placeholder="Your school name" />
-          <Row label="GPA (Unweighted)" value={gpa} field="gpa" placeholder="e.g. 3.5" inputType="number" />
-        </div>
+          <div id="gpa"><Row label="GPA (Unweighted)" value={gpa} field="gpa" placeholder="e.g. 3.5" inputType="number" /></div>
+                  </div>
 
         {/* CONTACT */}
         <div className="px-4 pt-2 pb-2">
@@ -669,7 +670,7 @@ export default function ProfilePage() {
         </div>
 
         {/* RECOMMENDATION */}
-        <div className="px-4 pt-2 pb-2">
+        <div id="recommendation" className="px-4 pt-2 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recommendation</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">

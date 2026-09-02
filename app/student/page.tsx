@@ -406,15 +406,15 @@ export default function StudentDasShboard() {
                 </p>
               </div>
               {!hasRecommendation && (
-                <button onClick={() => router.push("/student/profile")} className="shrink-0 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium">
-                  Request
-                </button>
+                              <button onClick={() => router.push("/student/profile#recommendation")} className="shrink-0 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                              Request
+                            </button>
               )}
             </div>
 
             {/* GPA */}
-            <div onClick={() => router.push("/student/profile")} className="flex items-center gap-3 px-4 py-3.5 border-b border-border cursor-pointer hover:bg-secondary/30 transition-colors">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-yellow-500/10">
+            <div onClick={() => router.push("/student/profile#gpa")} className="flex items-center gap-3 px-4 py-3.5 border-b border-border cursor-pointer hover:bg-secondary/30 transition-colors">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-yellow-500/10">
                 <Star className="h-4 w-4 text-yellow-600" />
               </div>
               <div className="flex-1">
@@ -425,8 +425,8 @@ export default function StudentDasShboard() {
             </div>
 
             {/* EDIT PROFILE */}
-            <Link href="/student/profile" className="flex items-center gap-3 px-4 py-3.5 hover:bg-secondary/30 transition-colors">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary">
+            <Link href="/student/profile#personal" className="flex items-center gap-3 px-4 py-3.5 hover:bg-secondary/30 transition-colors">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary">
                 <User className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="flex-1">

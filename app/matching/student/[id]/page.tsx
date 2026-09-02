@@ -272,8 +272,8 @@ export default function JobPage() {
                       <span className="text-yellow-500 mt-0.5">!</span>
                       <p className="text-xs text-muted-foreground">
                         This job also needs <span className="font-medium text-foreground">{missingDays.join(", ")}</span> — you're not available {missingDays.length === 1 ? "that day" : "those days"}.{" "}
-                        <button onClick={() => router.push("/student/profile")} className="text-primary underline">Update availability</button>
-                      </p>
+                        <button onClick={() => router.push("/student/profile#availability")} className="text-primary underline">Update availability</button>
+                                              </p>
                     </div>
                   )}
                 </div>
