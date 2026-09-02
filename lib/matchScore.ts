@@ -75,32 +75,34 @@ export function calculateMatch(
 
   // ── DAYS + HOURS SCORE (60 points max) ──
   let dayHourScore = 0
-  const totalStudentDays = studentDays.length || 1
-  let matchingDays = 0
 
+  // Total student available hours across all available days
+  let totalStudentMinutes = 0
+  studentDays.forEach((s) => {
+    if (s.start && s.end) {
+      totalStudentMinutes += Math.max(0, parseTime(s.end) - parseTime(s.start))
+    } else {
+      totalStudentMinutes += 480 // assume 8hr day if no time data
+    }
+  })
+
+  // Total overlapping minutes between student and employer shifts
+  let matchedMinutes = 0
   jobShifts.forEach((jobShift) => {
     const studentDay = studentDays.find((s) => s.day === jobShift.day)
     if (!studentDay) return
-
-    matchingDays++
-    const dayPoints = 6
-    let hourBonus = 0
     if (studentDay.start && studentDay.end && jobShift.start && jobShift.end) {
-      const employerMinutes = parseTime(jobShift.end) - parseTime(jobShift.start)
-      const overlap = getOverlapMinutes(
+      matchedMinutes += getOverlapMinutes(
         studentDay.start, studentDay.end,
         jobShift.start, jobShift.end
       )
-      const overlapRatio = employerMinutes > 0 ? overlap / employerMinutes : 0
-      hourBonus = overlapRatio * 4
     } else {
-      hourBonus = 4
+      matchedMinutes += 480 // assume 8hr overlap if no time data
     }
-    dayHourScore += dayPoints + hourBonus
   })
 
-  const studentCoverageRatio = matchingDays / totalStudentDays
-  const curvedRatio = Math.sqrt(studentCoverageRatio)
+  const hourCoverageRatio = totalStudentMinutes > 0 ? matchedMinutes / totalStudentMinutes : 0
+  const curvedRatio = Math.sqrt(hourCoverageRatio)
   dayHourScore = Math.min(60, curvedRatio * 60)
   // ── DISTANCE SCORE (up to 20 points) ──
   let distanceScore = 0
