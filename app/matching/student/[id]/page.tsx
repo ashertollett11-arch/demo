@@ -217,12 +217,20 @@ export default function JobPage() {
             </div>
           </div>
 
-          {/* LOCATION + DISTANCE */}
-          <div className="mt-4 space-y-2">
+            {/* LOCATION + DISTANCE */}
+            <div className="mt-4 space-y-2">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4 shrink-0" />
               <span>{job.location}</span>
             </div>
+            {job.location && (
+              <button
+                onClick={() => window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(job.location + " " + (job.zip_code || "")), "_blank")}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-border bg-secondary/40 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
+              >
+                <MapPin className="h-3 w-3" /> View on Maps
+              </button>
+            )}
             {distance && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4 shrink-0" />
