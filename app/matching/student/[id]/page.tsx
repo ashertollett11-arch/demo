@@ -225,7 +225,7 @@ export default function JobPage() {
             </div>
             {job.location && (
               <button
-                onClick={() => window.open("https://maps.apple.com/?q=" + encodeURIComponent(job.location + " " + (job.zip_code || "")), "_blank")}
+                onClick={() => window.open("https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent((job.company || "") + " " + job.location + " " + (job.zip_code || "")), "_blank")}
                 className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-border bg-secondary/40 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
               >
                 <MapPin className="h-3 w-3" /> View on Maps
