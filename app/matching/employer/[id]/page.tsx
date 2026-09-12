@@ -369,8 +369,9 @@ export default function StudentPage() {
               </CardContent>
             </Card>
 
-                    {/* BIO */}
-                    {student.bio && (
+            {/* PREFERRED POSITIONS */}
+                        {/* BIO */}
+                        {student.bio && (
               <Card className="border-border bg-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">About</CardTitle>
