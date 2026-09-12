@@ -369,8 +369,60 @@ export default function StudentPage() {
               </CardContent>
             </Card>
 
-            {/* PREFERRED POSITIONS */}
-            {student.preferred_jobs?.length > 0 && (
+                    {/* BIO */}
+                    {student.bio && (
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">About</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-foreground leading-relaxed">{student.bio}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* INTERESTS */}
+            {student.interests?.length > 0 && (
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Interests</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {student.interests.map((interest: string, i: number) => (
+                      <span key={i} className="px-3 py-1.5 text-sm rounded-full border border-border bg-secondary/40 text-foreground font-medium">{interest}</span>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* SOCIAL LINKS */}
+            {(student.instagram || student.tiktok || student.snapchat || student.linkedin || student.twitter) && (
+              <Card className="border-border bg-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Social Media</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {[
+                    { label: "Instagram", value: student.instagram, url: student.instagram ? `https://instagram.com/${student.instagram.replace("@", "")}` : null },
+                    { label: "TikTok", value: student.tiktok, url: student.tiktok ? `https://tiktok.com/@${student.tiktok.replace("@", "")}` : null },
+                    { label: "Snapchat", value: student.snapchat, url: null },
+                    { label: "LinkedIn", value: student.linkedin, url: student.linkedin?.startsWith("http") ? student.linkedin : student.linkedin ? `https://${student.linkedin}` : null },
+                    { label: "Twitter / X", value: student.twitter, url: student.twitter ? `https://x.com/${student.twitter.replace("@", "")}` : null },
+                  ].filter(s => s.value).map(({ label, value, url }) => (
+                    <div key={label} className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground w-24 shrink-0">{label}</span>
+                      {url ? (
+                        <button onClick={() => window.open(url, "_blank")} className="text-sm text-primary hover:underline text-right">{value}</button>
+                      ) : (
+                        <span className="text-sm text-foreground">{value}</span>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
               <Card className="border-border bg-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Preferred Positions</CardTitle>

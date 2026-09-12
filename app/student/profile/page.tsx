@@ -50,7 +50,12 @@ export default function ProfilePage() {
   const [recommenderRelationship, setRecommenderRelationship] = useState("")
   const [recommendation, setRecommendation] = useState<any>(null)
   const [sendingRec, setSendingRec] = useState(false)
-
+  const [bio, setBio] = useState("")
+  const [instagram, setInstagram] = useState("")
+  const [tiktok, setTiktok] = useState("")
+  const [linkedin, setLinkedin] = useState("")
+  const [twitter, setTwitter] = useState("")
+  const [snapchat, setSnapchat] = useState("")
   const JOB_OPTIONS = [
     // Food & Beverage
     "Cashier",
@@ -158,8 +163,8 @@ export default function ProfilePage() {
       if (authUser.email) setEmail(authUser.email)
       const { data: profileData, error } = await supabase
         .from("Students")
-        .select(`user_id, name, age, gpa, location, zip_code, email, school, phone, interests, preferred_jobs, availability, shift_preference, gpa_proof_url, gpa_verification_status, is_looking`)
-        .eq("user_id", authUser.id)
+        .select(`user_id, name, age, gpa, location, zip_code, email, school, phone, interests, preferred_jobs, availability, shift_preference, gpa_proof_url, gpa_verification_status, is_looking, bio, instagram, tiktok, linkedin, twitter, snapchat`)
+                .eq("user_id", authUser.id)
         .single()
       if (error) { setLoading(false); return }
       if (profileData) {
@@ -180,6 +185,12 @@ export default function ProfilePage() {
           ? profileData.availability : DEFAULT_AVAILABILITY
         setAvailability(safeAvailability)
         setShiftPreference(profileData.shift_preference || "flexible")
+        setBio(profileData.bio || "")
+        setInstagram(profileData.instagram || "")
+        setTiktok(profileData.tiktok || "")
+        setLinkedin(profileData.linkedin || "")
+        setTwitter(profileData.twitter || "")
+        setSnapchat(profileData.snapchat || "")
       }
       const { data: rec } = await supabase.from("recommendations").select("*").eq("student_user_id", authUser.id).maybeSingle()
       if (rec) {
@@ -212,8 +223,8 @@ export default function ProfilePage() {
       return
     }
     setHasUnsavedChanges(true)
-  }, [name, age, gpa, location, zipCode, email, school, phone, preferredJobs, interests, availability, shiftPreference, isLooking])
-  const saveStudentProfile = async () => {
+  }, [name, age, gpa, location, zipCode, email, school, phone, preferredJobs, interests, availability, shiftPreference, isLooking, bio, instagram, tiktok, linkedin, twitter, snapchat])
+    const saveStudentProfile = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     const user = session?.user
     if (!user) { toast.error("Not logged in"); return false }
@@ -223,8 +234,8 @@ export default function ProfilePage() {
       name, age: Number(age), location, zip_code: zipCode, email, school, phone,
       interests, preferred_jobs: preferredJobs, availability,
       shift_preference: shiftPreference,
-      is_looking: isLooking,
-      ...(gpaStatus !== "pending" && gpaStatus !== "approved" ? { gpa: Number(gpa) } : {}),
+      bio, instagram, tiktok, linkedin, twitter, snapchat,
+            ...(gpaStatus !== "pending" && gpaStatus !== "approved" ? { gpa: Number(gpa) } : {}),
       ...(gpaStatus === "rejected" || gpaStatus === "none" ? { gpa_proof_url: gpaProofUrl, gpa_verification_status: gpaStatus } : {}),
     }, { onConflict: "user_id" })
     if (error) { toast.error(error.message); return false }
@@ -622,7 +633,43 @@ export default function ProfilePage() {
         </div>
 
         {/* AVAILABILITY */}
-        <div id="availability" className="px-4 pt-2 pb-2">
+               {/* BIO + SOCIAL */}
+               <div className="px-4 pt-2 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">About Me & Social</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          <div className="p-4 space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5">Bio <span className="text-muted-foreground/60">(optional)</span></p>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell employers a little about yourself..."
+                rows={3}
+                maxLength={300}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary resize-none"
+              />
+              <p className="text-xs text-muted-foreground mt-1 text-right">{bio.length}/300</p>
+            </div>
+            {[
+              { label: "Instagram", value: instagram, setter: setInstagram, placeholder: "@username" },
+              { label: "TikTok", value: tiktok, setter: setTiktok, placeholder: "@username" },
+              { label: "Snapchat", value: snapchat, setter: setSnapchat, placeholder: "username" },
+              { label: "LinkedIn", value: linkedin, setter: setLinkedin, placeholder: "linkedin.com/in/yourname" },
+              { label: "Twitter / X", value: twitter, setter: setTwitter, placeholder: "@username" },
+            ].map(({ label, value, setter, placeholder }) => (
+              <div key={label} className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground w-20 shrink-0">{label}</span>
+                <input
+                  value={value}
+                  onChange={(e) => setter(e.target.value)}
+                  placeholder={placeholder}
+                  className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
