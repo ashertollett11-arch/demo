@@ -423,7 +423,7 @@ export default function StudentPage() {
                 </CardContent>
               </Card>
             )}
-
+            
             {/* PREFERRED POSITIONS */}
             {student.preferred_jobs?.length > 0 && (
               <Card className="border-border bg-card">
