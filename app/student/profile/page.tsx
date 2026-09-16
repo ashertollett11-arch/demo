@@ -632,9 +632,8 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* AVAILABILITY */}
-               {/* BIO + SOCIAL */}
-               <div className="px-4 pt-2 pb-2">
+        {/* BIO + SOCIAL */}
+        <div className="px-4 pt-2 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">About Me & Social</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
@@ -670,6 +669,8 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
+        {/* AVAILABILITY */}
+        <div className="px-4 pt-2 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">

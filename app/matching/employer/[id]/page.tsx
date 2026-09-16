@@ -369,9 +369,8 @@ export default function StudentPage() {
               </CardContent>
             </Card>
 
-            {/* PREFERRED POSITIONS */}
-                        {/* BIO */}
-                        {student.bio && (
+            {/* BIO */}
+            {student.bio && (
               <Card className="border-border bg-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">About</CardTitle>
@@ -424,6 +423,9 @@ export default function StudentPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* PREFERRED POSITIONS */}
+            {student.preferred_jobs?.length > 0 && (
               <Card className="border-border bg-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Preferred Positions</CardTitle>
