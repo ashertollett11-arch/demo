@@ -109,22 +109,33 @@ export default function RootLayout({
         <Analytics />
         <Toaster
           position="top-right"
+          offset={16}
           toastOptions={{
             style: {
-              background: "hsl(var(--background))",
-              color: "hsl(var(--foreground))",
-              border: "1px solid hsl(var(--border))",
+              // The theme tokens are complete oklch() colors, so they are used
+              // directly — wrapping them in hsl() produces invalid CSS and the
+              // toast renders with no background at all.
+              background: "var(--card)",
+              color: "var(--card-foreground)",
+              border: "1px solid var(--border)",
               borderRadius: "16px",
               fontSize: "14px",
               fontWeight: "500",
+              boxShadow: "0 12px 32px -12px rgb(0 0 0 / 0.28)",
             },
             classNames: {
-              success: "border-green-200 bg-green-50 text-green-900",
-              error: "border-red-200 bg-red-50 text-red-900",
+              success: "[&_[data-icon]]:text-green-600",
+              error: "[&_[data-icon]]:text-red-600",
+              info: "[&_[data-icon]]:text-primary",
+              warning: "[&_[data-icon]]:text-amber-600",
+              description: "text-muted-foreground font-normal",
+              closeButton:
+                "!bg-card !border-border !text-muted-foreground hover:!text-foreground",
             },
           }}
           closeButton
-        />      </body>
+        />
+      </body>
     </html>
   )
 }
