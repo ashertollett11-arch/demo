@@ -32,14 +32,6 @@ export const metadata: Metadata = {
     description: 'Find local part-time jobs matched to your schedule, availability, and interests. Built for students ages 14–21.',
     url: 'https://simplyapply.app',
     siteName: 'SimplyApply',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'SimplyApply — Local Jobs for Students',
-      },
-    ],
     locale: 'en_US',
     type: 'website',
   },
@@ -47,7 +39,6 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SimplyApply — Local Jobs for Students',
     description: 'Find local part-time jobs matched to your schedule, availability, and interests. Built for students ages 14–21.',
-    images: ['/og-image.png'],
     creator: '@simplyapply',
   },
   robots: {
@@ -72,7 +63,6 @@ export const metadata: Metadata = {
     icon: [
       { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
       { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
     ],
     apple: '/apple-icon.png',
   },
