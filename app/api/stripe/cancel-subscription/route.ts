@@ -1,22 +1,24 @@
 import Stripe from "stripe"
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { getCallerId } from "@/lib/apiAuth"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20",
 })
 
 const supabase = createClient(
-  process.env.SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await req.json()
+    // Acting user comes from the verified token, never the request body.
+    const userId = await getCallerId(req)
 
     if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Get the customer ID from Supabase

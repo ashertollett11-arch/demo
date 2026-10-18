@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { getCallerId } from "@/lib/apiAuth"
 
 export async function POST(request: Request) {
-  const { userId } = await request.json()
+  // The acting user comes from the verified access token, never from the body:
+  // anyone can post a userId, and employer user_ids are publicly readable.
+  const userId = await getCallerId(request)
 
-  if (!userId) return NextResponse.json({ error: "No userId" }, { status: 400 })
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

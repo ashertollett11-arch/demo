@@ -17,17 +17,36 @@ function parseTime(timeStr: string): number {
   return hour * 60 + min
 }
 
+// A range whose end is at or before its start crosses midnight (e.g. 10:00 PM
+// - 2:00 AM), so the end is pushed into the next day. Without this, overnight
+// shifts computed as negative length and scored zero overlap.
+function toRange(start: string, end: string): [number, number] {
+  const s = parseTime(start)
+  let e = parseTime(end)
+  if (e <= s) e += 1440
+  return [s, e]
+}
+
+export function getDurationMinutes(start: string, end: string): number {
+  const [s, e] = toRange(start, end)
+  return Math.max(0, e - s)
+}
+
 function getOverlapMinutes(
   startA: string, endA: string,
   startB: string, endB: string
 ): number {
-  const sA = parseTime(startA)
-  const eA = parseTime(endA)
-  const sB = parseTime(startB)
-  const eB = parseTime(endB)
-  const overlapStart = Math.max(sA, sB)
-  const overlapEnd = Math.min(eA, eB)
-  return Math.max(0, overlapEnd - overlapStart)
+  const [sA, eA] = toRange(startA, endA)
+  const [sB, eB] = toRange(startB, endB)
+  // Compare B against A on the previous, same and next day so a wrapped range
+  // still meets its counterpart. Best single window wins — summing would
+  // double-count the same overlap.
+  let best = 0
+  for (const shift of [-1440, 0, 1440]) {
+    const overlap = Math.min(eA, eB + shift) - Math.max(sA, sB + shift)
+    if (overlap > best) best = overlap
+  }
+  return best
 }
 
 export function calculateMatch(
@@ -80,7 +99,7 @@ export function calculateMatch(
   let totalStudentMinutes = 0
   studentDays.forEach((s) => {
     if (s.start && s.end) {
-      totalStudentMinutes += Math.max(0, parseTime(s.end) - parseTime(s.start))
+      totalStudentMinutes += getDurationMinutes(s.start, s.end)
     } else {
       totalStudentMinutes += 480 // assume 8hr day if no time data
     }

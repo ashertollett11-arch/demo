@@ -32,7 +32,7 @@ const JOB_ROLES = [
   "Tutor", "Library Assistant", "Office Assistant",
 ]
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|us|gov|io|co)$/i
+const emailRegex = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
 
 const inputClass = "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
 

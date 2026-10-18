@@ -4,7 +4,7 @@ import { calculateMatch } from "@/lib/matchScore"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
-import { toast, Toaster } from "sonner"
+import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import {
   Briefcase,

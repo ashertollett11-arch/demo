@@ -20,17 +20,36 @@ function parseTime(timeStr: string): number {
 }
 
 // Returns overlapping minutes between two time ranges
+// A range whose end is at or before its start crosses midnight (e.g. 10:00 PM
+// - 2:00 AM), so the end is pushed into the next day. Without this, overnight
+// shifts computed as negative length and scored zero overlap.
+function toRange(start: string, end: string): [number, number] {
+  const s = parseTime(start)
+  let e = parseTime(end)
+  if (e <= s) e += 1440
+  return [s, e]
+}
+
+export function getDurationMinutes(start: string, end: string): number {
+  const [s, e] = toRange(start, end)
+  return Math.max(0, e - s)
+}
+
 function getOverlapMinutes(
   startA: string, endA: string,
   startB: string, endB: string
 ): number {
-  const sA = parseTime(startA)
-  const eA = parseTime(endA)
-  const sB = parseTime(startB)
-  const eB = parseTime(endB)
-  const overlapStart = Math.max(sA, sB)
-  const overlapEnd = Math.min(eA, eB)
-  return Math.max(0, overlapEnd - overlapStart)
+  const [sA, eA] = toRange(startA, endA)
+  const [sB, eB] = toRange(startB, endB)
+  // Compare B against A on the previous, same and next day so a wrapped range
+  // still meets its counterpart. Best single window wins — summing would
+  // double-count the same overlap.
+  let best = 0
+  for (const shift of [-1440, 0, 1440]) {
+    const overlap = Math.min(eA, eB + shift) - Math.max(sA, sB + shift)
+    if (overlap > best) best = overlap
+  }
+  return best
 }
 
 export function calculateEmployerMatch(
@@ -93,7 +112,7 @@ export function calculateEmployerMatch(
     // Hour overlap bonus — up to 4 extra points
     let hourBonus = 0
     if (studentDay.start && studentDay.end && jobShift.start && jobShift.end) {
-      const employerMinutes = parseTime(jobShift.end) - parseTime(jobShift.start)
+      const employerMinutes = getDurationMinutes(jobShift.start, jobShift.end)
       const overlap = getOverlapMinutes(
         studentDay.start, studentDay.end,
         jobShift.start, jobShift.end

@@ -76,14 +76,14 @@ export default function StudentOnboarding() {
     return () => clearTimeout(timer)
   }, [name, age, gender, address, zipCode, school, gpa, email, phone])
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|us|gov|io|co)$/i
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
   const zipRegex = /^\d{5}$/
 
   const canProceed = () => {
     switch (step) {
       case 1: const n = parseInt(age); return name.trim().length > 0 && !isNaN(n) && n >= 14 && n <= 21 && gender !== ""
       case 2: return address.trim().length > 0 && zipRegex.test(zipCode)
-      case 3: return school.trim().length > 0 && gpa.trim().length > 0 && parseFloat(gpa) <= 4
+      case 3: const g = parseFloat(gpa); return school.trim().length > 0 && gpa.trim().length > 0 && !isNaN(g) && g >= 0 && g <= 4
       case 4: return emailRegex.test(email) && phone.length === 10
       default: return false
     }
@@ -113,11 +113,27 @@ export default function StudentOnboarding() {
       profile_complete: true,
     }, { onConflict: "user_id" })
     if (error) { toast.error("Failed to save. Please try again."); setSaving(false); return }
-    await fetch("/api/calculate-distances", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ studentUserId: user.id }),
-    }).catch(() => {})
-    toast.success("Welcome to SimplyApply!")
+    // Jobs are filtered by stored distance, so if this fails the student lands
+    // on an empty board. Say so rather than letting it look like "no jobs".
+    let distancesOk = false
+    try {
+      const res = await fetch("/api/calculate-distances", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentUserId: user.id }),
+      })
+      const body = await res.json().catch(() => null)
+      distancesOk = res.ok && (body?.calculated ?? 0) > 0
+    } catch {
+      distancesOk = false
+    }
+
+    if (distancesOk) {
+      toast.success("Welcome to SimplyApply!")
+    } else {
+      toast.warning("We couldn't find jobs near you yet", {
+        description: "Your profile is saved. Check that your address and zip are correct, or try again shortly.",
+      })
+    }
     router.push("/student")
   }
 
@@ -240,7 +256,7 @@ export default function StudentOnboarding() {
                 <div>
                   <label className="text-sm font-medium text-foreground block mb-1.5">Unweighted GPA</label>
                   <input type="number" step="0.01" min="0" max="4" value={gpa}
-                    onChange={(e) => { const v = e.target.value; if (v === "") { setGpa(""); return } if (parseFloat(v) > 4) return; setGpa(v) }}
+                    onChange={(e) => { const v = e.target.value; if (v === "") { setGpa(""); return } const n = parseFloat(v); if (n > 4 || n < 0) return; setGpa(v) }}
                     placeholder="e.g. 3.5" className={inputClass} />
                   <p className="text-xs text-muted-foreground mt-2">Max 4.0 unweighted.</p>
                 </div>

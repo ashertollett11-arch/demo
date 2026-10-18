@@ -59,6 +59,9 @@ export default function MatchesPage() {
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set())
   const [studentNotifications, setStudentNotifications] = useState<any[]>([])
   const [isFirstVisit, setIsFirstVisit] = useState(false)
+  // Locations exist but none have a stored distance — the lookup failed,
+  // which is not the same thing as there being no jobs nearby.
+  const [distanceUnavailable, setDistanceUnavailable] = useState(false)
 
   useEffect(() => {
     const seen = localStorage.getItem("jobs_page_visited")
@@ -103,6 +106,8 @@ export default function MatchesPage() {
       ;(distanceRows || []).forEach((d) => { distanceMap[d.employer_location_id] = { distance_text: d.distance_text, duration_text: d.duration_text, distance_meters: d.distance_meters } })
       const { data: recData } = await supabase.from("recommendations").select("id").eq("student_user_id", studentUserId).eq("submitted", true).maybeSingle()
       const studentHasRecommendation = !!recData
+      setDistanceUnavailable((locations?.length ?? 0) > 0 && Object.keys(distanceMap).length === 0)
+
       const updated = (locations || [])
         .filter((loc: any) => { const d = distanceMap[loc.id]?.distance_meters; if (!d) return false; return d <= (loc.max_distance_miles ?? 10) * 1609.34 })
         .map((loc: any) => {
@@ -366,8 +371,22 @@ useEffect(() => {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary mb-4">
               <Briefcase className="h-7 w-7 text-muted-foreground/50" />
             </div>
-            <p className="font-semibold text-foreground">No jobs near you yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Check back soon — new jobs are added regularly.</p>
+            {distanceUnavailable ? (
+              <>
+                <p className="font-semibold text-foreground">We couldn't work out your distance to nearby jobs</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  This usually means your address or zip needs a correction. Update it in your profile and we'll try again.
+                </p>
+                <Link href="/student/profile" className="mt-4 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+                  Check my address
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="font-semibold text-foreground">No jobs near you yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Check back soon — new jobs are added regularly.</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-3">

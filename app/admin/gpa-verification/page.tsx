@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,8 +17,30 @@ type Student = {
   gpa_verification_status: string
 }
 export default function GpaVerificationPage() {
+  const router = useRouter()
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
+  const [authorized, setAuthorized] = useState(false)
+
+  // This page reads student records, approves GPAs and deletes proof uploads.
+  // It previously had no guard at all and was reachable while signed out.
+  // Grant access by setting users.role = 'admin' on your own row.
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.replace("/login"); return }
+
+      const { data: roleData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle()
+
+      if (roleData?.role !== "admin") { router.replace("/"); return }
+      setAuthorized(true)
+    }
+    checkAdmin()
+  }, [router])
 
   const fetchPending = async () => {
     setLoading(true)
@@ -39,8 +62,9 @@ export default function GpaVerificationPage() {
   }
 
   useEffect(() => {
+    if (!authorized) return
     fetchPending()
-  }, [])
+  }, [authorized])
 
   const updateStatus = async (
     student: Student,
@@ -92,6 +116,14 @@ export default function GpaVerificationPage() {
     toast.success(`Marked as ${status}`)
     fetchPending()
   }
+  if (!authorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen p-6 bg-background">
       <h1 className="text-2xl font-bold mb-6">GPA Verification</h1>

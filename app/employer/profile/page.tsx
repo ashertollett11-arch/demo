@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Building2, AlertTriangle, MapPin, Plus, Pencil, Bell, CreditCard, LogOut, ChevronDown, DollarSign, Clock, HelpCircle } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { authedFetch } from "@/lib/authedFetch"
 import Image from "next/image"
 import Link from "next/link"
 import {
@@ -61,7 +62,7 @@ export default function EmployerProfilePage() {
   type FieldRef = React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>
   const scrollToField = (ref: FieldRef) => { ref.current?.scrollIntoView({ behavior: "smooth", block: "center" }); ref.current?.focus?.() }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|us|gov|io|co)$/i
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
   const phoneRegex = /^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/
 
   const isProfileComplete =
@@ -186,7 +187,7 @@ export default function EmployerProfilePage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSwitching(false); return }
     try {
-      const res = await fetch("/api/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: user.id }) })
+      const res = await authedFetch("/api/delete-account", { method: "POST" })
       if (!res.ok) { toast.error("Failed to switch role."); setSwitching(false); return }
       await supabase.auth.signOut(); window.location.href = "/choose-role"
     } catch { toast.error("Something went wrong."); setSwitching(false) }
@@ -220,7 +221,7 @@ export default function EmployerProfilePage() {
             <Button variant="destructive" onClick={async () => {
               const { data: { user } } = await supabase.auth.getUser()
               if (!user) return
-              const res = await fetch("/api/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: user.id }) })
+              const res = await authedFetch("/api/delete-account", { method: "POST" })
               if (!res.ok) { toast.error("Failed to delete account."); return }
               await supabase.auth.signOut(); window.location.href = "/login"
             }}>Yes, delete my account</Button>

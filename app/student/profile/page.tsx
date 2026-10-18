@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, Briefcase, AlertTriangle, Star, ChevronRight, ChevronLeft, X, Check } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { authedFetch } from "@/lib/authedFetch"
 import {
   Dialog,
   DialogContent,
@@ -101,7 +102,7 @@ export default function ProfilePage() {
     { day: "Sunday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "-" },
   ]
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|us|gov|io|co)$/i
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
   const zipRegex = /^\d{5}$/
   const numAge = parseInt(age)
   const isAgeValid = !isNaN(numAge) && numAge >= 14 && numAge <= 21
@@ -272,7 +273,7 @@ export default function ProfilePage() {
     if (!user) return
     setDeleting(true)
     try {
-      const res = await fetch("/api/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: user.id }) })
+      const res = await authedFetch("/api/delete-account", { method: "POST" })
       if (!res.ok) { const data = await res.json(); toast.error(data.error || "Failed to delete account."); setDeleting(false); return }
       supabase.auth.signOut().finally(() => { window.location.href = "/login" })
     } catch { toast.error("Something went wrong."); setDeleting(false) }
@@ -283,7 +284,7 @@ export default function ProfilePage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSwitching(false); return }
     try {
-      const res = await fetch("/api/delete-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: user.id }) })
+      const res = await authedFetch("/api/delete-account", { method: "POST" })
       if (!res.ok) { const data = await res.json(); toast.error(data.error || "Failed to switch role."); setSwitching(false); return }
       supabase.auth.signOut().finally(() => { window.location.href = "/choose-role" })
     } catch { toast.error("Something went wrong."); setSwitching(false) }

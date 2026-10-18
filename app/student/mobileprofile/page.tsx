@@ -94,7 +94,7 @@ export default function ProfilePage() {
     { day: "Sunday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "-" },
   ]
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.(com|net|org|edu|us|gov|io|co)$/i
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i
   const isDobValid = (() => {
     if (!dob) return false
     const birthDate = new Date(dob)

@@ -5,7 +5,8 @@ export const signInWithGoogle = async () => {
   return await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: "http://localhost:3000/student",
+      // Was hardcoded to localhost:3000, which breaks OAuth in production.
+      redirectTo: `${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback`,
     },
   })
 }
