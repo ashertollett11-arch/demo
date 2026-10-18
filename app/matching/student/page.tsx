@@ -11,6 +11,7 @@ import {
   User,
   LogOut,
   Bell,
+  Building2,
   MapPin,
   Clock,
   Home,
@@ -58,6 +59,8 @@ export default function MatchesPage() {
   const pathname = usePathname()
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set())
   const [studentNotifications, setStudentNotifications] = useState<any[]>([])
+  // employer user_id -> company name, so a notification can lead with who it's from
+  const [notifCompanies, setNotifCompanies] = useState<Record<string, string>>({})
   const [isFirstVisit, setIsFirstVisit] = useState(false)
   // Locations exist but none have a stored distance — the lookup failed,
   // which is not the same thing as there being no jobs nearby.
@@ -155,6 +158,14 @@ export default function MatchesPage() {
       const { data } = await supabase.from("student_notifications").select("*").eq("student_user_id", user.id).eq("read", false).order("created_at", { ascending: false })
       setStudentNotifications(data || [])
 
+      const employerIds = [...new Set((data || []).map((n: any) => n.employer_id).filter(Boolean))]
+      if (employerIds.length) {
+        const { data: jobs } = await supabase.from("job").select("user_id, company").in("user_id", employerIds)
+        const companyMap: Record<string, string> = {}
+        ;(jobs || []).forEach((j: any) => { if (j.user_id) companyMap[j.user_id] = j.company })
+        setNotifCompanies(companyMap)
+      }
+
       const channel = supabase
         .channel("student-notifications-realtime")
         .on("postgres_changes", {
@@ -237,17 +248,28 @@ useEffect(() => {
                 <div className="max-h-72 overflow-y-auto divide-y divide-border">
                   {studentNotifications.map((n) => (
                     <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-secondary/30">
-<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">🎉</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm leading-snug">{n.message}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{n.created_at ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "Just now"}</p>
+<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                        <Building2 className="h-4 w-4 text-primary" />
                       </div>
-                      <div className="flex flex-col gap-1.5 shrink-0">
-                        <Link href="/student/activity" className="text-xs font-medium text-primary hover:text-primary/80 transition-colors">
-                          View
-                        </Link>
-                        <button onClick={async () => { setStudentNotifications(prev => prev.filter(x => x.id !== n.id)); await supabase.from("student_notifications").update({ read: true }).eq("id", n.id) }}
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors">Dismiss</button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="truncate text-sm font-semibold text-foreground">
+                            {notifCompanies[n.employer_id] || "An employer"}
+                          </p>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">
+                            {n.created_at ? new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Now"}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">
+                          Reached out about hiring you
+                        </p>
+                        <div className="mt-1.5 flex items-center gap-3">
+                          <Link href="/student/activity" className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
+                            View details
+                          </Link>
+                          <button onClick={async () => { setStudentNotifications(prev => prev.filter(x => x.id !== n.id)); await supabase.from("student_notifications").update({ read: true }).eq("id", n.id) }}
+                            className="text-xs text-muted-foreground hover:text-foreground transition-colors">Dismiss</button>
+                        </div>
                       </div>
                     </div>
                   ))}
