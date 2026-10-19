@@ -112,43 +112,43 @@ export default function ChooseRolePage() {
           ← Back to home
         </button>
       </div>
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-6 py-12">
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-5 py-8 sm:px-6 sm:py-12">
         {/* TOP */}
-        <div className="mb-14 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm text-muted-foreground shadow-sm">
+        <div className="mb-8 text-center sm:mb-14">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-sm sm:mb-4 sm:px-4 sm:py-2 sm:text-sm">
             <Sparkles className="h-4 w-4 text-primary" />
             Welcome to SimplyApply
           </div>
 
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-5xl">
             Choose how you want to use the platform
           </h1>
 
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground sm:mt-5 sm:text-lg">
             Whether you're looking for your first job or hiring great students,
             SimplyApply helps make the process fast and simple.
           </p>
         </div>
 
         {/* ROLE CARDS */}
-        <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-2">
+        <div className="grid w-full max-w-5xl gap-4 sm:gap-6 lg:grid-cols-2">
 
           {/* STUDENT */}
           <Card className="group relative overflow-hidden border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-primary/30">
             <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
-            <CardContent className="p-8">
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+            <CardContent className="p-5 sm:p-8">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 sm:mb-6 sm:h-14 sm:w-14">
                 <GraduationCap className="h-7 w-7 text-primary" />
               </div>
 
-              <h2 className="text-2xl font-bold text-foreground">I'm a Student</h2>
+              <h2 className="text-xl font-bold text-foreground sm:text-2xl">I'm a Student</h2>
 
-              <p className="mt-3 text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground sm:mt-3 sm:text-base">
                 Find flexible jobs near you, apply quickly, and build your
                 experience while balancing school.
               </p>
 
-              <div className="mt-8 space-y-4">
+              <div className="mt-6 hidden space-y-4 sm:block">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
@@ -175,7 +175,7 @@ export default function ChooseRolePage() {
               <Button
                 onClick={() => selectRole("student")}
                 disabled={loading}
-                className="mt-10 h-11 w-full text-base font-medium"
+                className="mt-5 h-11 w-full text-base font-medium sm:mt-10"
               >
                 {loading ? "Loading..." : "Continue as Student"}
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -186,19 +186,19 @@ export default function ChooseRolePage() {
           {/* EMPLOYER */}
           <Card className="group relative overflow-hidden border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:border-primary/30">
             <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
-            <CardContent className="p-8">
-              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+            <CardContent className="p-5 sm:p-8">
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 sm:mb-6 sm:h-14 sm:w-14">
                 <Briefcase className="h-7 w-7 text-primary" />
               </div>
 
-              <h2 className="text-2xl font-bold text-foreground">I'm an Employer</h2>
+              <h2 className="text-xl font-bold text-foreground sm:text-2xl">I'm an Employer</h2>
 
-              <p className="mt-3 text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground sm:mt-3 sm:text-base">
                 Connect with motivated students, manage applicants, and hire
                 faster with smart matching tools.
               </p>
 
-              <div className="mt-8 space-y-4">
+              <div className="mt-6 hidden space-y-4 sm:block">
                 <div className="flex items-start gap-3">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 text-primary" />
                   <div>
@@ -226,7 +226,7 @@ export default function ChooseRolePage() {
                 onClick={() => selectRole("employer")}
                 disabled={loading}
                 variant="outline"
-                className="mt-10 h-11 w-full text-base font-medium"
+                className="mt-5 h-11 w-full text-base font-medium sm:mt-10"
               >
                 {loading ? "Loading..." : "Continue as Employer"}
                 <ArrowRight className="ml-2 h-4 w-4" />
