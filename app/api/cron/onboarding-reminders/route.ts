@@ -21,6 +21,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  // ?dry=1 reports exactly who would be emailed, and sends nothing. Use it
+  // before any change to the targeting rules.
+  const dryRun = new URL(request.url).searchParams.get("dry") === "1"
+
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,6 +72,7 @@ export async function GET(request: Request) {
 
     let sent = 0
     const skipped: Record<string, number> = { complete: 0, alreadySent: 0, optedOut: 0 }
+    const would: { email: string; role: string; subject: string }[] = []
 
     for (const user of candidates) {
       if (alreadySent.has(`${user.id}:reminder`) || alreadySent.has(`${user.id}:welcome`)) {
@@ -92,6 +97,11 @@ export async function GET(request: Request) {
         email = employerUnfinished({ company: jobOf.get(user.id)?.company })
       }
 
+      if (dryRun) {
+        would.push({ email: user.email!, role: role ?? "none", subject: email.subject })
+        continue
+      }
+
       const { error } = await resend.emails.send({
         from: FROM, to: user.email!, subject: email.subject, html: email.html,
       })
@@ -101,6 +111,9 @@ export async function GET(request: Request) {
       sent++
     }
 
+    if (dryRun) {
+      return NextResponse.json({ dryRun: true, checked: candidates.length, wouldSend: would.length, would, skipped })
+    }
     return NextResponse.json({ checked: candidates.length, sent, skipped })
   } catch (err: any) {
     console.error("ONBOARDING REMINDERS ERROR:", err.message)
