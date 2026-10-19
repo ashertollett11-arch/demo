@@ -3,6 +3,7 @@ import { toast } from "sonner"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import { fetchVisibleLocationIds } from "@/lib/plan"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -40,15 +41,21 @@ const { data, error } = await supabase
     company
   )
 `)
-.limit(2)
+.limit(8)
 .order("created_at", { ascending: false })
 
 
       if (error) {
         return
       }
-  
-      setFeaturedJobs(data || [])
+
+      // Don't feature a paused location on the public landing page.
+      const visibleIds = await fetchVisibleLocationIds()
+      const featured = visibleIds
+        ? (data || []).filter((loc: any) => visibleIds.has(String(loc.id)))
+        : (data || [])
+      // over-fetch, then take two, so a paused location doesn't leave a gap
+      setFeaturedJobs(featured.slice(0, 2))
     }
   
     loadFeaturedJobs()

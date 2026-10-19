@@ -22,6 +22,7 @@ import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { calculateMatch } from "@/lib/matchScore"
 import { supabase } from "@/lib/supabase"
+import { fetchVisibleLocationIds } from "@/lib/plan"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -98,9 +99,15 @@ export default function MatchesPage() {
       const studentAvailability = studentData?.availability ?? []
       const studentShiftPreference = studentData?.shift_preference || "flexible"
       const studentUserId = studentData?.user_id
-      const { data: locations, error: locError } = await supabase
+      const { data: allLocationRows, error: locError } = await supabase
         .from("locations").select(`id, name, address, max_distance_miles, available_shifts, shift_preference, hourly_pay, has_tips, preferred_jobs, employer_id, job:employer_id (id, company, details, status)`)
       if (locError) return
+      // Free employers keep only one live location; the rest are paused and
+      // must not show up on the job board.
+      const visibleIds = await fetchVisibleLocationIds()
+      const locations = visibleIds
+        ? (allLocationRows ?? []).filter((loc: any) => visibleIds.has(String(loc.id)))
+        : allLocationRows
       const { data: applications } = await supabase.from("location_applications").select("location_id").eq("student_user_id", userId)
       setAppliedIds(new Set((applications || []).map((a: any) => a.location_id)))
       const { data: distanceRows } = await supabase

@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { fetchVisibleLocationIds } from "@/lib/plan"
 import {
   Briefcase,
   CheckCircle2,
@@ -98,9 +99,15 @@ export default function StudentDasShboard() {
       const { data: studentData, error: studentError } = await supabase
         .from("Students").select("availability, shift_preference, zip_code, user_id").eq("user_id", user.id).single()
       if (studentError || !studentData) return
-      const { data: locations, error: locError } = await supabase
+      const { data: allLocationRows, error: locError } = await supabase
         .from("locations").select(`id, name, address, max_distance_miles, available_shifts, shift_preference, hourly_pay, has_tips, preferred_jobs, employer_id, job:employer_id (id, company, details, status)`)
       if (locError) return
+      // Free employers keep only one live location; the rest are paused and
+      // must not show up on the job board.
+      const visibleIds = await fetchVisibleLocationIds()
+      const locations = visibleIds
+        ? (allLocationRows ?? []).filter((loc: any) => visibleIds.has(String(loc.id)))
+        : allLocationRows
       const { data: distanceRows } = await supabase
         .from("employer_student_distances").select("employer_location_id, distance_meters").eq("student_user_id", studentData.user_id)
       const distanceMap: Record<string, number> = {}

@@ -3,6 +3,7 @@ import { useParams, useRouter } from "next/navigation"
 import { MapPin, ChevronLeft, Clock, Briefcase, Home, Activity, User } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase"
+import { fetchVisibleLocationIds } from "@/lib/plan"
 import { calculateMatch } from "@/lib/matchScore"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -68,6 +69,9 @@ export default function JobPage() {
         job:employer_id (id, company, details, status, user_id)
       `).eq("id", id).single()
       if (error || !data) { setLoading(false); return }
+      // A direct link must not reach a paused location either.
+      const visibleIds = await fetchVisibleLocationIds()
+      if (visibleIds && !visibleIds.has(String(data.id))) { setLoading(false); return }
       const jobData = Array.isArray(data.job) ? data.job[0] : data.job
       setJob({
         ...data, title: data.name, company: jobData?.company, location: data.address,
