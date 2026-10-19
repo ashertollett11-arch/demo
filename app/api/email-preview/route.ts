@@ -21,7 +21,9 @@ export async function GET(request: Request) {
       hourlyPay: 13, hasTips: true, roles: ["Barista", "Customer Service"],
     })],
     ["Employer · unfinished setup (day 1)", employerUnfinished({ company: "Cow Girl Kitchen" })],
-    ["No role chosen (day 1)", chooseRoleUnfinished({ name: "Maya Rodriguez" })],
+    // No-role users have no Students row and no auth metadata name, so this
+    // one is previewed the way it actually sends: without a greeting.
+    ["No role chosen (day 1)", chooseRoleUnfinished({})],
   ]
 
   // ?send=<address>&which=<n> delivers one of these for real, so inbox
