@@ -36,7 +36,6 @@ export default function StudentOnboarding() {
       const { data: existing } = await supabase.from("Students")
         .select("name, age, gender, location, zip_code, school, gpa, email, phone").eq("user_id", user.id).maybeSingle()
       if (existing) {
-        if (existing.name) setName(existing.name)
         if (existing.age) setAge(String(existing.age))
         if (existing.gender) setGender(existing.gender)
         if (existing.location) setAddress(existing.location)
@@ -44,11 +43,13 @@ export default function StudentOnboarding() {
         if (existing.school) setSchool(existing.school)
         if (existing.gpa) setGpa(String(existing.gpa))
         if (existing.phone) setPhone(existing.phone)
-        if (existing.email) setEmail(existing.email)
-      } else {
-        if (user.email) setEmail(user.email)
-        if (user.user_metadata?.full_name) setName(user.user_metadata.full_name)
       }
+      // Fall back to the signed-in account for email and name. These were
+      // previously only read when no Students row existed, but /choose-role
+      // always inserts one, so the fallback never ran and the email field
+      // started empty even though we already knew it.
+      setEmail(existing?.email || user.email || "")
+      setName(existing?.name || user.user_metadata?.full_name || "")
     }
     load()
   }, [router])
