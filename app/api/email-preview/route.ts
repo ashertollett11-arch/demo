@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import {
-  studentWelcome, studentUnfinished, employerWelcome, employerUnfinished,
+  studentWelcome, studentUnfinished, employerWelcome, employerUnfinished, chooseRoleUnfinished,
 } from "@/lib/emails/templates"
 
 /**
@@ -20,6 +20,7 @@ export async function GET() {
       hourlyPay: 13, hasTips: true, roles: ["Barista", "Customer Service"],
     })],
     ["Employer · unfinished setup (day 1)", employerUnfinished({ company: "Cow Girl Kitchen" })],
+    ["No role chosen (day 1)", chooseRoleUnfinished({ name: "Maya Rodriguez" })],
   ]
 
   const page = `<!doctype html><meta charset="utf-8"><title>Email preview</title>

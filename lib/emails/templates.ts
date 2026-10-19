@@ -95,3 +95,37 @@ export function employerUnfinished({ company }: { company?: string | null }) {
     }),
   }
 }
+
+/**
+ * Confirmed their email but never chose a role, so we don't know whether they
+ * came to find work or to hire. One tap resolves it.
+ */
+export function chooseRoleUnfinished({ name }: { name?: string | null }) {
+  const first = firstName(name)
+  return {
+    subject: "One step left on SimplyApply",
+    html: shell({
+      heading: first ? `Hey ${first}, one step left` : "One step left",
+      intro: "Your account is confirmed — we just don't know yet what you came here for.",
+      body:
+        `<p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">Tell us whether you're looking for a job or hiring, and we'll set the right thing up. It's one tap, and you can change it later.</p>` +
+        `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+          <tr><td style="padding:0 0 12px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;"><tr><td style="padding:16px 20px;">
+              <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#1e40af;">I'm a student</p>
+              <p style="margin:0;font-size:14px;color:#1e3a8a;">Find local jobs that fit around school. No resume needed.</p>
+            </td></tr></table>
+          </td></tr>
+          <tr><td>
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;"><tr><td style="padding:16px 20px;">
+              <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#111827;">I'm hiring</p>
+              <p style="margin:0;font-size:14px;color:#6b7280;">Get matched to students who are free when you need cover.</p>
+            </td></tr></table>
+          </td></tr>
+        </table>`,
+      ctaLabel: "Choose how I'll use SimplyApply",
+      ctaHref: `${siteUrl}/choose-role`,
+      footerReason: "You're receiving this because you created an account on SimplyApply.",
+    }),
+  }
+}

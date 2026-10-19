@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
-import { studentUnfinished, employerUnfinished } from "@/lib/emails/templates"
+import { studentUnfinished, employerUnfinished, chooseRoleUnfinished } from "@/lib/emails/templates"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 const REMIND_AFTER_HOURS = 24
@@ -34,7 +34,14 @@ export async function GET(request: Request) {
     const newerThan = now - MAX_AGE_DAYS * 24 * 3600_000
 
     // candidates: confirmed accounts inside the window
-    const { data: list } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
+    const { data: list, error: listError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
+    // A bad service key makes listUsers return nothing, which would otherwise
+    // look identical to "no one needs an email" and fail silently forever.
+    if (listError) {
+      console.error("ONBOARDING REMINDERS: cannot list users:", listError.message)
+      return NextResponse.json({ error: `Could not list users: ${listError.message}` }, { status: 500 })
+    }
+
     const candidates = (list?.users ?? []).filter((u) => {
       if (!u.email || !u.email_confirmed_at) return false
       const created = new Date(u.created_at).getTime()
@@ -60,7 +67,7 @@ export async function GET(request: Request) {
     const alreadySent = new Set((sentRows ?? []).map((r: any) => `${r.user_id}:${r.kind}`))
 
     let sent = 0
-    const skipped: Record<string, number> = { complete: 0, noRole: 0, alreadySent: 0, optedOut: 0 }
+    const skipped: Record<string, number> = { complete: 0, alreadySent: 0, optedOut: 0 }
 
     for (const user of candidates) {
       if (alreadySent.has(`${user.id}:reminder`) || alreadySent.has(`${user.id}:welcome`)) {
@@ -68,13 +75,13 @@ export async function GET(request: Request) {
       }
       const role = roleOf.get(user.id)
 
-      // Someone who confirmed but never picked a role can't be sent a
-      // role-specific email, so they're left alone.
-      if (role !== "student" && role !== "employer") { skipped.noRole++; continue }
-
       let email: { subject: string; html: string }
 
-      if (role === "student") {
+      if (role !== "student" && role !== "employer") {
+        // Confirmed but never chose a role — ask them which they are.
+        // A Students row can exist from /choose-role, so use any saved name.
+        email = chooseRoleUnfinished({ name: studentOf.get(user.id)?.name })
+      } else if (role === "student") {
         const student = studentOf.get(user.id)
         if (student?.profile_complete) { skipped.complete++; continue }
         email = studentUnfinished({ name: student?.name })
