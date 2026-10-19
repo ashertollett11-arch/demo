@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { authedFetch } from "@/lib/authedFetch"
 import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
 
 const TOTAL_STEPS = 4
@@ -126,6 +127,11 @@ export default function StudentOnboarding() {
     } catch {
       distancesOk = false
     }
+
+    // Welcome email. Deliberately not awaited into the happy path: a mail
+    // failure must not block someone finishing onboarding, and the route
+    // records what it sent so a retry can't double-send.
+    authedFetch("/api/send-welcome-email", { method: "POST" }).catch(() => {})
 
     if (distancesOk) {
       toast.success("Welcome to SimplyApply!")

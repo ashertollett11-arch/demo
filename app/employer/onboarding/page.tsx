@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { authedFetch } from "@/lib/authedFetch"
 import { Building2, MapPin, CheckCircle2, ChevronRight, ArrowRight } from "lucide-react"
 
 const DEFAULT_SHIFTS = [
@@ -129,6 +130,8 @@ export default function EmployerOnboarding() {
     }
     if (locData?.id) {
       await fetch("/api/calculate-distances", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ locationId: locData.id }) }).catch(() => {})
+    // Welcome email — not awaited, same reasoning as the student flow.
+    authedFetch("/api/send-welcome-email", { method: "POST" }).catch(() => {})
     }
     setSaving(false)
     setStep(3)
