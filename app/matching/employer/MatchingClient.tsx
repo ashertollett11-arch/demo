@@ -206,8 +206,6 @@ export default function MatchingPage() {
   const [selectedDays, setSelectedDays] = useState<string[]>([])
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [sortBy, setSortBy] = useState<"matchScore" | "gpa" | "age">("matchScore")
-  // Free has no match score, so "Best Match" is not a valid sort for them
-  useEffect(() => { if (planStatus && !isPro(planStatus) && sortBy === "matchScore") setSortBy("gpa") }, [planStatus, sortBy])
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
   const [ageMode, setAgeMode] = useState<"range" | "specific">("range")
@@ -237,6 +235,8 @@ export default function MatchingPage() {
   const [planStatus, setPlanStatus] = useState<string | null>(null)
   // mirrored in a ref: the location loader runs in a different effect
   const planStatusRef = useRef<string | null>(null)
+  // Free has no match score, so "Best Match" is not a valid sort for them
+  useEffect(() => { if (planStatus && !isPro(planStatus) && sortBy === "matchScore") setSortBy("gpa") }, [planStatus, sortBy])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [distances, setDistances] = useState<Record<string, { distance_text: string; duration_text: string; distance_meters: number }>>({})
   const [locationLoading, setLocationLoading] = useState(false)
