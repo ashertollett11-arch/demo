@@ -348,6 +348,8 @@ export default function ProfilePage() {
     const isEditing = editingField === field
     const [localVal, setLocalVal] = useState(initialEditValue ?? value)
     useEffect(() => { setLocalVal(initialEditValue ?? value) }, [value, initialEditValue])
+    // Set when the row is dismissed deliberately, so blur doesn't also save.
+    const cancelledRef = useRef(false)
     return (
       <div className="border-b border-border last:border-0">
         {isEditing ? (
@@ -358,17 +360,37 @@ export default function ProfilePage() {
                 autoFocus
                 type={inputType}
                 value={localVal}
+                enterKeyHint="done"
                 onChange={(e) => setLocalVal(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") commitEdit(field, localVal) }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); commitEdit(field, localVal) }
+                  if (e.key === "Escape") { cancelledRef.current = true; closeEdit() }
+                }}
+                // Numeric keypads (phone, zip, age, GPA) have no Return key, so
+                // tapping away has to save — otherwise the check button is the
+                // only way out of the field.
+                onBlur={() => {
+                  if (cancelledRef.current) { cancelledRef.current = false; return }
+                  commitEdit(field, localVal)
+                }}
                 className="w-full bg-transparent text-sm text-foreground outline-none border-b border-primary pb-1"
                 placeholder={placeholder}
               />
             </div>
-            <button onClick={() => commitEdit(field, localVal)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <Check className="h-4 w-4" />
+            <button
+              type="button"
+              aria-label={`Save ${label}`}
+              onClick={() => commitEdit(field, localVal)}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground active:scale-95 transition-transform">
+              <Check className="h-5 w-5" />
             </button>
-            <button onClick={closeEdit} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary">
-              <X className="h-4 w-4 text-muted-foreground" />
+            <button
+              type="button"
+              aria-label={`Cancel editing ${label}`}
+              onPointerDown={() => { cancelledRef.current = true }}
+              onClick={closeEdit}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary active:scale-95 transition-transform">
+              <X className="h-5 w-5 text-muted-foreground" />
             </button>
           </div>
         ) : (
