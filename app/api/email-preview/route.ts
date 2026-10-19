@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { Resend } from "resend"
 import {
   studentWelcome, studentUnfinished, employerWelcome, employerUnfinished, chooseRoleUnfinished,
 } from "@/lib/emails/templates"
@@ -7,7 +8,7 @@ import {
  * Dev-only preview of every onboarding email, so templates can be eyeballed
  * without sending anything. Returns 404 in production.
  */
-export async function GET() {
+export async function GET(request: Request) {
   if (process.env.NODE_ENV === "production") {
     return new NextResponse("Not found", { status: 404 })
   }
@@ -22,6 +23,23 @@ export async function GET() {
     ["Employer · unfinished setup (day 1)", employerUnfinished({ company: "Cow Girl Kitchen" })],
     ["No role chosen (day 1)", chooseRoleUnfinished({ name: "Maya Rodriguez" })],
   ]
+
+  // ?send=<address>&which=<n> delivers one of these for real, so inbox
+  // placement and rendering can be checked. Dev only — this route 404s in
+  // production — and it writes nothing, so it can't affect the dedupe records.
+  const params = new URL(request.url).searchParams
+  const sendTo = params.get("send")
+  if (sendTo) {
+    const which = Number(params.get("which") ?? 0)
+    const picked = all[which]
+    if (!picked) return NextResponse.json({ error: `which must be 0-${all.length - 1}` }, { status: 400 })
+    const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
+      from: "SimplyApply <noreply@simplyapply.app>",
+      to: sendTo, subject: picked[1].subject, html: picked[1].html,
+    })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ sent: true, to: sendTo, template: picked[0], subject: picked[1].subject })
+  }
 
   const page = `<!doctype html><meta charset="utf-8"><title>Email preview</title>
 <style>

@@ -7,10 +7,13 @@ const firstName = (name?: string | null) =>
 export function studentWelcome({ name }: { name?: string | null }) {
   const first = firstName(name)
   return {
-    subject: first ? `You're all set, ${first} — time to find a job` : "You're all set on SimplyApply",
+    // Subject and heading are deliberately plain: the celebratory version of
+    // this email ("You're all set — time to find a job 🎉") was classified as
+    // Promotions by Gmail, while the task-shaped reminder reached Primary.
+    subject: first ? `${first}, your SimplyApply profile is live` : "Your SimplyApply profile is live",
     html: shell({
-      heading: first ? `You're set up, ${first} 🎉` : "You're set up 🎉",
-      intro: "Your profile is live, and local employers can see you from now on.",
+      heading: first ? `Your profile is live, ${first}` : "Your profile is live",
+      intro: "Local employers can see you from now on, and you can start applying.",
       body:
         `<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111827;">There are two ways to get hired</p>` +
         steps([
@@ -57,9 +60,9 @@ export function employerWelcome({
   const pay = hourlyPay ? `$${hourlyPay}/hr${hasTips ? " + tips" : ""}` : null
   const detail = [roles?.length ? roles.join(" · ") : null, pay].filter(Boolean).join("  |  ")
   return {
-    subject: name ? `You're live on SimplyApply — ${name}` : "You're live on SimplyApply",
+    subject: name ? `${name} is live on SimplyApply` : "Your listing is live on SimplyApply",
     html: shell({
-      heading: name ? `You're live, ${name} 🎉` : "You're live 🎉",
+      heading: name ? `${name} is live` : "Your listing is live",
       intro: locationName
         ? `Students near ${locationName} can see your listing and start applying today.`
         : "Students nearby can see your listing and start applying today.",
