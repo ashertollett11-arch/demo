@@ -111,9 +111,9 @@ function LoginContent() {
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-background" />
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-12">
         <div className="w-full flex justify-center">
-          <Card className="w-full max-w-md border-border bg-card/95 shadow-2xl backdrop-blur">
-            <CardContent className="p-6 sm:p-10">
-              <div className="mb-8 text-center">
+          <Card className="w-full max-w-md gap-0 py-0 border-border bg-card/95 shadow-2xl backdrop-blur">
+            <CardContent className="px-5 py-7 sm:p-10">
+              <div className="mb-6 text-center sm:mb-8">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Welcome back</h1>
                               <p className="mt-2 text-muted-foreground">Log in to your SimplyApply account.</p>
               </div>
@@ -129,7 +129,7 @@ function LoginContent() {
                 />
               </div>
               {/* PASSWORD */}
-              <div className="mt-5 space-y-2">
+              <div className="mt-4 space-y-2 sm:mt-5">
               <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-foreground">Password</label>
                   <Link href="/forgot-password" className="text-xs text-primary hover:underline">
@@ -147,7 +147,7 @@ function LoginContent() {
               </div>
               {/* LOGIN BUTTON */}
               <Button
-                className="mt-6 h-14 w-full rounded-xl text-lg font-semibold"
+                className="mt-6 h-12 w-full rounded-xl text-base font-semibold sm:h-14 sm:text-lg"
                 disabled={loading}
                 onClick={signIn}
               >
@@ -162,7 +162,7 @@ function LoginContent() {
                 </Link>
               </p>
               {/* NOT WORKING */}
-              <div className="mt-6 border-t border-border pt-5">
+              <div className="mt-5 border-t border-border pt-4">
                 <details className="group">
                   <summary className="text-sm text-muted-foreground cursor-pointer hover:text-foreground transition-colors list-none flex items-center gap-1">
                     <span className="text-primary underline underline-offset-2">Not working?</span>
@@ -185,7 +185,7 @@ function LoginContent() {
                 </details>
               </div>
               {/* FOOTER */}
-              <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <CheckCircle2 className="h-4 w-4 text-primary" />
                 Secure authentication powered by Supabase
               </div>

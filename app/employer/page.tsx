@@ -1,15 +1,17 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
+import { hasEmployerAccess, isPro, activeLocations } from "@/lib/plan"
 import Image from "next/image"
 import {
   ChevronDown, ArrowRight, Sparkles, Building2, MapPin, CreditCard, LogOut,
   Users, TrendingUp, CheckCircle2, Bell, ChevronRight, HelpCircle,
+  Lock,
 } from "lucide-react"
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
@@ -33,6 +35,10 @@ export default function EmployerDashboard() {
   const [statusesLoaded, setStatusesLoaded] = useState(false)
   const [distancesLoaded, setDistancesLoaded] = useState(false)
   const [allLocations, setAllLocations] = useState<any[]>([])
+  // "active" = Pro, "freeactive" = Free; drives every paywall on this page
+  const [planStatus, setPlanStatus] = useState<string | null>(null)
+  // mirrored in a ref: the location loader runs in a different effect
+  const planStatusRef = useRef<string | null>(null)
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [distances, setDistances] = useState<Record<string, number>>({})
   const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
@@ -46,7 +52,9 @@ export default function EmployerDashboard() {
         if (!roleData?.role) { router.replace("/choose-role"); return }
         if (roleData.role !== "employer") { router.replace("/login"); return }
         const { data: profile } = await supabase.from("profiles").select("subscription_status, profile_complete").eq("id", user.id).maybeSingle()
-        const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
+        const isSubscribed = hasEmployerAccess(profile?.subscription_status)
+        setPlanStatus(profile?.subscription_status ?? null)
+        planStatusRef.current = profile?.subscription_status ?? null
         if (!isSubscribed) { router.replace(!profile?.profile_complete ? "/employer/profile?missing=true" : "/pricing/mobile"); return }
         const { data: jobData } = await supabase.from("job").select("id").eq("user_id", user.id).maybeSingle()
         if (!jobData) { router.replace("/employer/profile?missing=true"); return }
@@ -105,11 +113,13 @@ export default function EmployerDashboard() {
       if (!jobData) return
       setShiftPreference(jobData.shift_preference || "flexible")
       setPreferredJobs(jobData.preferred_jobs || [])
-      const { data: locations } = await supabase.from("locations").select("id, name, available_shifts, shift_preference, preferred_jobs, max_distance_miles").eq("employer_id", jobData.id).order("created_at", { ascending: true })
-      if (locations?.length) {
-        setAllLocations(locations)
-        setSelectedLocationId(locations[0].id)
-        const first = locations[0]
+      const { data: locations } = await supabase.from("locations").select("id, name, available_shifts, shift_preference, preferred_jobs, max_distance_miles, created_at").eq("employer_id", jobData.id).order("created_at", { ascending: true })
+      // Free employers see only their oldest location; extras are locked.
+      const unlocked = activeLocations(locations ?? [], planStatusRef.current)
+      if (unlocked.length) {
+        setAllLocations(unlocked)
+        setSelectedLocationId(unlocked[0].id)
+        const first = unlocked[0]
         setEmployerShifts(first.available_shifts ?? [])
         setShiftPreference(first.shift_preference ?? "flexible")
         setSelectedLocationMaxMiles(first.max_distance_miles ?? 10)
@@ -376,8 +386,22 @@ export default function EmployerDashboard() {
                   </div>
                   <span className="text-sm text-muted-foreground font-medium">Top Match</span>
                 </div>
-                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{topMatch}%</p>}
-                {locationLoading ? <div className="h-3 w-28 rounded bg-secondary animate-pulse mt-2" /> : <p className="text-xs text-muted-foreground mt-1">{greatCandidates} strong candidates</p>}
+                {!isPro(planStatus) ? (
+                  <>
+                    <p className="text-3xl font-bold text-muted-foreground/50">—</p>
+                    <p className="text-xs text-primary font-medium mt-1">Unlock with Pro</p>
+                  </>
+                ) : locationLoading ? (
+                  <>
+                    <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" />
+                    <div className="h-3 w-28 rounded bg-secondary animate-pulse mt-2" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-foreground">{topMatch}%</p>
+                    <p className="text-xs text-muted-foreground mt-1">{greatCandidates} strong candidates</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </Link>
@@ -480,15 +504,27 @@ export default function EmployerDashboard() {
                   <Sparkles className="h-4 w-4 text-primary" />
                   <p className="text-sm font-semibold text-foreground">Strong Candidates</p>
                 </div>
-                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{greatCandidates}</p>}
-                <p className="text-xs text-muted-foreground mt-1 mb-4">75%+ match score ready to review</p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-                  <span>Top match: <b className="text-foreground">{locationLoading ? "..." : `${topMatch}%`}</b></span>
-                  <span>Top match: <b className="text-foreground">{topMatch}%</b></span>
-                  <Link href="/matching/employer?perfect=true" className="text-primary hover:underline">
-                    {perfectMatches} perfect matches
-                  </Link>
-                </div>
+                {!isPro(planStatus) ? (
+                  <>
+                    <p className="text-sm text-muted-foreground mt-1 mb-4">
+                      Match scores rank every student by how well they fit your shifts.
+                    </p>
+                    <Link href="/pricing/mobile" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80">
+                      <Lock className="h-3.5 w-3.5" /> Unlock with Pro — $20/month
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{greatCandidates}</p>}
+                    <p className="text-xs text-muted-foreground mt-1 mb-4">75%+ match score ready to review</p>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+                      <span>Top match: <b className="text-foreground">{locationLoading ? "..." : `${topMatch}%`}</b></span>
+                      <Link href="/matching/employer?perfect=true" className="text-primary hover:underline">
+                        {perfectMatches} perfect matches
+                      </Link>
+                    </div>
+                  </>
+                )}
                 <Button asChild className="w-full">
                   <Link href="/matching/employer">
                     Find Candidates <ArrowRight className="ml-2 h-4 w-4" />

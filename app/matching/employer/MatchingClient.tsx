@@ -1,12 +1,13 @@
 "use client"
 import { toast } from "sonner"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabase"
+import { hasEmployerAccess, isPro, activeLocations } from "@/lib/plan"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
 import Image from "next/image"
 import {
@@ -16,7 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, Bell, MapPin, Building2, CreditCard, LogOut, HelpCircle } from "lucide-react"
+import { ChevronDown, Bell, MapPin, Building2, CreditCard, LogOut, HelpCircle, Lock } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Star,
@@ -205,6 +206,8 @@ export default function MatchingPage() {
   const [selectedDays, setSelectedDays] = useState<string[]>([])
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [sortBy, setSortBy] = useState<"matchScore" | "gpa" | "age">("matchScore")
+  // Free has no match score, so "Best Match" is not a valid sort for them
+  useEffect(() => { if (planStatus && !isPro(planStatus) && sortBy === "matchScore") setSortBy("gpa") }, [planStatus, sortBy])
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
   const [ageMode, setAgeMode] = useState<"range" | "specific">("range")
@@ -230,6 +233,10 @@ export default function MatchingPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [allLocations, setAllLocations] = useState<any[]>([])
+  // "active" = Pro, "freeactive" = Free; drives every paywall on this page
+  const [planStatus, setPlanStatus] = useState<string | null>(null)
+  // mirrored in a ref: the location loader runs in a different effect
+  const planStatusRef = useRef<string | null>(null)
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [distances, setDistances] = useState<Record<string, { distance_text: string; duration_text: string; distance_meters: number }>>({})
   const [locationLoading, setLocationLoading] = useState(false)
@@ -266,9 +273,9 @@ export default function MatchingPage() {
           .select("subscription_status, profile_complete")
           .eq("id", user.id)
           .maybeSingle()
-        const isSubscribed =
-          profile?.subscription_status === "active" ||
-          profile?.subscription_status === "freeactive"
+        const isSubscribed = hasEmployerAccess(profile?.subscription_status)
+        setPlanStatus(profile?.subscription_status ?? null)
+        planStatusRef.current = profile?.subscription_status ?? null
         if (!isSubscribed) {
           if (!profile?.profile_complete) {
             router.replace("/employer/profile?missing=true")
@@ -371,13 +378,16 @@ export default function MatchingPage() {
       setPreferredJobs(jobData.preferred_jobs ?? [])
       const { data: locations } = await supabase
         .from("locations")
-        .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, max_distance_miles")
+        .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, max_distance_miles, created_at")
         .eq("employer_id", jobData.id)
         .order("created_at", { ascending: true })
-      if (locations?.length) {
-        setAllLocations(locations)
-        setSelectedLocationId(locations[0].id)
-        const first = locations[0]
+      // Free employers match against their oldest location only; the rest are
+      // locked, not deleted, so re-subscribing restores them immediately.
+      const unlocked = activeLocations(locations ?? [], planStatusRef.current)
+      if (unlocked.length) {
+        setAllLocations(unlocked)
+        setSelectedLocationId(unlocked[0].id)
+        const first = unlocked[0]
         setEmployerShifts(first.available_shifts ?? [])
         setShiftPreference(first.shift_preference ?? "flexible")
         setSelectedLocationMaxMiles(first.max_distance_miles ?? 10)
@@ -553,7 +563,7 @@ export default function MatchingPage() {
       if (!matchesAge(candidate.age)) return false
       if (candidate.gpa < minGpa[0]) return false
       const perfect = searchParams.get("perfect")
-      if (perfect === "true" && candidate.matchScore !== 100) return false
+      if (isPro(planStatus) && perfect === "true" && candidate.matchScore !== 100) return false
       if (verifiedOnly && !candidate.is_gpa_verified) return false
       const safeAvailability = candidate.availability ?? []
       if (selectedDays.length > 0) {
@@ -850,7 +860,14 @@ export default function MatchingPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">Match Score</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Each student gets a % score based on how well their availability, GPA, and job preferences align with yours.</p>
+                  {isPro(planStatus) ? (
+                    <p className="text-xs text-muted-foreground mt-0.5">Each student gets a % score based on how well their availability, GPA, and job preferences align with yours.</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      See how well each student fits your shifts, ranked best-first.{" "}
+                      <Link href="/pricing/mobile" className="font-semibold text-primary hover:text-primary/80">Upgrade to Pro</Link>
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -953,7 +970,7 @@ export default function MatchingPage() {
                 <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
                   <SelectTrigger className="w-40 gap-2"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="matchScore">Best Match</SelectItem>
+                    {isPro(planStatus) && <SelectItem value="matchScore">Best Match</SelectItem>}
                     <SelectItem value="gpa">Highest GPA</SelectItem>
                     <SelectItem value="age">Age</SelectItem>
                   </SelectContent>
@@ -1062,7 +1079,7 @@ export default function MatchingPage() {
                             {getStatusBadge(candidate.status)}
                           </div>
                         </div>
-                        <Badge className="bg-primary/10 text-primary">{candidate.matchScore}% match</Badge>
+                        {isPro(planStatus) ? <Badge className="bg-primary/10 text-primary">{candidate.matchScore}% match</Badge> : <Badge className="bg-secondary text-muted-foreground"><Lock className="mr-1 h-3 w-3" />Pro</Badge>}
                       </div>
                       <div className="mt-4 text-sm text-muted-foreground">
                         Available:{" "}

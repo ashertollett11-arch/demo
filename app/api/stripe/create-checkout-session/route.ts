@@ -59,8 +59,8 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/billing?success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/billing?canceled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing/mobile?success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing/mobile?canceled=true`,
       metadata: {
         userId,
       },

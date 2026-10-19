@@ -12,13 +12,13 @@ const faqs = [
     icon: CreditCard,
     question: "I'm having trouble with billing or access.",
     answer:
-      "Billing is handled through your employer dashboard under the Billing section. During early access, all employer accounts are free — just activate your account from the billing page. If you're still having trouble, email us with your account email.",
+      "Billing lives under Billing in your employer dashboard. Every account starts free with one location; Employer Pro is $20/month and unlocks unlimited locations, match scores and full student profiles. If you're still having trouble, email us with your account email.",
   },
   {
     icon: Users,
     question: "I'm an employer and can't access the dashboard.",
     answer:
-      "Make sure your company profile is complete and you've activated your free early access from the billing page. You also need at least one location added before your profile is considered complete. If you're still locked out, email us.",
+      "Make sure your company profile is complete and you've added at least one location — both are required before your profile counts as complete. If you're still locked out, email us.",
   },
   {
     icon: HelpCircle,

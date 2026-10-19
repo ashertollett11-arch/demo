@@ -54,7 +54,7 @@ export default function ResetPasswordPage() {
   if (checking) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
   }
@@ -65,8 +65,8 @@ export default function ResetPasswordPage() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-12">
         <div className="w-full flex justify-center">
-          <Card className="w-full max-w-md border-border bg-card/95 shadow-2xl backdrop-blur">
-            <CardContent className="p-6 sm:p-10">
+          <Card className="w-full max-w-md gap-0 py-0 border-border bg-card/95 shadow-2xl backdrop-blur">
+            <CardContent className="px-5 py-7 sm:p-10">
               {done ? (
                 <div className="text-center space-y-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mx-auto">
@@ -92,7 +92,7 @@ export default function ResetPasswordPage() {
                 </div>
               ) : (
                 <>
-                  <div className="mb-8 text-center">
+                  <div className="mb-6 text-center sm:mb-8">
                     <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Set a new password</h1>
                     <p className="mt-2 text-muted-foreground text-sm">
                       Choose a strong password for your account.
@@ -110,7 +110,7 @@ export default function ResetPasswordPage() {
                     />
                   </div>
 
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4 space-y-2 sm:mt-5">
                     <label className="text-sm font-medium text-foreground">Confirm Password</label>
                     <input
                       className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -123,7 +123,7 @@ export default function ResetPasswordPage() {
                   </div>
 
                   <Button
-                    className="mt-6 h-14 w-full rounded-xl text-lg font-semibold"
+                    className="mt-6 h-12 w-full rounded-xl text-base font-semibold sm:h-14 sm:text-lg"
                     disabled={loading}
                     onClick={handleReset}
                   >

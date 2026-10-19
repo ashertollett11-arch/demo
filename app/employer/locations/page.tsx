@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, MapPin, X, Clock, DollarSign, Briefcase } from "lucide-react"
+import { isPro, activeLocations, FREE_LOCATION_LIMIT } from "@/lib/plan"
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, MapPin, X, Clock, DollarSign, Briefcase, Lock} from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import {
@@ -68,6 +69,7 @@ export default function LocationsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [planStatus, setPlanStatus] = useState<string | null>(null)
 
   const [formName, setFormName] = useState("")
   const [formAddress, setFormAddress] = useState("")
@@ -91,6 +93,8 @@ export default function LocationsPage() {
       if (!job) { toast.error("Please complete your company profile first."); router.replace("/employer/profile"); return }
       setJobId(job.id)
       setCompanyName(job.company || "")
+      const { data: profile } = await supabase.from("profiles").select("subscription_status").eq("id", user.id).maybeSingle()
+      setPlanStatus(profile?.subscription_status ?? null)
       await loadLocations(job.id)
       // Auto-open edit form if ?edit=locationId is in the URL
       const editId = new URLSearchParams(window.location.search).get("edit")
@@ -139,6 +143,10 @@ export default function LocationsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
+  // Free is capped at one location; extras stay in the DB but are locked.
+  const atLocationCap = !isPro(planStatus) && locations.length >= FREE_LOCATION_LIMIT
+  const unlockedIds = new Set(activeLocations(locations, planStatus).map((l) => l.id))
+
   const saveLocation = async () => {
     if (!formName.trim()) { toast.error("Location name is required"); return }
     if (!formAddress.trim()) { toast.error("Address is required"); return }
@@ -157,6 +165,11 @@ export default function LocationsPage() {
       const { error } = await supabase.from("locations").update(payload).eq("id", editingId)
       if (error) { toast.error("Failed to save location."); setSaving(false); return }
     } else {
+      if (!isPro(planStatus) && locations.length >= FREE_LOCATION_LIMIT) {
+        toast.error("Upgrade to Pro to add more locations")
+        setSaving(false)
+        return
+      }
       const { data, error } = await supabase.from("locations").insert(payload).select("id").single()
       if (error) { toast.error("Failed to save location."); setSaving(false); return }
       savedLocationId = data?.id ?? null
@@ -288,11 +301,17 @@ export default function LocationsPage() {
                 <ChevronLeft className="h-4 w-4 mr-1" /> Dashboard
               </Button>
             )}
-            {!showForm && (
+            {!showForm && (atLocationCap ? (
+              <Button asChild variant="outline">
+                <Link href="/pricing/mobile">
+                  <Lock className="h-4 w-4 mr-2" /> Upgrade to add locations
+                </Link>
+              </Button>
+            ) : (
               <Button onClick={openAddForm}>
                 <Plus className="h-4 w-4 mr-2" /> Add Location
               </Button>
-            )}
+            ))}
           </div>
         </div>
 
@@ -470,9 +489,18 @@ export default function LocationsPage() {
               </Card>
             ) : (
               <div className={`grid gap-4 ${!showForm ? "sm:grid-cols-2 xl:grid-cols-3" : ""}`}>
-                {otherLocations.map((loc) => (
-                  <Card key={loc.id} className="border-border bg-card hover:shadow-md transition-shadow">
+                {otherLocations.map((loc) => {
+                  // Locked locations are kept, not deleted — re-subscribing
+                  // brings them straight back into matching.
+                  const locked = !unlockedIds.has(loc.id)
+                  return (
+                  <Card key={loc.id} className={`py-0 border-border bg-card hover:shadow-md transition-shadow ${locked ? "opacity-70" : ""}`}>
                     <CardContent className="p-5">
+                      {locked && (
+                        <Link href="/pricing/mobile" className="mb-3 flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary hover:bg-primary/15">
+                          <Lock className="h-3 w-3" /> Paused — upgrade to reactivate
+                        </Link>
+                      )}
                       <div className="flex items-start justify-between gap-2 mb-3">
                         <div>
                           <h3 className="font-semibold text-foreground">{loc.name}</h3>
@@ -514,15 +542,22 @@ export default function LocationsPage() {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  )
+                })}
 
                 {/* ADD NEW CARD */}
-                {!showForm && (
+                {!showForm && (atLocationCap ? (
+                  <Link href="/pricing/mobile" className="rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 hover:border-primary/50 transition-all p-5 flex flex-col items-center justify-center gap-2 min-h-[160px] text-center text-muted-foreground hover:text-primary">
+                    <Lock className="h-6 w-6 text-primary" />
+                    <span className="text-sm font-medium text-foreground">Add more locations</span>
+                    <span className="text-xs">Employer Pro — $20/month</span>
+                  </Link>
+                ) : (
                   <button onClick={openAddForm} className="rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-primary/5 transition-all p-5 flex flex-col items-center justify-center gap-2 min-h-[160px] text-muted-foreground hover:text-primary">
                     <Plus className="h-6 w-6" />
                     <span className="text-sm font-medium">Add Location</span>
                   </button>
-                )}
+                ))}
               </div>
             )}
           </div>

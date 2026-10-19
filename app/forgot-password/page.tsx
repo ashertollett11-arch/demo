@@ -50,8 +50,8 @@ export default function ForgotPasswordPage() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-12">
         <div className="w-full flex justify-center">
-          <Card className="w-full max-w-md border-border bg-card/95 shadow-2xl backdrop-blur">
-            <CardContent className="p-6 sm:p-10">
+          <Card className="w-full max-w-md gap-0 py-0 border-border bg-card/95 shadow-2xl backdrop-blur">
+            <CardContent className="px-5 py-7 sm:p-10">
               {done ? (
                 <div className="text-center space-y-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mx-auto">
@@ -75,7 +75,7 @@ export default function ForgotPasswordPage() {
                 </div>
               ) : (
                 <>
-                  <div className="mb-8 text-center">
+                  <div className="mb-6 text-center sm:mb-8">
                     <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Forgot your password?</h1>
                     <p className="mt-2 text-muted-foreground text-sm">
                       Enter your email and we'll send you a link to reset it.
@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
                   </div>
 
                   <Button
-                    className="mt-6 h-14 w-full rounded-xl text-lg font-semibold"
+                    className="mt-6 h-12 w-full rounded-xl text-base font-semibold sm:h-14 sm:text-lg"
                     disabled={loading}
                     onClick={handleReset}
                   >

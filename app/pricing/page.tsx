@@ -29,16 +29,16 @@ export default function PricingPage() {
         {/* HERO */}
         <div className="text-center mb-14">
           <Badge variant="secondary" className="mb-4 px-4 py-1.5 text-sm">
-            Early Access — Free to Start
+            Free to Start
           </Badge>
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Simple, honest pricing
           </h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            We're in early access and want to grow alongside our users. Get full access today — free while we build together.
+            Students are free, always. Employers start free with one location and upgrade to Pro when they're hiring at scale.
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Pricing may increase in the future as we add more features. Early users lock in the best deal.
+            No contracts and no setup fees — cancel Pro any time and keep your free account.
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export default function PricingPage() {
           <Card className="border-primary/30 bg-card relative overflow-hidden shadow-lg">
             <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
             <div className="absolute top-4 right-4">
-              <Badge className="bg-primary text-primary-foreground text-xs">Early Access</Badge>
+              <Badge className="bg-primary text-primary-foreground text-xs">Pro</Badge>
             </div>
             <CardContent className="p-8">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 mb-4">
@@ -92,19 +92,19 @@ export default function PricingPage() {
               <h2 className="text-xl font-bold text-foreground">For Employers</h2>
               <p className="text-muted-foreground text-sm mt-1">Local businesses hiring motivated students</p>
               <div className="mt-6 mb-1">
-                <span className="text-4xl font-bold text-foreground">Free</span>
-                <span className="text-muted-foreground ml-2 text-sm">during early access</span>
+                <span className="text-4xl font-bold text-foreground">$20</span>
+                <span className="text-muted-foreground ml-2 text-sm">/month</span>
               </div>
               <p className="text-xs text-muted-foreground mb-6">
-                Pricing will increase as we grow. Early users get the best deal.
+                Start free with one location — upgrade when you need more. Cancel anytime.
               </p>
               <ul className="space-y-3 mb-8">
                 {[
-                  "Full access to student profiles",
+                  "Unlimited hiring locations",
+                  "Match scores on every candidate",
+                  "Full student profiles — bio, interests, socials",
                   "Smart availability matching",
                   "Hiring pipeline tools",
-                  "Candidates with recommendations",
-                  "Location-based filtering",
                   "Unlimited candidate browsing",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
@@ -114,7 +114,7 @@ export default function PricingPage() {
                 ))}
               </ul>
               <Button className="w-full" asChild>
-                <Link href="/signup">Start Hiring Free <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/signup">Start free <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </CardContent>
           </Card>
@@ -126,12 +126,12 @@ export default function PricingPage() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 mx-auto mb-3">
             <Zap className="h-5 w-5 text-primary" />
           </div>
-          <h3 className="font-semibold text-foreground">Why free?</h3>
+          <h3 className="font-semibold text-foreground">Why start free?</h3>
           <p className="mt-2 text-sm text-muted-foreground max-w-xl mx-auto">
-            We're early and focused on building something great. Right now the most important thing is getting real students and employers on the platform so we can make it better. We'd rather grow with you than charge you before we've earned it.
+            Students never pay. Employers get a real location, real candidates and the full hiring pipeline for free — so you can hire someone before you decide whether Pro is worth it.
           </p>
           <p className="mt-3 text-xs text-muted-foreground">
-            Pricing may be introduced in the future. We'll give existing users plenty of notice before anything changes.
+            Employer Pro is $20/month and unlocks unlimited locations, match scores and full student profiles.
           </p>
         </div>
 

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { authedFetch } from "@/lib/authedFetch"
+import { isPro } from "@/lib/plan"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +17,9 @@ import {
   Zap,
   Star,
   ArrowRight,
+  Lock,
+  MapPin,
+  Eye,
 } from "lucide-react"
 
 export default function BillingPage() {
@@ -93,6 +98,49 @@ export default function BillingPage() {
   // -------------------------
   // ACTIVATE FREE ACCESS
   // -------------------------
+  const [upgrading, setUpgrading] = useState(false)
+
+  // Stripe sends the employer back here after checkout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("success") === "true") {
+      toast.success("You're on Employer Pro", { description: "Match scores, extra locations and full student profiles are unlocked." })
+      window.history.replaceState({}, "", "/pricing/mobile")
+    }
+    if (params.get("canceled") === "true") {
+      toast.info("Checkout canceled — no charge was made.")
+      window.history.replaceState({}, "", "/pricing/mobile")
+    }
+  }, [])
+
+  const startUpgrade = async () => {
+    if (upgrading) return
+    setUpgrading(true)
+    try {
+      const res = await authedFetch("/api/stripe/create-checkout-session", { method: "POST" })
+      const body = await res.json()
+      if (!res.ok || !body?.url) {
+        toast.error(body?.error || "Could not start checkout. Please try again.")
+        setUpgrading(false)
+        return
+      }
+      window.location.href = body.url
+    } catch {
+      toast.error("Could not start checkout. Please try again.")
+      setUpgrading(false)
+    }
+  }
+
+  const openBillingPortal = async () => {
+    const res = await authedFetch("/api/stripe/create-portal-session", { method: "POST" })
+    const body = await res.json()
+    if (!res.ok || !body?.url) {
+      toast.error(body?.error || "Could not open billing.")
+      return
+    }
+    window.location.href = body.url
+  }
+
   const activateFreeAccess = async () => {
     if (!userId || activating) return
     setActivating(true)
@@ -233,20 +281,20 @@ export default function BillingPage() {
               <CardContent className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-lg font-semibold">
-                    {isFreeActive ? "Employer — Early Access" :
+                    {isFreeActive ? "Employer Free" :
                      isActive ? "Employer Pro" :
                      "No Active Plan"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {isFreeActive ? "Free during early access" :
+                    {isFreeActive ? "1 location · no match scores" :
                      isActive ? "Paid subscription" :
-                     "Activate for free — no card needed"}
+                     "Start free — no card needed"}
                   </p>
                 </div>
                 {isFreeActive ? (
-                  <Badge className="bg-primary/10 text-primary">Early Access</Badge>
+                  <Badge className="bg-secondary text-muted-foreground">Free</Badge>
                 ) : isActive ? (
-                  <Badge className="bg-green-100 text-green-700">Active</Badge>
+                  <Badge className="bg-green-100 text-green-700">Pro</Badge>
                 ) : (
                   <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
                 )}
@@ -265,7 +313,7 @@ export default function BillingPage() {
                     </p>
                   </div>
                   <Button className="w-full" size="lg" onClick={activateFreeAccess} disabled={activating}>
-                    {activating ? "Activating..." : "Activate Free Access"}
+                    {activating ? "Starting..." : "Start free"}
                     {!activating && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
                   <p className="text-xs text-muted-foreground text-center">
@@ -275,21 +323,64 @@ export default function BillingPage() {
               </Card>
             )}
 
-            {/* ALREADY SUBSCRIBED */}
-            {isSubscribed && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account Status</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    {isFreeActive
-                      ? "You have full access to all SimplyApply employer features during early access. We'll notify you well in advance of any pricing changes."
-                      : "You have full access to all SimplyApply employer features."}
-                  </p>
-                  <Button variant="outline" asChild>
-                    <Link href="/employer">Go to Dashboard</Link>
+            {/* UPGRADE TO PRO */}
+            {!isActive && (
+              <Card className="gap-4 border-primary/30 bg-primary/5">
+                <CardContent className="px-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold text-foreground">Employer Pro</p>
+                      <p className="mt-1 text-3xl font-bold text-primary">
+                        $20
+                        <span className="ml-1 text-base font-normal text-muted-foreground">/month</span>
+                      </p>
+                    </div>
+                    <Badge className="bg-primary/10 text-primary">Recommended</Badge>
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    {[
+                      { icon: MapPin, title: "Unlimited locations", body: "Hire for every site you run, each matched separately." },
+                      { icon: Zap, title: "Match scores", body: "See how well each student fits your shifts, ranked best-first." },
+                      { icon: Eye, title: "Full student profiles", body: "Bio, interests, social links and preferred positions." },
+                    ].map(({ icon: Icon, title, body }) => (
+                      <div key={title} className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                          <Icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{title}</p>
+                          <p className="text-xs text-muted-foreground">{body}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button className="mt-5 w-full" size="lg" onClick={startUpgrade} disabled={upgrading}>
+                    {upgrading ? "Opening checkout..." : "Upgrade to Pro"}
+                    {!upgrading && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
+                    Cancel anytime — you keep Pro until the end of the period.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* MANAGE (PRO ONLY) */}
+            {isActive && (
+              <Card className="gap-4">
+                <CardHeader>
+                  <CardTitle>Billing</CardTitle>
+                </CardHeader>
+                <CardContent className="px-6 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Update your card, download invoices or cancel. Cancelling keeps Pro until the end of the period, then drops you to Free — your extra locations are paused, never deleted.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={openBillingPortal}>Manage billing</Button>
+                    <Button variant="ghost" asChild><Link href="/employer">Go to Dashboard</Link></Button>
+                  </div>
                 </CardContent>
               </Card>
             )}

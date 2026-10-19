@@ -104,8 +104,8 @@ export default function SignupPage() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-6 sm:px-6 sm:py-12">
         <div className="w-full flex justify-center">
-          <Card className="w-full max-w-md border-border bg-card/95 shadow-2xl backdrop-blur">
-            <CardContent className="p-6 sm:p-10">
+          <Card className="w-full max-w-md gap-0 py-0 border-border bg-card/95 shadow-2xl backdrop-blur">
+            <CardContent className="px-5 py-7 sm:p-10">
               {done ? (
                 /* SUCCESS STATE */
                 <div className="text-center space-y-4">
@@ -127,8 +127,8 @@ export default function SignupPage() {
                 </div>
               ) : (
                 <>
-                  <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold text-foreground">Create your account</h1>
+                  <div className="mb-6 text-center sm:mb-8">
+                    <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Create your account</h1>
                     <p className="mt-2 text-muted-foreground">
                       Join SimplyApply — free for students, free to start for employers.
                     </p>
@@ -147,7 +147,7 @@ export default function SignupPage() {
                   </div>
 
                   {/* PASSWORD */}
-                  <div className="mt-5 space-y-2">
+                  <div className="mt-4 space-y-2 sm:mt-5">
                     <label className="text-sm font-medium text-foreground">Password</label>
                     <input
                       className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -161,7 +161,7 @@ export default function SignupPage() {
 
                   {/* SIGNUP BUTTON */}
                   <Button
-                    className="mt-6 h-14 w-full rounded-xl text-lg font-semibold"
+                    className="mt-6 h-12 w-full rounded-xl text-base font-semibold sm:h-14 sm:text-lg"
                     disabled={loading}
                     onClick={signUp}
                   >
@@ -178,7 +178,7 @@ export default function SignupPage() {
                   </p>
 
                   {/* FOOTER */}
-                  <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                     <CheckCircle2 className="h-4 w-4 text-primary" />
                     Secure authentication powered by Supabase
                   </div>

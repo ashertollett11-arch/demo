@@ -4,9 +4,10 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, MapPin, Star, Calendar, Clock, Phone, Mail, Building2, CreditCard, LogOut, ChevronDown, Bell } from "lucide-react"
+import { ChevronLeft, MapPin, Star, Calendar, Clock, Phone, Mail, Building2, CreditCard, LogOut, ChevronDown, Bell, Lock } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
+import { hasEmployerAccess, isPro, activeLocations } from "@/lib/plan"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
 import { getDistance } from "@/lib/distance"
 import Image from "next/image"
@@ -33,6 +34,8 @@ export default function StudentPage() {
   const [distance, setDistance] = useState<{ distance: string; duration: string } | null>(null)
   const [loadingDistance, setLoadingDistance] = useState(false)
   const [allLocations, setAllLocations] = useState<any[]>([])
+  // "active" = Pro, "freeactive" = Free; drives every paywall on this page
+  const [planStatus, setPlanStatus] = useState<string | null>(null)
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("")
   const [notes, setNotes] = useState("")
@@ -52,7 +55,8 @@ export default function StudentPage() {
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "employer") { router.replace("/login"); return }
       const { data: profile } = await supabase.from("profiles").select("subscription_status, profile_complete").eq("id", userId).maybeSingle()
-      const isSubscribed = profile?.subscription_status === "active" || profile?.subscription_status === "freeactive"
+      const isSubscribed = hasEmployerAccess(profile?.subscription_status)
+      setPlanStatus(profile?.subscription_status ?? null)
       if (!isSubscribed) { router.replace(!profile?.profile_complete ? "/employer/profile?missing=true" : "/pricing/mobile"); return }
       const { data: employerJob } = await supabase.from("job").select("id, shift_preference, preferred_jobs, company").eq("user_id", userId).single()
       if (!employerJob) { router.replace("/employer/profile?missing=true"); return }
@@ -269,7 +273,11 @@ export default function StudentPage() {
                         <p className="text-muted-foreground mt-0.5">{student.school}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        {locationLoading ? (
+                        {!isPro(planStatus) ? (
+                          <Link href="/pricing/mobile" className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/15">
+                            <Lock className="h-3 w-3" /> Match score with Pro
+                          </Link>
+                        ) : locationLoading ? (
                           <div className="h-6 w-24 rounded bg-secondary animate-pulse" />
                         ) : (
                           <span className={`text-lg font-bold ${matchScore >= 75 ? "text-primary" : matchScore >= 50 ? "text-yellow-600" : "text-muted-foreground"}`}>
@@ -369,72 +377,94 @@ export default function StudentPage() {
               </CardContent>
             </Card>
 
-            {/* BIO */}
-            {student.bio && (
-              <Card className="border-border bg-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">About</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-foreground leading-relaxed">{student.bio}</p>
-                </CardContent>
-              </Card>
-            )}
+            {/* Bio, interests, socials and preferred positions are Pro-only. */}
+            {isPro(planStatus) ? (
+              <>
+                {/* BIO */}
+                {student.bio && (
+                  <Card className="border-border bg-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">About</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-foreground leading-relaxed">{student.bio}</p>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* INTERESTS */}
-            {student.interests?.length > 0 && (
-              <Card className="border-border bg-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Interests</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {student.interests.map((interest: string, i: number) => (
-                      <span key={i} className="px-3 py-1.5 text-sm rounded-full border border-border bg-secondary/40 text-foreground font-medium">{interest}</span>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                {/* INTERESTS */}
+                {student.interests?.length > 0 && (
+                  <Card className="border-border bg-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Interests</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {student.interests.map((interest: string, i: number) => (
+                          <span key={i} className="px-3 py-1.5 text-sm rounded-full border border-border bg-secondary/40 text-foreground font-medium">{interest}</span>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-            {/* SOCIAL LINKS */}
-            {(student.instagram || student.tiktok || student.snapchat || student.linkedin || student.twitter) && (
-              <Card className="border-border bg-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Social Media</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {[
-                    { label: "Instagram", value: student.instagram, url: student.instagram ? `https://instagram.com/${student.instagram.replace("@", "")}` : null },
-                    { label: "TikTok", value: student.tiktok, url: student.tiktok ? `https://tiktok.com/@${student.tiktok.replace("@", "")}` : null },
-                    { label: "Snapchat", value: student.snapchat, url: null },
-                    { label: "LinkedIn", value: student.linkedin, url: student.linkedin?.startsWith("http") ? student.linkedin : student.linkedin ? `https://${student.linkedin}` : null },
-                    { label: "Twitter / X", value: student.twitter, url: student.twitter ? `https://x.com/${student.twitter.replace("@", "")}` : null },
-                  ].filter(s => s.value).map(({ label, value, url }) => (
-                    <div key={label} className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground w-24 shrink-0">{label}</span>
-                      {url ? (
-                        <button onClick={() => window.open(url, "_blank")} className="text-sm text-primary hover:underline text-right">{value}</button>
-                      ) : (
-                        <span className="text-sm text-foreground">{value}</span>
-                      )}
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+                {/* SOCIAL LINKS */}
+                {(student.instagram || student.tiktok || student.snapchat || student.linkedin || student.twitter) && (
+                  <Card className="border-border bg-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Social Media</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {[
+                        { label: "Instagram", value: student.instagram, url: student.instagram ? `https://instagram.com/${student.instagram.replace("@", "")}` : null },
+                        { label: "TikTok", value: student.tiktok, url: student.tiktok ? `https://tiktok.com/@${student.tiktok.replace("@", "")}` : null },
+                        { label: "Snapchat", value: student.snapchat, url: null },
+                        { label: "LinkedIn", value: student.linkedin, url: student.linkedin?.startsWith("http") ? student.linkedin : student.linkedin ? `https://${student.linkedin}` : null },
+                        { label: "Twitter / X", value: student.twitter, url: student.twitter ? `https://x.com/${student.twitter.replace("@", "")}` : null },
+                      ].filter(s => s.value).map(({ label, value, url }) => (
+                        <div key={label} className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground w-24 shrink-0">{label}</span>
+                          {url ? (
+                            <button onClick={() => window.open(url, "_blank")} className="text-sm text-primary hover:underline text-right">{value}</button>
+                          ) : (
+                            <span className="text-sm text-foreground">{value}</span>
+                          )}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
             
-            {/* PREFERRED POSITIONS */}
-            {student.preferred_jobs?.length > 0 && (
-              <Card className="border-border bg-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Preferred Positions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {student.preferred_jobs.map((job: string, i: number) => (
-                      <span key={i} className="px-3 py-1.5 text-sm rounded-full border border-border bg-secondary/40 text-foreground font-medium">{job}</span>
-                    ))}
+                {/* PREFERRED POSITIONS */}
+                {student.preferred_jobs?.length > 0 && (
+                  <Card className="border-border bg-card">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Preferred Positions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {student.preferred_jobs.map((job: string, i: number) => (
+                          <span key={i} className="px-3 py-1.5 text-sm rounded-full border border-border bg-secondary/40 text-foreground font-medium">{job}</span>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            ) : (
+              <Card className="gap-4 border-dashed border-primary/40 bg-primary/5">
+                <CardContent className="px-6">
+                  <div className="flex items-start gap-3">
+                    <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">See the full profile with Pro</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Their bio, interests, social links and preferred positions are included in Employer Pro.
+                      </p>
+                      <Link href="/pricing/mobile" className="mt-3 inline-block text-sm font-semibold text-primary hover:text-primary/80">
+                        Upgrade — $20/month
+                      </Link>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -13,8 +13,12 @@ const supabase = createClient(
 
 // Stripe sends canceled status OR cancel_at_period_end when user cancels
 function getStatus(sub: Stripe.Subscription): string {
-  if (sub.status === "canceled" || sub.cancel_at_period_end || sub.ended_at) {
-    return "canceled"
+  // A lapsed Pro drops to the free tier, not "canceled" — "canceled" fails
+  // hasEmployerAccess() and would lock them out of the employer area entirely.
+  // cancel_at_period_end is deliberately NOT treated as ended: they have paid
+  // through the period and keep Pro until Stripe actually ends the sub.
+  if (sub.status === "canceled" || sub.ended_at) {
+    return "freeactive"
   }
   if (sub.status === "past_due" || sub.status === "unpaid") {
     return "past_due"
@@ -155,7 +159,7 @@ export async function POST(req: Request) {
       console.log("SUB DELETED:", { id: sub.id, customerId })
 
       await updateProfile(sub.id, customerId, {
-        subscription_status: "canceled",
+        subscription_status: "freeactive",
         current_period_end: sub.current_period_end
           ? new Date(sub.current_period_end * 1000).toISOString()
           : null,
