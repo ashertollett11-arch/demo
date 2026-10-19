@@ -24,7 +24,12 @@ export async function GET(request: Request) {
 
   // ?dry=1 reports exactly who would be emailed, and sends nothing. Use it
   // before any change to the targeting rules.
-  const dryRun = new URL(request.url).searchParams.get("dry") === "1"
+  const params = new URL(request.url).searchParams
+  const dryRun = params.get("dry") === "1"
+  // ?only=<email> targets a single address and ignores the age window, so the
+  // flow can be tested without waiting 24h or loosening the real rule.
+  // Suppression, opt-out and already-sent checks still apply.
+  const only = params.get("only")?.trim().toLowerCase() || null
 
   try {
     const supabase = createClient(
@@ -49,6 +54,7 @@ export async function GET(request: Request) {
 
     const candidates = (list?.users ?? []).filter((u) => {
       if (!u.email || !u.email_confirmed_at) return false
+      if (only) return u.email.toLowerCase() === only
       const created = new Date(u.created_at).getTime()
       return created < olderThan && created > newerThan
     })
