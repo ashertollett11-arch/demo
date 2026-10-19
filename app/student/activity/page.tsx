@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
-import { Clock, Building2, Bell, Home, Briefcase, User, Activity, CheckCircle2, MapPin } from "lucide-react"
+import { Clock, Building2, Home, Briefcase, User, Activity } from "lucide-react"
 import Link from "next/link"
 import {
     DropdownMenu,
@@ -31,6 +31,7 @@ type Application = {
   hourly_pay: number | null
   has_tips: boolean
   employer_status: string // what the employer has marked: new | contacted | hired
+  employer_user_id: string
 }
 
 export default function StudentActivityPage() {
@@ -57,6 +58,11 @@ export default function StudentActivityPage() {
         .from("student_notifications").select("*").eq("student_user_id", user.id)
         .eq("read", false).order("created_at", { ascending: false })
       setStudentNotifications(notifs || [])
+      // Opening this page counts as reading them; the same events are shown
+      // below as pipeline stages, so the badge shouldn't keep nagging.
+      if (notifs?.length) {
+        await supabase.from("student_notifications").update({ read: true }).eq("student_user_id", user.id).eq("read", false)
+      }
 
       // EMPLOYER ACTIVITY (contacted/hired statuses)
       const { data: statuses } = await supabase
@@ -116,6 +122,7 @@ export default function StudentActivityPage() {
             hourly_pay: loc?.hourly_pay ?? null,
             has_tips: Boolean(loc?.has_tips),
             employer_status: empStatus,
+            employer_user_id: employerUserId,
           }
         }))
       }
@@ -141,16 +148,26 @@ export default function StudentActivityPage() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
   }
 
-  const getApplicationStatus = (empStatus: string) => {
-    switch (empStatus) {
-      case "hired":
-        return <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-600">✅ Hired</span>
-      case "contacted":
-        return <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-600">📬 Employer reached out</span>
-        default:
-            return <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground"> Application sent</span>
-    }
-  }
+  // One place that decides what a stage looks like and what the student should
+  // do about it, so the same event can't be described three different ways.
+  const STAGES = {
+    applied:   { emoji: "📨", label: "Applied",        hint: "Waiting to hear back",                 chip: "bg-secondary text-muted-foreground" },
+    contacted: { emoji: "📬", label: "They reached out", hint: "Check your phone and email — reply soon", chip: "bg-blue-500/10 text-blue-600" },
+    hired:     { emoji: "🎉", label: "Hired",          hint: "Congratulations — you got the job",    chip: "bg-green-500/10 text-green-600" },
+    interested:{ emoji: "⭐", label: "Interested in you", hint: "They found your profile and reached out", chip: "bg-amber-500/10 text-amber-700" },
+  } as const
+
+  type StageKey = keyof typeof STAGES
+
+  const stageFor = (empStatus: string): StageKey =>
+    empStatus === "hired" ? "hired" : empStatus === "contacted" ? "contacted" : "applied"
+
+  const StageChip = ({ stage }: { stage: StageKey }) => (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${STAGES[stage].chip}`}>
+      <span aria-hidden>{STAGES[stage].emoji}</span>
+      {STAGES[stage].label}
+    </span>
+  )
 
   if (loading) {
     return (
@@ -165,8 +182,24 @@ export default function StudentActivityPage() {
 
   const initials = (name || "").trim().split(" ").filter(Boolean).slice(0, 2).map(n => n[0]?.toUpperCase()).join("") || "?"
 
+  // An employer who contacted a student who also applied is the SAME event —
+  // show it once, on the application, instead of repeating it below.
+  const appliedEmployerIds = new Set(applications.map(a => a.employer_user_id).filter(Boolean))
+  const foundYou = contacted.filter(c => !appliedEmployerIds.has(c.employer_id))
+
+  const counts = {
+    applied: applications.length,
+    waiting: applications.filter(a => stageFor(a.employer_status) === "applied").length,
+    replied: applications.filter(a => stageFor(a.employer_status) === "contacted").length + foundYou.length,
+    hired: applications.filter(a => stageFor(a.employer_status) === "hired").length
+          + contacted.filter(c => c.status === "hired").length,
+  }
+
+  // What the student should do next, surfaced once at the top
+  const needsReply = counts.replied > 0
+
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background pb-36">
 
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/40">
@@ -210,34 +243,43 @@ export default function StudentActivityPage() {
 
       <div className="max-w-lg mx-auto px-4 pt-5">
 
-        {/* NOTIFICATIONS */}
-        {studentNotifications.length > 0 && (
-          <div className="mb-5">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Notifications</p>
-            <div className="space-y-2">
-              {studentNotifications.map(n => (
-                <div key={n.id} className="rounded-2xl border border-border/60 bg-card p-4 flex items-start gap-3">
-<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-base">🎉</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground leading-snug">{n.message}</p>
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                      <Clock className="h-3 w-3" />{formatTime(n.created_at)}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-1.5 shrink-0">
-                    <Link href="/student/activity" className="text-xs font-medium text-primary hover:text-primary/80 transition-colors">View</Link>
-                    <button onClick={async () => { setStudentNotifications(prev => prev.filter(x => x.id !== n.id)); await supabase.from("student_notifications").update({ read: true }).eq("id", n.id) }}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors">Dismiss</button>
-                  </div>
-                </div>
-              ))}
+        {/* WHAT TO DO NEXT — one line, only when there is something to do */}
+        {needsReply && (
+          <div className="mb-5 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3.5">
+            <div className="flex items-start gap-3">
+              <span className="text-lg leading-none" aria-hidden>📬</span>
+              <div>
+                <p className="text-sm font-semibold text-blue-900">
+                  {counts.replied === 1 ? "An employer is waiting on you" : `${counts.replied} employers are waiting on you`}
+                </p>
+                <p className="mt-0.5 text-xs text-blue-700">
+                  Check your phone and email — replying quickly is the single biggest thing you can do.
+                </p>
+              </div>
             </div>
+          </div>
+        )}
+
+        {/* PIPELINE SUMMARY */}
+        {(applications.length > 0 || foundYou.length > 0) && (
+          <div className="mb-6 grid grid-cols-3 gap-2">
+            {[
+              { k: "waiting", emoji: "📨", n: counts.waiting, label: "Waiting" },
+              { k: "replied", emoji: "📬", n: counts.replied, label: "Replied" },
+              { k: "hired",   emoji: "🎉", n: counts.hired,   label: "Hired" },
+            ].map(({ k, emoji, n, label }) => (
+              <div key={k} className="rounded-2xl border border-border/60 bg-card px-3 py-3 text-center">
+                <p className="text-lg leading-none" aria-hidden>{emoji}</p>
+                <p className="mt-1.5 text-xl font-bold text-foreground">{n}</p>
+                <p className="text-[11px] text-muted-foreground">{label}</p>
+              </div>
+            ))}
           </div>
         )}
 
         {/* APPLICATIONS */}
         <div className="mb-5">
-          <h1 className="text-2xl font-bold text-foreground">My Applications</h1>
+          <h1 className="text-2xl font-bold text-foreground">My applications</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {applications.length > 0
               ? `${applications.length} job${applications.length !== 1 ? "s" : ""} applied to`
@@ -277,86 +319,72 @@ export default function StudentActivityPage() {
                         <span className="text-xs font-medium text-foreground">${app.hourly_pay}/hr{app.has_tips ? " + tips" : ""}</span>
                       )}
                     </div>
-                    <div className="mt-2">{getApplicationStatus(app.employer_status)}</div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <StageChip stage={stageFor(app.employer_status)} />
+                      <span className="text-xs text-muted-foreground">{STAGES[stageFor(app.employer_status)].hint}</span>
+                    </div>
                   </div>
                 </div>
-                {app.employer_status === "contacted" && (
-                  <div className="mt-3 rounded-xl bg-blue-50 border border-blue-100 px-3 py-2.5">
-                    <p className="text-xs text-blue-700 leading-relaxed">
-                      Check your <span className="font-semibold">phone and email</span> — this employer already reached out!
-                    </p>
-                  </div>
-                )}
               </div>
             ))}
           </div>
         )}
 
-        {/* EMPLOYER ACTIVITY */}
-        <div className="mb-5">
-          <h2 className="text-xl font-bold text-foreground">Employer Activity</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {contacted.length > 0
-              ? `${contacted.length} employer${contacted.length !== 1 ? "s" : ""} have shown interest`
-              : "No employer activity yet"}
-          </p>
-        </div>
-
-        {contacted.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center gap-3 mb-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
-              <Bell className="h-7 w-7 text-muted-foreground/50" />
-            </div>
-            <p className="font-semibold text-foreground">No activity yet</p>
-            <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-              When an employer contacts you or marks you as hired, it'll show up here.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {contacted.map(item => (
-              <div key={item.id} className="rounded-2xl border border-border/60 bg-card p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-base font-bold text-primary">
-                    {item.company[0]?.toUpperCase() || "?"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-foreground text-sm truncate">{item.company}</p>
-                      <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />{formatTime(item.updated_at)}
-                      </span>
-                    </div>
-                    {item.business_type && (
-                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                        <Building2 className="h-3 w-3" />{item.business_type}
-                      </p>
-                    )}
-                    <div className="mt-2">
-                      {item.status === "contacted" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-600">📬 Reached out to you</span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-600">✅ Marked you as hired</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {item.status === "contacted" && (
-                  <div className="mt-3 rounded-xl bg-secondary/50 px-3 py-2.5">
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Check your <span className="font-semibold text-foreground">phone and email</span> — they may have already reached out directly.
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))}
-            <div className="rounded-2xl border border-border/40 bg-secondary/20 p-4 text-center mt-2">
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Employers contact you directly by phone or email.{" "}
-                <Link href="/student/profile" className="text-primary font-medium">Keep your profile updated</Link>{" "}
-                so they can reach you.
+        {/* EMPLOYERS WHO FOUND YOU — only those the student did NOT apply to,
+            so a contact is never shown twice */}
+        {foundYou.length > 0 && (
+          <>
+            <div className="mb-4">
+              <h2 className="text-xl font-bold text-foreground">Employers who found you</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {foundYou.length === 1
+                  ? "1 employer reached out without an application"
+                  : `${foundYou.length} employers reached out without an application`}
               </p>
             </div>
+
+            <div className="space-y-3">
+              {foundYou.map(item => {
+                const stage = item.status === "hired" ? "hired" : "interested"
+                return (
+                  <div key={item.id} className="rounded-2xl border border-border/60 bg-card p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-base font-bold text-primary">
+                        {item.company[0]?.toUpperCase() || "?"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="font-semibold text-foreground text-sm truncate">{item.company}</p>
+                          <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />{formatTime(item.updated_at)}
+                          </span>
+                        </div>
+                        {item.business_type && (
+                          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                            <Building2 className="h-3 w-3" />{item.business_type}
+                          </p>
+                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <StageChip stage={stage} />
+                          <span className="text-xs text-muted-foreground">{STAGES[stage].hint}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {/* NOTHING AT ALL YET */}
+        {applications.length === 0 && foundYou.length === 0 && (
+          <div className="rounded-2xl border border-border/40 bg-secondary/20 p-4 text-center">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Employers contact you directly by phone or email.{" "}
+              <Link href="/student/profile" className="text-primary font-medium">Keep your profile updated</Link>{" "}
+              so they can reach you.
+            </p>
           </div>
         )}
 
