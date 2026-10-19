@@ -3,6 +3,7 @@ import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
 import { getCallerId } from "@/lib/apiAuth"
 import { studentWelcome, employerWelcome } from "@/lib/emails/templates"
+import { isSuppressed } from "@/lib/emails/suppress"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
     }
 
     if (!to) return NextResponse.json({ error: "No address" }, { status: 400 })
+    if (isSuppressed(to)) return NextResponse.json({ success: true, skipped: "suppressed" })
 
     const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
       from: FROM, to, subject: email.subject, html: email.html,

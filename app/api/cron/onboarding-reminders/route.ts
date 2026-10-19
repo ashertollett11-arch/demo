@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
 import { studentUnfinished, employerUnfinished, chooseRoleUnfinished } from "@/lib/emails/templates"
+import { isSuppressed } from "@/lib/emails/suppress"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 const REMIND_AFTER_HOURS = 24
@@ -71,10 +72,11 @@ export async function GET(request: Request) {
     const alreadySent = new Set((sentRows ?? []).map((r: any) => `${r.user_id}:${r.kind}`))
 
     let sent = 0
-    const skipped: Record<string, number> = { complete: 0, alreadySent: 0, optedOut: 0 }
+    const skipped: Record<string, number> = { complete: 0, alreadySent: 0, optedOut: 0, suppressed: 0 }
     const would: { email: string; role: string; subject: string }[] = []
 
     for (const user of candidates) {
+      if (isSuppressed(user.email)) { skipped.suppressed++; continue }
       if (alreadySent.has(`${user.id}:reminder`) || alreadySent.has(`${user.id}:welcome`)) {
         skipped.alreadySent++; continue
       }
