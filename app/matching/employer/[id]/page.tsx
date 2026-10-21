@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, MapPin, Star, Calendar, Clock, Phone, Mail, Building2, CreditCard, LogOut, ChevronDown, Bell, Lock } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
+import { recordProInterest } from "@/lib/proInterest"
 import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { hasEmployerAccess, isPro, activeLocations } from "@/lib/plan"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
@@ -38,6 +39,11 @@ export default function StudentPage() {
   const [allLocations, setAllLocations] = useState<any[]>([])
   // "active" = Pro, "freeactive" = Free; drives every paywall on this page
   const [planStatus, setPlanStatus] = useState<string | null>(null)
+  // A free employer seeing the locked state is the interest signal the
+  // daily sweep counts; recordProInterest dedupes per session.
+  useEffect(() => {
+    if (planStatus && !isPro(planStatus)) recordProInterest("student-profile")
+  }, [planStatus])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("")
   const [notes, setNotes] = useState("")

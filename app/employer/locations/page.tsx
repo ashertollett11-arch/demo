@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { recordProInterest } from "@/lib/proInterest"
 import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { isPro, activeLocations, FREE_LOCATION_LIMIT } from "@/lib/plan"
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, MapPin, X, Clock, DollarSign, Briefcase, Lock} from "lucide-react"
@@ -72,6 +73,11 @@ export default function LocationsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [planStatus, setPlanStatus] = useState<string | null>(null)
+  // A free employer seeing the locked state is the interest signal the
+  // daily sweep counts; recordProInterest dedupes per session.
+  useEffect(() => {
+    if (planStatus && !isPro(planStatus)) recordProInterest("locations")
+  }, [planStatus])
 
   const [formName, setFormName] = useState("")
   const [formAddress, setFormAddress] = useState("")

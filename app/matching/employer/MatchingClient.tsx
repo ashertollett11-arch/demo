@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabase"
+import { recordProInterest } from "@/lib/proInterest"
 import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { hasEmployerAccess, isPro, activeLocations } from "@/lib/plan"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
@@ -237,6 +238,11 @@ export default function MatchingPage() {
   const [planStatus, setPlanStatus] = useState<string | null>(null)
   // mirrored in a ref: the location loader runs in a different effect
   const planStatusRef = useRef<string | null>(null)
+  // A free employer seeing the locked state is the interest signal the
+  // daily sweep counts; recordProInterest dedupes per session.
+  useEffect(() => {
+    if (planStatus && !isPro(planStatus)) recordProInterest("candidates")
+  }, [planStatus])
   // Free has no match score, so "Best Match" is not a valid sort for them
   useEffect(() => { if (planStatus && !isPro(planStatus) && sortBy === "matchScore") setSortBy("gpa") }, [planStatus, sortBy])
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)

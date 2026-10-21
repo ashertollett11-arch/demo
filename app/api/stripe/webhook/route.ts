@@ -2,7 +2,8 @@ import Stripe from "stripe"
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
-import { proWelcome } from "@/lib/emails/templates"
+import { proWelcome, cancelConfirm, proWinback, checkoutAbandoned } from "@/lib/emails/templates"
+import { canEmail, PREF_COLUMNS, type EmailCategory } from "@/lib/emails/prefs"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20",
@@ -60,6 +61,48 @@ async function updateProfile(
     else console.log("UPDATED (by customer id):", data2)
   } else {
     console.log("UPDATED (by sub id):", data)
+  }
+}
+
+
+const FROM = "SimplyApply <noreply@simplyapply.app>"
+
+/**
+ * Sends one lifecycle email, once. Never throws: a non-2xx from this webhook
+ * makes Stripe retry the whole handler, and the unique (user_id, kind) row is
+ * what actually prevents a retry sending twice.
+ */
+async function sendOnce(
+  supabase: any,
+  userId: string,
+  kind: string,
+  category: EmailCategory,
+  build: (company?: string | null) => { subject: string; html: string }
+) {
+  try {
+    const { data: already } = await supabase
+      .from("onboarding_emails").select("id").eq("user_id", userId).eq("kind", kind).maybeSingle()
+    if (already) return
+
+    const { data: profile } = await supabase
+      .from("profiles").select(`email, ${PREF_COLUMNS}`).eq("id", userId).maybeSingle()
+    if (!canEmail(profile, category)) return
+
+    const { data: job } = await supabase
+      .from("job").select("company, email").eq("user_id", userId).maybeSingle()
+
+    const to = job?.email || profile?.email || null
+    if (!to) { console.warn(`${kind}: no address for`, userId); return }
+
+    const mail = build(job?.company)
+    const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
+      from: FROM, to, subject: mail.subject, html: mail.html,
+    })
+    if (error) { console.error(`${kind} SEND ERROR:`, error.message); return }
+
+    await supabase.from("onboarding_emails").insert({ user_id: userId, kind })
+  } catch (e: any) {
+    console.error(`${kind} ERROR:`, e.message)
   }
 }
 
@@ -127,37 +170,7 @@ export async function POST(req: Request) {
 
       if (error) console.error("CHECKOUT DB ERROR:", error)
 
-      // Confirmation email. Wrapped so a mail failure can never fail the
-      // webhook — a non-2xx makes Stripe retry, which would re-run the whole
-      // handler. The unique (user_id, kind) row is what actually stops a
-      // retry sending twice.
-      try {
-        const { data: already } = await supabase
-          .from("onboarding_emails")
-          .select("id").eq("user_id", userId).eq("kind", "pro_welcome").maybeSingle()
-
-        if (!already) {
-          const { data: job } = await supabase
-            .from("job").select("company, email").eq("user_id", userId).maybeSingle()
-          const { data: profile } = await supabase
-            .from("profiles").select("email").eq("id", userId).maybeSingle()
-
-          const to = job?.email || profile?.email || null
-          if (to) {
-            const mail = proWelcome({ company: job?.company })
-            const { error: mailError } = await new Resend(process.env.RESEND_API_KEY).emails.send({
-              from: "SimplyApply <noreply@simplyapply.app>",
-              to, subject: mail.subject, html: mail.html,
-            })
-            if (mailError) console.error("PRO WELCOME SEND ERROR:", mailError.message)
-            else await supabase.from("onboarding_emails").insert({ user_id: userId, kind: "pro_welcome" })
-          } else {
-            console.warn("PRO WELCOME: no address for", userId)
-          }
-        }
-      } catch (e: any) {
-        console.error("PRO WELCOME ERROR:", e.message)
-      }
+      await sendOnce(supabase, userId, "pro_welcome", "account", (company) => proWelcome({ company }))
     }
 
     // =====================================================
@@ -171,6 +184,20 @@ export async function POST(req: Request) {
       const status = getStatus(sub)
 
       console.log("SUB UPDATED:", { id: sub.id, status, cancel_at_period_end: sub.cancel_at_period_end })
+
+      // Cancellation requested: Pro runs to the end of the period, so confirm
+      // now and leave the win-back for when it actually lapses.
+      if (sub.cancel_at_period_end) {
+        const { data: row } = await supabase
+          .from("profiles").select("id").eq("stripe_subscription_id", sub.id).maybeSingle()
+        const endsAt = sub.current_period_end
+          ? new Date(sub.current_period_end * 1000).toISOString()
+          : null
+        if (row?.id) {
+          await sendOnce(supabase, row.id, "cancel_confirm", "account",
+            (company) => cancelConfirm({ company, endsAt }))
+        }
+      }
 
       await updateProfile(sub.id, customerId, {
         subscription_status: status,
@@ -192,12 +219,33 @@ export async function POST(req: Request) {
 
       console.log("SUB DELETED:", { id: sub.id, customerId })
 
+      // Pro has actually stopped — this is the moment the features disappear.
+      {
+        const { data: row } = await supabase
+          .from("profiles").select("id").eq("stripe_subscription_id", sub.id).maybeSingle()
+        if (row?.id) {
+          await sendOnce(supabase, row.id, "winback", "other", (company) => proWinback({ company }))
+        }
+      }
+
       await updateProfile(sub.id, customerId, {
         subscription_status: "freeactive",
         current_period_end: sub.current_period_end
           ? new Date(sub.current_period_end * 1000).toISOString()
           : null,
       })
+    }
+
+    // =====================================================
+    // CHECKOUT EXPIRED — started an upgrade and never finished
+    // =====================================================
+    if (event.type === "checkout.session.expired") {
+      const session = event.data.object as Stripe.Checkout.Session
+      const userId = session.metadata?.userId
+      if (userId) {
+        await sendOnce(supabase, userId, "checkout_abandoned", "other",
+          (company) => checkoutAbandoned({ company }))
+      }
     }
 
     return NextResponse.json({ received: true })

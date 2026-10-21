@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import { authedFetch } from "@/lib/authedFetch"
 import { isPro } from "@/lib/plan"
+import { recordProInterest } from "@/lib/proInterest"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -99,6 +100,11 @@ export default function BillingPage() {
   // ACTIVATE FREE ACCESS
   // -------------------------
   const [upgrading, setUpgrading] = useState(false)
+
+  // Opening the plan page is the clearest intent signal of the lot.
+  useEffect(() => {
+    if (subscriptionStatus && !isPro(subscriptionStatus)) recordProInterest("plan-page")
+  }, [subscriptionStatus])
 
   // Stripe sends the employer back here after checkout
   useEffect(() => {

@@ -51,6 +51,8 @@ export async function POST(req: Request) {
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+      // lets the discount code from the lifecycle emails be entered
+      allow_promotion_codes: true,
       customer: customerId,
       payment_method_types: ["card"],
       line_items: [

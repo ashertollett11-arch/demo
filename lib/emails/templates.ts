@@ -1,4 +1,5 @@
 import { shell, steps, callout, siteUrl } from "./layout"
+import { PROMO_CODE, PROMO_DESCRIPTION } from "./prefs"
 
 const firstName = (name?: string | null) =>
   (name || "").trim().split(/\s+/)[0] || ""
@@ -150,6 +151,103 @@ export function proWelcome({ company }: { company?: string | null }) {
       ctaLabel: "Go to your dashboard",
       ctaHref: `${siteUrl}/employer`,
       footerReason: "You're receiving this because you started an Employer Pro subscription on SimplyApply.",
+    }),
+  }
+}
+
+/** The discount block shown in the "other" emails. */
+function promoBlock() {
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff;border:1px dashed #93c5fd;border-radius:12px;margin-bottom:24px;">
+    <tr><td style="padding:18px 22px;text-align:center;">
+      <p style="margin:0 0 6px;font-size:13px;color:#3b82f6;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">${PROMO_DESCRIPTION}</p>
+      <p style="margin:0 0 6px;font-size:24px;font-weight:700;color:#1e40af;letter-spacing:2px;">${PROMO_CODE}</p>
+      <p style="margin:0;font-size:13px;color:#1e3a8a;">Enter it at checkout. One use per business.</p>
+    </td></tr>
+  </table>`
+}
+
+/**
+ * Cancellation confirmed. Account category — always sends, because it tells
+ * them when access actually stops.
+ */
+export function cancelConfirm({ company, endsAt }: { company?: string | null; endsAt?: string | null }) {
+  const name = (company || "").trim()
+  const date = endsAt
+    ? new Date(endsAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+    : null
+  return {
+    subject: "Your Employer Pro subscription is cancelled",
+    html: shell({
+      heading: "Your cancellation is confirmed",
+      intro: date
+        ? `${name || "Your account"} keeps full Pro access until ${date}.`
+        : `${name || "Your account"} keeps full Pro access until the end of the current billing period.`,
+      body:
+        `<p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">You won't be charged again. When Pro ends you'll move to the free plan \u2014 one hiring location stays live, and any others pause rather than being deleted. Nothing is lost, and resubscribing brings them straight back.</p>` +
+        callout("After Pro ends", "You keep your free account", "Your oldest location, unlimited candidate browsing, availability matching and the full hiring pipeline."),
+      ctaLabel: "Manage billing",
+      ctaHref: `${siteUrl}/pricing/mobile`,
+      footerReason: "You're receiving this because you cancelled an Employer Pro subscription on SimplyApply.",
+    }),
+  }
+}
+
+/** Pro has actually lapsed. Other category. */
+export function proWinback({ company }: { company?: string | null }) {
+  const name = (company || "").trim()
+  return {
+    subject: name ? `${name} is back on the free plan` : "You're back on the free plan",
+    html: shell({
+      heading: "Pro has ended",
+      intro: "Your extra locations are paused and match scores are hidden again.",
+      body:
+        `<p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">Nothing was deleted. Every location you added is still there, and resubscribing makes them live again straight away \u2014 along with match scores on every candidate and full student profiles.</p>` +
+        promoBlock(),
+      ctaLabel: "Restart Employer Pro",
+      ctaHref: `${siteUrl}/pricing/mobile`,
+      footerReason: "You're receiving this because you had an Employer Pro subscription on SimplyApply.",
+    }),
+  }
+}
+
+/** Repeatedly hit the paywall without subscribing. Other category. */
+export function proValue({ company }: { company?: string | null }) {
+  const name = (company || "").trim()
+  return {
+    subject: name ? `Getting more out of SimplyApply, ${name}` : "Getting more out of SimplyApply",
+    html: shell({
+      heading: "You keep running into the locked parts",
+      intro: "Here's what Pro actually changes about hiring, so you can judge whether it's worth it.",
+      body:
+        steps([
+          "<strong>Stop guessing who fits.</strong> Match scores rank every student by how well they cover the shifts you actually need, so you call the right person first instead of working down a list.",
+          "<strong>See who you're calling.</strong> Full profiles include their bio, interests and preferred roles \u2014 useful context before you pick up the phone.",
+          "<strong>Hire for every site.</strong> Unlimited locations, each matched to students near it.",
+        ]) +
+        promoBlock(),
+      ctaLabel: "See what Pro costs",
+      ctaHref: `${siteUrl}/pricing/mobile`,
+      footerReason: "You're receiving this because you have an employer account on SimplyApply.",
+    }),
+  }
+}
+
+/** Started checkout and didn't finish. Other category. */
+export function checkoutAbandoned({ company }: { company?: string | null }) {
+  const name = (company || "").trim()
+  return {
+    subject: "You were one step from Employer Pro",
+    html: shell({
+      heading: "So close",
+      intro: name
+        ? `${name} started upgrading to Pro but didn't finish checking out.`
+        : "You started upgrading to Pro but didn't finish checking out.",
+      body:
+        `<p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">Nothing was charged. If something got in the way, replying to this email reaches a person \u2014 and if you were just weighing it up, here's a reason to decide now.</p>` +
+        promoBlock(),
+      ctaLabel: "Finish upgrading",
+      ctaHref: `${siteUrl}/pricing/mobile`,
+      footerReason: "You're receiving this because you started an Employer Pro checkout on SimplyApply.",
     }),
   }
 }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
+import { recordProInterest } from "@/lib/proInterest"
 import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { hasEmployerAccess, isPro, activeLocations } from "@/lib/plan"
 import Image from "next/image"
@@ -39,6 +40,11 @@ export default function EmployerDashboard() {
   const [allLocations, setAllLocations] = useState<any[]>([])
   // "active" = Pro, "freeactive" = Free; drives every paywall on this page
   const [planStatus, setPlanStatus] = useState<string | null>(null)
+  // A free employer seeing the locked state is the interest signal the
+  // daily sweep counts; recordProInterest dedupes per session.
+  useEffect(() => {
+    if (planStatus && !isPro(planStatus)) recordProInterest("dashboard")
+  }, [planStatus])
   // mirrored in a ref: the location loader runs in a different effect
   const planStatusRef = useRef<string | null>(null)
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)

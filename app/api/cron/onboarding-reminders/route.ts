@@ -3,10 +3,13 @@ import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
 import { studentUnfinished, employerUnfinished, chooseRoleUnfinished } from "@/lib/emails/templates"
 import { isSuppressed } from "@/lib/emails/suppress"
+import { proValue } from "@/lib/emails/templates"
+import { canEmail, PREF_COLUMNS } from "@/lib/emails/prefs"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 const REMIND_AFTER_HOURS = 24
 const MAX_AGE_DAYS = 14 // don't email people who signed up and vanished months ago
+const PRO_INTEREST_THRESHOLD = 3 // paywall views before the value email is worth sending
 
 /**
  * Daily sweep: nudge anyone who signed up, confirmed their email, and never
@@ -120,10 +123,48 @@ export async function GET(request: Request) {
       sent++
     }
 
-    if (dryRun) {
-      return NextResponse.json({ dryRun: true, checked: candidates.length, wouldSend: would.length, would, skipped })
+    // ---- second sweep: free employers who keep hitting the paywall ----
+    const { data: interested } = await supabase
+      .from("profiles")
+      .select(`id, email, pro_paywall_hits, subscription_status, ${PREF_COLUMNS}`)
+      .gte("pro_paywall_hits", PRO_INTEREST_THRESHOLD)
+      .neq("subscription_status", "active")
+
+    let proValueSent = 0
+    const wouldProValue: { email: string; hits: number }[] = []
+
+    if (interested?.length) {
+      const ids = interested.map((p: any) => p.id)
+      const [{ data: sentPro }, { data: proJobs }] = await Promise.all([
+        supabase.from("onboarding_emails").select("user_id").eq("kind", "pro_interest").in("user_id", ids),
+        supabase.from("job").select("user_id, company, email").in("user_id", ids),
+      ])
+      const done = new Set((sentPro ?? []).map((r: any) => r.user_id))
+      const jobOf = new Map((proJobs ?? []).map((j: any) => [j.user_id, j]))
+
+      for (const prof of interested) {
+        if (done.has(prof.id)) continue
+        if (!canEmail(prof, "other")) continue
+        const to = jobOf.get(prof.id)?.email || prof.email
+        if (!to || isSuppressed(to)) continue
+
+        if (dryRun) { wouldProValue.push({ email: to, hits: prof.pro_paywall_hits }); continue }
+
+        const mail = proValue({ company: jobOf.get(prof.id)?.company })
+        const { error } = await resend.emails.send({ from: FROM, to, subject: mail.subject, html: mail.html })
+        if (error) { console.error("PRO VALUE SEND ERROR:", prof.id, error.message); continue }
+        await supabase.from("onboarding_emails").insert({ user_id: prof.id, kind: "pro_interest" })
+        proValueSent++
+      }
     }
-    return NextResponse.json({ checked: candidates.length, sent, skipped })
+
+    if (dryRun) {
+      return NextResponse.json({
+        dryRun: true, checked: candidates.length, wouldSend: would.length, would, skipped,
+        proValue: { candidates: interested?.length ?? 0, would: wouldProValue },
+      })
+    }
+    return NextResponse.json({ checked: candidates.length, sent, skipped, proValueSent })
   } catch (err: any) {
     console.error("ONBOARDING REMINDERS ERROR:", err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })

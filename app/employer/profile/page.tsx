@@ -35,6 +35,9 @@ const inputClass = "w-full rounded-lg border border-border bg-background px-3 py
 export default function EmployerProfilePage() {
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [showEmailOffDialog, setShowEmailOffDialog] = useState(false)
+  const [emailHiring, setEmailHiring] = useState(true)
+  const [emailOther, setEmailOther] = useState(true)
+  const [pendingPrefOff, setPendingPrefOff] = useState<"all" | "hiring" | "other" | null>(null)
   const router = useRouter()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showSwitchDialog, setShowSwitchDialog] = useState(false)
@@ -129,6 +132,12 @@ export default function EmployerProfilePage() {
       }
       const { data: profileData } = await supabase.from("profiles").select("email_notifications").eq("id", user.id).maybeSingle()
       setEmailNotifications(profileData?.email_notifications !== false)
+      // Queried separately so the page still loads before the migration adds
+      // these columns; both default to on.
+      const { data: prefRow } = await supabase
+        .from("profiles").select("email_hiring, email_other").eq("id", user.id).maybeSingle()
+      setEmailHiring(prefRow?.email_hiring !== false)
+      setEmailOther(prefRow?.email_other !== false)
       setLoading(false)
     }
     loadEmployer()
@@ -164,19 +173,21 @@ export default function EmployerProfilePage() {
     router.push("/employer/locations")
   }
 
-  const applyEmailNotifications = async (next: boolean) => {
+  const applyEmailPref = async (key: "all" | "hiring" | "other", next: boolean) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    setEmailNotifications(next)
-    const { error } = await supabase
-      .from("profiles").update({ email_notifications: next }).eq("id", user.id)
+    const column = key === "all" ? "email_notifications" : key === "hiring" ? "email_hiring" : "email_other"
+    const setter = key === "all" ? setEmailNotifications : key === "hiring" ? setEmailHiring : setEmailOther
+    setter(next)
+    const { error } = await supabase.from("profiles").update({ [column]: next }).eq("id", user.id)
     if (error) {
-      setEmailNotifications(!next)
-      toast.error("Couldn't update notifications. Please try again.")
+      setter(!next)
+      toast.error("Couldn't update email preferences. Please try again.")
       return
     }
-    toast.success(next ? "Email notifications enabled" : "Email notifications disabled")
+    toast.success(next ? "Emails enabled" : "Emails turned off")
   }
+
 
   const handleSave = async () => {
     if (!validateProfile()) return
@@ -232,13 +243,20 @@ export default function EmployerProfilePage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-yellow-600"><AlertTriangle className="h-5 w-5" />Turn off email notifications?</DialogTitle>
             <DialogDescription className="pt-2">
-              Email is how we tell you a student has applied. With this off, the only way to see new applicants is by opening the dashboard yourself — there's no other way we can reach you.
+              {pendingPrefOff === "all"
+                ? "This stops every email except billing and cancellation notices. You'll only see new applicants by opening the dashboard yourself."
+                : "Email is how we tell you a student has applied. With this off, the only way to see new applicants is by opening the dashboard yourself — there's no other way we can reach you."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 mt-4">
-            <button onClick={() => setShowEmailOffDialog(false)} className="flex-1 py-2 rounded-xl border text-sm font-medium">Keep them on</button>
+            <button onClick={() => { setShowEmailOffDialog(false); setPendingPrefOff(null) }} className="flex-1 py-2 rounded-xl border text-sm font-medium">Keep them on</button>
             <button
-              onClick={async () => { setShowEmailOffDialog(false); await applyEmailNotifications(false) }}
+              onClick={async () => {
+                const key = pendingPrefOff ?? "all"
+                setShowEmailOffDialog(false)
+                setPendingPrefOff(null)
+                await applyEmailPref(key, false)
+              }}
               className="flex-1 py-2 rounded-xl bg-yellow-600 text-white text-sm font-medium">Turn off</button>
           </DialogFooter>
         </DialogContent>
@@ -488,26 +506,59 @@ export default function EmployerProfilePage() {
               </CardContent>
             </Card>
 
-            {/* EMAIL NOTIFICATIONS */}
+            {/* EMAIL PREFERENCES */}
             <Card className="border-border bg-card">
               <CardContent className="p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Application Emails</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Get notified when a student applies</p>
-                  </div>
-                  <button type="button"
-                    onClick={async () => {
-                      const { data: { user } } = await supabase.auth.getUser()
-                      if (!user) return
-                      // Turning them ON is harmless; turning them OFF means we
-                      // can't tell them about applicants at all, so confirm it.
-                      if (emailNotifications) { setShowEmailOffDialog(true); return }
-                      await applyEmailNotifications(true)
-                    }}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${emailNotifications ? "bg-primary" : "bg-gray-300"}`}>
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${emailNotifications ? "translate-x-6" : "translate-x-1"}`} />
-                  </button>
+                <p className="text-sm font-semibold text-foreground">Email preferences</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Billing and cancellation emails always send.
+                </p>
+
+                <div className="mt-4 divide-y divide-border">
+                  {([
+                    {
+                      key: "hiring" as const,
+                      value: emailHiring,
+                      title: "Student emails",
+                      body: "When a student applies or you're matched to someone new",
+                    },
+                    {
+                      key: "other" as const,
+                      value: emailOther,
+                      title: "Other",
+                      body: "Occasional suggestions for getting more out of SimplyApply",
+                    },
+                    {
+                      key: "all" as const,
+                      value: emailNotifications,
+                      title: "All emails",
+                      body: "Turning this off stops everything above",
+                    },
+                  ]).map(({ key, value, title, body }) => (
+                    <div key={key} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">{title}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{body}</p>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Toggle ${title}`}
+                        disabled={key !== "all" && !emailNotifications}
+                        onClick={() => {
+                          // Only the destructive direction is confirmed, and only
+                          // where turning it off actually costs them something.
+                          if (value && (key === "all" || key === "hiring")) {
+                            setPendingPrefOff(key)
+                            setShowEmailOffDialog(true)
+                            return
+                          }
+                          applyEmailPref(key, !value)
+                        }}
+                        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-40 ${value && (key === "all" || emailNotifications) ? "bg-primary" : "bg-gray-300"}`}>
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${value && (key === "all" || emailNotifications) ? "translate-x-6" : "translate-x-1"}`} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

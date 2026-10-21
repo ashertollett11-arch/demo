@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import {
-  studentWelcome, studentUnfinished, employerWelcome, employerUnfinished, chooseRoleUnfinished, proWelcome,
+  studentWelcome, studentUnfinished, employerWelcome, employerUnfinished, chooseRoleUnfinished, proWelcome, cancelConfirm, proWinback, proValue, checkoutAbandoned,
 } from "@/lib/emails/templates"
 
 /**
@@ -25,6 +25,10 @@ export async function GET(request: Request) {
     // one is previewed the way it actually sends: without a greeting.
     ["No role chosen (day 1)", chooseRoleUnfinished({})],
     ["Employer \u00b7 Pro subscription started", proWelcome({ company: "Cow Girl Kitchen" })],
+    ["Employer \u00b7 cancellation confirmed", cancelConfirm({ company: "Cow Girl Kitchen", endsAt: "2026-11-21T00:00:00Z" })],
+    ["Employer \u00b7 win-back (Pro lapsed)", proWinback({ company: "Cow Girl Kitchen" })],
+    ["Employer \u00b7 value email (repeat paywall hits)", proValue({ company: "Cow Girl Kitchen" })],
+    ["Employer \u00b7 abandoned checkout", checkoutAbandoned({ company: "Cow Girl Kitchen" })],
   ]
 
   // ?send=<address>&which=<n> delivers one of these for real, so inbox

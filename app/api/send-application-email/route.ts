@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
+import { canEmail, PREF_COLUMNS } from "@/lib/emails/prefs"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const supabase = createClient(
@@ -19,12 +20,12 @@ export async function POST(request: Request) {
     // Check if employer has email notifications enabled
     const { data: profile } = await supabase
       .from("profiles")
-      .select("email_notifications")
+      .select(PREF_COLUMNS)
       .eq("id", employerUserId)
       .maybeSingle()
 
-    if (profile?.email_notifications === false) {
-      return NextResponse.json({ success: true, skipped: true })
+    if (!canEmail(profile, "hiring")) {
+      return NextResponse.json({ success: true, skipped: "opted out" })
     }
 
     const profileUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/matching/employer/${studentId}`
