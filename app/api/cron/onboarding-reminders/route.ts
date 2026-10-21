@@ -65,7 +65,7 @@ export async function GET(request: Request) {
     const [{ data: roles }, { data: students }, { data: profiles }, { data: jobs }, { data: sentRows }] =
       await Promise.all([
         supabase.from("users").select("id, role").in("id", ids),
-        supabase.from("Students").select("user_id, name, profile_complete").in("user_id", ids),
+        supabase.from("Students").select("user_id, name, profile_complete, email_notifications").in("user_id", ids),
         supabase.from("profiles").select("id, profile_complete, email_notifications").in("id", ids),
         supabase.from("job").select("user_id, company").in("user_id", ids),
         supabase.from("onboarding_emails").select("user_id, kind").in("user_id", ids),
@@ -97,6 +97,7 @@ export async function GET(request: Request) {
       } else if (role === "student") {
         const student = studentOf.get(user.id)
         if (student?.profile_complete) { skipped.complete++; continue }
+        if (student?.email_notifications === false) { skipped.optedOut++; continue }
         email = studentUnfinished({ name: student?.name })
       } else {
         const profile = profileOf.get(user.id)

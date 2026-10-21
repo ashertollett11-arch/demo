@@ -22,6 +22,8 @@ export default function ProfilePage() {
   const [switching, setSwitching] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [emailNotifications, setEmailNotifications] = useState(true)
+  const [showEmailOffDialog, setShowEmailOffDialog] = useState(false)
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [saving, setSaving] = useState(false)
   const [isLooking, setIsLooking] = useState(true)
@@ -168,6 +170,12 @@ export default function ProfilePage() {
                 .eq("user_id", authUser.id)
         .single()
       if (error) { setLoading(false); return }
+
+      // Queried on its own: if the column hasn't been added yet the profile
+      // still loads, it just defaults to notifications on.
+      const { data: notifRow } = await supabase
+        .from("Students").select("email_notifications").eq("user_id", authUser.id).maybeSingle()
+      setEmailNotifications(notifRow?.email_notifications !== false)
       if (profileData) {
         setGpaProofUrl(profileData.gpa_proof_url || null)
         setName(profileData.name || "")
@@ -297,6 +305,20 @@ export default function ProfilePage() {
   }
 
   const closeEdit = () => { setEditingField(null); setEditValue("") }
+
+  const applyEmailNotifications = async (next: boolean) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    setEmailNotifications(next)
+    const { error } = await supabase
+      .from("Students").update({ email_notifications: next }).eq("user_id", user.id)
+    if (error) {
+      setEmailNotifications(!next)
+      toast.error("Couldn't update notifications. Please try again.")
+      return
+    }
+    toast.success(next ? "Email notifications enabled" : "Email notifications disabled")
+  }
 
   const commitEdit = (field: string, value: string) => {
     switch (field) {
@@ -493,6 +515,23 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showEmailOffDialog} onOpenChange={setShowEmailOffDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-yellow-600"><AlertTriangle className="h-5 w-5" />Turn off email notifications?</DialogTitle>
+            <DialogDescription className="pt-2">
+              Email is the main way employers tell you they're interested. With this off, the only way to find out is by opening the app — there's no other way we can reach you.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 mt-4">
+            <button onClick={() => setShowEmailOffDialog(false)} className="flex-1 py-2 rounded-xl border text-sm font-medium">Keep them on</button>
+            <button
+              onClick={async () => { setShowEmailOffDialog(false); await applyEmailNotifications(false) }}
+              className="flex-1 py-2 rounded-xl bg-yellow-600 text-white text-sm font-medium">Turn off</button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border">
         <div className="flex items-center justify-between px-4 py-3 max-w-lg mx-auto">
@@ -562,7 +601,7 @@ export default function ProfilePage() {
         </div>
 
         {/* PERSONAL INFO */}
-        <div id="personal" className="px-4 pt-2 pb-2">
+        <div id="personal" className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Personal Info</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
@@ -573,7 +612,7 @@ export default function ProfilePage() {
                             </div>
 
         {/* CONTACT */}
-        <div className="px-4 pt-2 pb-2">
+        <div className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Contact</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
@@ -584,13 +623,13 @@ export default function ProfilePage() {
         </div>
 
         {/* PREFERRED JOBS */}
-        <div className="px-4 pt-2 pb-2">
+        <div className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Preferred Positions</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
           <div className="p-4">
-            <p className="text-xs text-muted-foreground mb-3">Select up to 3 roles you're interested in.</p>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-xs text-muted-foreground mb-3.5">Select up to 3 roles you're interested in.</p>
+            <div className="flex flex-wrap gap-2.5">
               {JOB_OPTIONS.map((job) => {
                 const selected = preferredJobs.includes(job)
                 return (
@@ -600,7 +639,7 @@ export default function ProfilePage() {
                       if (prev.length >= MAX_JOBS) { toast.error(`Max ${MAX_JOBS} positions`); return prev }
                       return [...prev, job]
                     })}
-                    className={`px-3 py-1.5 text-xs rounded-full border font-medium transition-all ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
+                    className={`px-3.5 py-2.5 text-[13px] rounded-full border font-medium transition-all active:scale-95 ${selected ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
                     {job}
                   </button>
                 )
@@ -610,14 +649,14 @@ export default function ProfilePage() {
         </div>
 
         {/* INTERESTS */}
-        <div className="px-4 pt-2 pb-2">
+        <div className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Interests</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
           <div className="p-4">
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap gap-2.5 mb-3">
               {interests.map((interest, index) => (
-                <span key={index} className="inline-flex items-center gap-1 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-foreground">
+                <span key={index} className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3.5 py-2 text-[13px] font-medium text-foreground">
                   {interest}
                   <button onClick={() => setInterests(interests.filter((_, i) => i !== index))} className="text-muted-foreground hover:text-foreground ml-0.5">
                     <X className="h-3 w-3" />
@@ -656,7 +695,7 @@ export default function ProfilePage() {
         </div>
 
         {/* BIO + SOCIAL */}
-        <div className="px-4 pt-2 pb-2">
+        <div className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">About Me & Social</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
@@ -693,7 +732,7 @@ export default function ProfilePage() {
           </div>
         </div>
         {/* AVAILABILITY */}
-        <div className="px-4 pt-2 pb-2">
+        <div className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
@@ -741,7 +780,7 @@ export default function ProfilePage() {
         </div>
 
         {/* RECOMMENDATION */}
-        <div id="recommendation" className="px-4 pt-2 pb-2">
+        <div id="recommendation" className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recommendation</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
@@ -796,8 +835,34 @@ export default function ProfilePage() {
             </div>
 
 
+        {/* PRIVACY */}
+        <div className="px-4 pt-4 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Privacy</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Email notifications</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                How employers tell you they're interested
+              </p>
+            </div>
+            <button
+              aria-label="Toggle email notifications"
+              onClick={() => {
+                // Turning them ON is harmless; turning them OFF loses the only
+                // channel we have, so that direction is confirmed first.
+                if (emailNotifications) setShowEmailOffDialog(true)
+                else applyEmailNotifications(true)
+              }}
+              className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${emailNotifications ? "bg-primary" : "bg-gray-300"}`}>
+              <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${emailNotifications ? "translate-x-6" : "translate-x-1"}`} />
+            </button>
+          </div>
+        </div>
+
         {/* DANGER ZONE */}
-        <div className="px-4 pt-2 pb-2">
+        <div className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">

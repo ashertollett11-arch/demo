@@ -41,8 +41,11 @@ export async function POST(request: Request) {
 
     if (role === "student") {
       const { data: student } = await supabase
-        .from("Students").select("name, email, profile_complete").eq("user_id", userId).maybeSingle()
+        .from("Students").select("name, email, profile_complete, email_notifications").eq("user_id", userId).maybeSingle()
       if (!student?.profile_complete) return NextResponse.json({ error: "Profile not complete" }, { status: 400 })
+      if (student.email_notifications === false) {
+        return NextResponse.json({ success: true, skipped: "opted out" })
+      }
       to = student.email || to
       email = studentWelcome({ name: student.name })
     } else {
