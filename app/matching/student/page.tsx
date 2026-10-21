@@ -22,6 +22,7 @@ import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { calculateMatch } from "@/lib/matchScore"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { fetchVisibleLocationIds } from "@/lib/plan"
 import {
   DropdownMenu,
@@ -52,6 +53,7 @@ interface Job {
 export default function MatchesPage() {
   const router = useRouter()
   const [pageLoading, setPageLoading] = useState(true)
+  const loadingMessage = useLoadingMessage(["Finding jobs near you...", "Measuring the walk from your place...", "Matching shifts to your free time...", "Sorting by who’s closest..."])
   const [jobsLoaded, setJobsLoaded] = useState(false)
   const [nameLoaded, setNameLoaded] = useState(false)
   const [matchedJobs, setMatchedJobs] = useState<Job[]>([])
@@ -215,7 +217,7 @@ useEffect(() => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-                  <p className="text-muted-foreground text-sm">Finding jobs near you...</p>
+                  <p className="text-muted-foreground text-sm">{loadingMessage}</p>
         </div>
       </div>
     )

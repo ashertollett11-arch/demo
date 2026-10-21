@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { Clock, Building2, Home, Briefcase, User, Activity } from "lucide-react"
 import Link from "next/link"
 import {
@@ -37,6 +38,7 @@ type Application = {
 export default function StudentActivityPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const loadingMessage = useLoadingMessage(["Loading activity...", "Checking who’s replied...", "Catching up on your applications..."])
   const [contacted, setContacted] = useState<ContactedEmployer[]>([])
   const [applications, setApplications] = useState<Application[]>([])
   const [name, setName] = useState("")
@@ -174,7 +176,7 @@ export default function StudentActivityPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-          <p className="text-muted-foreground text-sm">Loading activity...</p>
+          <p className="text-muted-foreground text-sm">{loadingMessage}</p>
         </div>
       </div>
     )

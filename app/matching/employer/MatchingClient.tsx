@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { hasEmployerAccess, isPro, activeLocations } from "@/lib/plan"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
 import Image from "next/image"
@@ -223,6 +224,7 @@ export default function MatchingPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [employerId, setEmployerId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const loadingMessage = useLoadingMessage(["Loading candidates...", "Scoring students against your shifts...", "Ranking by schedule fit...", "Measuring who’s nearby..."])
   const [studentsLoaded, setStudentsLoaded] = useState(false)
   const [distancesLoaded, setDistancesLoaded] = useState(false)
   const [scoresLoaded, setScoresLoaded] = useState(false)
@@ -622,7 +624,7 @@ export default function MatchingPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-          <p className="text-muted-foreground text-sm">Loading candidates...</p>
+          <p className="text-muted-foreground text-sm">{loadingMessage}</p>
         </div>
       </div>
     )

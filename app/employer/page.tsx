@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { hasEmployerAccess, isPro, activeLocations } from "@/lib/plan"
 import Image from "next/image"
 import {
@@ -30,6 +31,7 @@ export default function EmployerDashboard() {
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [selectedLocationMaxMiles, setSelectedLocationMaxMiles] = useState<number>(10)
   const [pageLoading, setPageLoading] = useState(true)
+  const loadingMessage = useLoadingMessage(["Loading your dashboard...", "Checking for new applicants...", "Counting who’s available..."])
   const [companyLoaded, setCompanyLoaded] = useState(false)
   const [studentsLoaded, setStudentsLoaded] = useState(false)
   const [statusesLoaded, setStatusesLoaded] = useState(false)
@@ -219,7 +221,7 @@ export default function EmployerDashboard() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-muted-foreground text-sm">Loading your dashboard...</p>
+          <p className="text-muted-foreground text-sm">{loadingMessage}</p>
         </div>
       </div>
     )

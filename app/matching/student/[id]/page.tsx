@@ -3,6 +3,7 @@ import { useParams, useRouter } from "next/navigation"
 import { MapPin, ChevronLeft, Clock, Briefcase, Home, Activity, User } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { fetchVisibleLocationIds } from "@/lib/plan"
 import { calculateMatch } from "@/lib/matchScore"
 import { toast } from "sonner"
@@ -18,6 +19,7 @@ export default function JobPage() {
   const [studentShiftPreference, setStudentShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [job, setJob] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const loadingMessage = useLoadingMessage(["Loading job details...", "Checking the shifts...", "Working out your commute..."])
   const [hasApplied, setHasApplied] = useState(false)
   const [applying, setApplying] = useState(false)
   const [availability, setAvailability] = useState<any[]>([])
@@ -155,7 +157,7 @@ export default function JobPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-                  <p className="text-muted-foreground text-sm">Loading job details...</p>
+                  <p className="text-muted-foreground text-sm">{loadingMessage}</p>
         </div>
       </div>
     )

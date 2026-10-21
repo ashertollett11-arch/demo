@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { isPro, activeLocations, FREE_LOCATION_LIMIT } from "@/lib/plan"
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, MapPin, X, Clock, DollarSign, Briefcase, Lock} from "lucide-react"
 import Image from "next/image"
@@ -64,6 +65,7 @@ export default function LocationsPage() {
   const [companyName, setCompanyName] = useState("")
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
+  const loadingMessage = useLoadingMessage(["Loading locations...", "Pulling up your hiring sites..."])
   const [saving, setSaving] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -203,7 +205,7 @@ export default function LocationsPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-muted-foreground text-sm">Loading locations...</p>
+          <p className="text-muted-foreground text-sm">{loadingMessage}</p>
         </div>
       </div>
     )

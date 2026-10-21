@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { Building2, AlertTriangle, MapPin, Plus, Pencil, Bell, CreditCard, LogOut, ChevronDown, DollarSign, Clock, HelpCircle } from "lucide-react"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { authedFetch } from "@/lib/authedFetch"
 import Image from "next/image"
 import Link from "next/link"
@@ -40,6 +41,7 @@ export default function EmployerProfilePage() {
   const [switching, setSwitching] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const loadingMessage = useLoadingMessage(["Loading your profile...", "Pulling up your company details..."])
   const [locations, setLocations] = useState<Location[]>([])
   const [loadingLocations, setLoadingLocations] = useState(false)
   const [autoSaving, setAutoSaving] = useState(false)
@@ -213,7 +215,7 @@ export default function EmployerProfilePage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-muted-foreground text-sm">Loading your profile...</p>
+          <p className="text-muted-foreground text-sm">{loadingMessage}</p>
         </div>
       </div>
     )

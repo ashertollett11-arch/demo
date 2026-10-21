@@ -2,8 +2,10 @@
 
 import { useEffect } from "react"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 
 export default function Home() {
+  const loadingMessage = useLoadingMessage(["Loading SimplyApply...", "Getting you to the right place..."])
   useEffect(() => {
     const routeUser = async () => {
       if (typeof window === "undefined") return
@@ -38,7 +40,7 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="text-muted-foreground text-sm">Loading SimplyApply...</p>
+        <p className="text-muted-foreground text-sm">{loadingMessage}</p>
       </div>
     </div>
   )

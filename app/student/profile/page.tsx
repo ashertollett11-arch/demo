@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, Briefcase, AlertTriangle, Star, ChevronRight, ChevronLeft, X, Check } from "lucide-react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { authedFetch } from "@/lib/authedFetch"
 import {
   Dialog,
@@ -47,6 +48,7 @@ export default function ProfilePage() {
   const [school, setSchool] = useState("")
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const loadingMessage = useLoadingMessage(["Loading your profile...", "Pulling up your details...", "Getting your availability..."])
   const [gpaStatus, setGpaStatus] = useState("none")
   const [recommenderName, setRecommenderName] = useState("")
   const [recommenderEmail, setRecommenderEmail] = useState("")
@@ -359,7 +361,7 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-                  <p className="text-muted-foreground text-sm">Loading your profile...</p>
+                  <p className="text-muted-foreground text-sm">{loadingMessage}</p>
         </div>
       </div>
     )

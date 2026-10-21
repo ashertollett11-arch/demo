@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChevronLeft, MapPin, Star, Calendar, Clock, Phone, Mail, Building2, CreditCard, LogOut, ChevronDown, Bell, Lock } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
+import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { hasEmployerAccess, isPro, activeLocations } from "@/lib/plan"
 import { calculateEmployerMatch } from "@/lib/employerMatchScore"
 import { getDistance } from "@/lib/distance"
@@ -28,6 +29,7 @@ export default function StudentPage() {
   const [recommendation, setRecommendation] = useState<any>(null)
   const [student, setStudent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const loadingMessage = useLoadingMessage(["Loading student profile...", "Pulling up their availability...", "Checking their schedule against yours..."])
   const [employerShifts, setEmployerShifts] = useState<any[]>([])
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
@@ -166,7 +168,7 @@ export default function StudentPage() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-muted-foreground text-sm">Loading student profile...</p>
+          <p className="text-muted-foreground text-sm">{loadingMessage}</p>
         </div>
       </div>
     )
