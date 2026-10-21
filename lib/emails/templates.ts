@@ -122,3 +122,34 @@ export function chooseRoleUnfinished({ name }: { name?: string | null }) {
     }),
   }
 }
+
+/**
+ * Sent by the Stripe webhook when a subscription starts. This is a purchase
+ * confirmation, so it is sent regardless of the notification preference —
+ * the preference governs hiring activity, not billing.
+ *
+ * Stripe sends the actual receipt separately, if receipts are enabled in the
+ * dashboard; this deliberately doesn't restate the amount.
+ */
+export function proWelcome({ company }: { company?: string | null }) {
+  const name = (company || "").trim()
+  return {
+    subject: name ? `${name} is on Employer Pro` : "You're on Employer Pro",
+    html: shell({
+      heading: name ? `${name} is on Employer Pro` : "You're on Employer Pro",
+      intro: "Your subscription is active and everything is unlocked right now.",
+      body:
+        `<p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111827;">What you just unlocked</p>` +
+        steps([
+          "<strong>Unlimited locations.</strong> Every site you hire for gets matched to students separately.",
+          "<strong>Match scores.</strong> See how well each student fits the shifts you actually need covered, ranked best first.",
+          "<strong>Full student profiles.</strong> Bio, interests, social links and preferred roles.",
+          "<strong>Priority placement.</strong> Your listings come first when students are weighing up similar jobs nearby.",
+        ]) +
+        `<p style="margin:0 0 28px;font-size:15px;color:#374151;line-height:1.6;">You can update your card, download invoices or cancel any time from Billing. If you cancel, Pro stays active until the end of the period and your extra locations pause rather than disappear.</p>`,
+      ctaLabel: "Go to your dashboard",
+      ctaHref: `${siteUrl}/employer`,
+      footerReason: "You're receiving this because you started an Employer Pro subscription on SimplyApply.",
+    }),
+  }
+}

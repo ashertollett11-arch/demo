@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import {
-  studentWelcome, studentUnfinished, employerWelcome, employerUnfinished, chooseRoleUnfinished,
+  studentWelcome, studentUnfinished, employerWelcome, employerUnfinished, chooseRoleUnfinished, proWelcome,
 } from "@/lib/emails/templates"
 
 /**
@@ -24,6 +24,7 @@ export async function GET(request: Request) {
     // No-role users have no Students row and no auth metadata name, so this
     // one is previewed the way it actually sends: without a greeting.
     ["No role chosen (day 1)", chooseRoleUnfinished({})],
+    ["Employer \u00b7 Pro subscription started", proWelcome({ company: "Cow Girl Kitchen" })],
   ]
 
   // ?send=<address>&which=<n> delivers one of these for real, so inbox

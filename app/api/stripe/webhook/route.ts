@@ -1,6 +1,8 @@
 import Stripe from "stripe"
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { Resend } from "resend"
+import { proWelcome } from "@/lib/emails/templates"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20",
@@ -124,6 +126,38 @@ export async function POST(req: Request) {
         .eq("id", userId)
 
       if (error) console.error("CHECKOUT DB ERROR:", error)
+
+      // Confirmation email. Wrapped so a mail failure can never fail the
+      // webhook — a non-2xx makes Stripe retry, which would re-run the whole
+      // handler. The unique (user_id, kind) row is what actually stops a
+      // retry sending twice.
+      try {
+        const { data: already } = await supabase
+          .from("onboarding_emails")
+          .select("id").eq("user_id", userId).eq("kind", "pro_welcome").maybeSingle()
+
+        if (!already) {
+          const { data: job } = await supabase
+            .from("job").select("company, email").eq("user_id", userId).maybeSingle()
+          const { data: profile } = await supabase
+            .from("profiles").select("email").eq("id", userId).maybeSingle()
+
+          const to = job?.email || profile?.email || null
+          if (to) {
+            const mail = proWelcome({ company: job?.company })
+            const { error: mailError } = await new Resend(process.env.RESEND_API_KEY).emails.send({
+              from: "SimplyApply <noreply@simplyapply.app>",
+              to, subject: mail.subject, html: mail.html,
+            })
+            if (mailError) console.error("PRO WELCOME SEND ERROR:", mailError.message)
+            else await supabase.from("onboarding_emails").insert({ user_id: userId, kind: "pro_welcome" })
+          } else {
+            console.warn("PRO WELCOME: no address for", userId)
+          }
+        }
+      } catch (e: any) {
+        console.error("PRO WELCOME ERROR:", e.message)
+      }
     }
 
     // =====================================================
