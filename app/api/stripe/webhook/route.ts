@@ -65,6 +65,24 @@ async function updateProfile(
 }
 
 
+
+/**
+ * Period end, wherever this API version puts it.
+ *
+ * Stripe moved current_period_end off the subscription and onto its items in
+ * 2025. The webhook endpoint's own API version decides the shape we receive,
+ * which can differ from the version this SDK is pinned to — so read both and
+ * take whichever exists.
+ */
+function periodEndISO(sub: Stripe.Subscription): string | null {
+  const fromSub = (sub as any).current_period_end as number | undefined
+  const fromItem = sub.items?.data?.[0]
+    ? ((sub.items.data[0] as any).current_period_end as number | undefined)
+    : undefined
+  const unix = fromSub ?? fromItem
+  return unix ? new Date(unix * 1000).toISOString() : null
+}
+
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 
 /**
@@ -148,9 +166,7 @@ export async function POST(req: Request) {
       if (subscriptionId) {
         try {
           const sub = await stripe.subscriptions.retrieve(subscriptionId)
-          periodEnd = sub.current_period_end
-            ? new Date(sub.current_period_end * 1000).toISOString()
-            : null
+          periodEnd = periodEndISO(sub)
           priceId = sub.items.data[0]?.price?.id ?? null
         } catch (e) {
           console.warn("Could not retrieve subscription:", e)
@@ -190,9 +206,7 @@ export async function POST(req: Request) {
       if (sub.cancel_at_period_end) {
         const { data: row } = await supabase
           .from("profiles").select("id").eq("stripe_subscription_id", sub.id).maybeSingle()
-        const endsAt = sub.current_period_end
-          ? new Date(sub.current_period_end * 1000).toISOString()
-          : null
+        const endsAt = periodEndISO(sub)
         if (row?.id) {
           await sendOnce(supabase, row.id, "cancel_confirm", "account",
             (company) => cancelConfirm({ company, endsAt }))
@@ -202,9 +216,7 @@ export async function POST(req: Request) {
       await updateProfile(sub.id, customerId, {
         subscription_status: status,
         price_id: sub.items.data[0]?.price?.id ?? null,
-        current_period_end: sub.current_period_end
-          ? new Date(sub.current_period_end * 1000).toISOString()
-          : null,
+        current_period_end: periodEndISO(sub),
       })
     }
 
@@ -230,9 +242,7 @@ export async function POST(req: Request) {
 
       await updateProfile(sub.id, customerId, {
         subscription_status: "freeactive",
-        current_period_end: sub.current_period_end
-          ? new Date(sub.current_period_end * 1000).toISOString()
-          : null,
+        current_period_end: periodEndISO(sub),
       })
     }
 
