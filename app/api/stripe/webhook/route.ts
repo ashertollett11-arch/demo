@@ -2,7 +2,7 @@ import Stripe from "stripe"
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
-import { proWelcome, cancelConfirm, proWinback, checkoutAbandoned } from "@/lib/emails/templates"
+import { proWelcome, cancelConfirm, proWinback, checkoutAbandoned, paymentFailed } from "@/lib/emails/templates"
 import { canEmail, PREF_COLUMNS, type EmailCategory } from "@/lib/emails/prefs"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -244,6 +244,55 @@ export async function POST(req: Request) {
         subscription_status: "freeactive",
         current_period_end: periodEndISO(sub),
       })
+    }
+
+    // =====================================================
+    // PAYMENT FAILED — a renewal was declined
+    // =====================================================
+    if (event.type === "invoice.payment_failed") {
+      const invoice = event.data.object as Stripe.Invoice
+
+      // Stripe retries a failed invoice several times and fires this event on
+      // each attempt. Only the first one is worth an email — the rest would
+      // just be the same message again while they're already dealing with it.
+      const firstAttempt = (invoice.attempt_count ?? 1) <= 1
+
+      const customerId =
+        typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id
+
+      if (firstAttempt && customerId) {
+        // This one is NOT routed through sendOnce: a card can fail again
+        // months later, and the once-per-kind record would suppress it.
+        try {
+          const { data: profile } = await supabase
+            .from("profiles").select("id, email").eq("stripe_customer_id", customerId).maybeSingle()
+
+          if (profile?.id) {
+            const { data: job } = await supabase
+              .from("job").select("company, email").eq("user_id", profile.id).maybeSingle()
+            const to = job?.email || profile.email
+
+            if (to) {
+              const next = (invoice as any).next_payment_attempt as number | undefined
+              const mail = paymentFailed({
+                company: job?.company,
+                invoiceUrl: invoice.hosted_invoice_url,
+                nextAttempt: next ? new Date(next * 1000).toISOString() : null,
+              })
+              const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
+                from: FROM, to, subject: mail.subject, html: mail.html,
+              })
+              if (error) console.error("PAYMENT FAILED SEND ERROR:", error.message)
+            } else {
+              console.warn("payment_failed: no address for", profile.id)
+            }
+          } else {
+            console.warn("payment_failed: no profile for customer", customerId)
+          }
+        } catch (e: any) {
+          console.error("PAYMENT FAILED ERROR:", e.message)
+        }
+      }
     }
 
     // =====================================================

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import {
-  studentWelcome, studentUnfinished, employerWelcome, employerUnfinished, chooseRoleUnfinished, proWelcome, cancelConfirm, proWinback, proValue, checkoutAbandoned,
+  studentWelcome, studentUnfinished, employerWelcome, employerUnfinished, chooseRoleUnfinished, proWelcome, cancelConfirm, proWinback, proValue, checkoutAbandoned, paymentFailed,
 } from "@/lib/emails/templates"
 
 /**
@@ -29,6 +29,7 @@ export async function GET(request: Request) {
     ["Employer \u00b7 win-back (Pro lapsed)", proWinback({ company: "Cow Girl Kitchen" })],
     ["Employer \u00b7 value email (repeat paywall hits)", proValue({ company: "Cow Girl Kitchen" })],
     ["Employer \u00b7 abandoned checkout", checkoutAbandoned({ company: "Cow Girl Kitchen" })],
+    ["Employer \u00b7 payment failed", paymentFailed({ company: "Cow Girl Kitchen", invoiceUrl: "https://invoice.stripe.com/example", nextAttempt: "2026-10-28T00:00:00Z" })],
   ]
 
   // ?send=<address>&which=<n> delivers one of these for real, so inbox

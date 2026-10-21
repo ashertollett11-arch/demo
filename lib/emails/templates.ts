@@ -251,3 +251,46 @@ export function checkoutAbandoned({ company }: { company?: string | null }) {
     }),
   }
 }
+
+/**
+ * A renewal payment was declined.
+ *
+ * Account category — this is about losing access, not marketing, so it sends
+ * regardless of preferences. Deliberately leads with the fix rather than the
+ * problem: the hosted invoice URL lets them pay without hunting for Billing.
+ */
+export function paymentFailed({
+  company, invoiceUrl, nextAttempt,
+}: {
+  company?: string | null
+  invoiceUrl?: string | null
+  nextAttempt?: string | null
+}) {
+  const name = (company || "").trim()
+  const retry = nextAttempt
+    ? new Date(nextAttempt).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+    : null
+  return {
+    subject: "Your SimplyApply payment didn't go through",
+    html: shell({
+      heading: "We couldn't take this month's payment",
+      intro: name
+        ? `The card on file for ${name} was declined.`
+        : "The card on file for your account was declined.",
+      body:
+        `<p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">` +
+        (retry
+          ? `Pro is still active. We'll try again on ${retry}, but updating your card now avoids any interruption.`
+          : `Pro is still active for now, but it will end if we can't collect payment.`) +
+        `</p>` +
+        callout(
+          "If payment keeps failing",
+          "You'll move to the free plan",
+          "Nothing is deleted — your extra locations pause and come straight back once payment succeeds."
+        ),
+      ctaLabel: invoiceUrl ? "Pay now" : "Update payment method",
+      ctaHref: invoiceUrl || `${siteUrl}/pricing/mobile`,
+      footerReason: "You're receiving this because you have an Employer Pro subscription on SimplyApply.",
+    }),
+  }
+}
