@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { activeLocations } from "@/lib/plan"
+import { activeLocations, isPro } from "@/lib/plan"
 
 /**
  * Location ids that should be visible to students.
@@ -38,12 +38,18 @@ export async function GET() {
     }
 
     const activeIds: string[] = []
+    const proIds: string[] = []
     for (const [employerId, locs] of byEmployer) {
       const plan = planByUser.get(employerUserId.get(employerId) ?? "") ?? null
-      for (const loc of activeLocations(locs, plan)) activeIds.push(String(loc.id))
+      for (const loc of activeLocations(locs, plan)) {
+        activeIds.push(String(loc.id))
+        // Pro listings get a tie-break edge in the student job board. The
+        // score students see is never altered — only the ordering.
+        if (isPro(plan)) proIds.push(String(loc.id))
+      }
     }
 
-    return NextResponse.json({ activeIds })
+    return NextResponse.json({ activeIds, proIds })
   } catch (err: any) {
     // Fail open: a board that silently shows nothing is worse for students
     // than briefly showing a paused location.

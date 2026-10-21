@@ -23,7 +23,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { calculateMatch } from "@/lib/matchScore"
 import { supabase } from "@/lib/supabase"
 import { useLoadingMessage } from "@/lib/useLoadingMessage"
-import { fetchVisibleLocationIds } from "@/lib/plan"
+import { fetchLocationVisibility, compareByMatchThenPro } from "@/lib/plan"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +48,7 @@ interface Job {
   distanceText?: string
   durationText?: string
   distanceMeters?: number
+  isPro?: boolean
 }
 
 export default function MatchesPage() {
@@ -106,10 +107,11 @@ export default function MatchesPage() {
       if (locError) return
       // Free employers keep only one live location; the rest are paused and
       // must not show up on the job board.
-      const visibleIds = await fetchVisibleLocationIds()
-      const locations = visibleIds
-        ? (allLocationRows ?? []).filter((loc: any) => visibleIds.has(String(loc.id)))
+      const visibility = await fetchLocationVisibility()
+      const locations = visibility
+        ? (allLocationRows ?? []).filter((loc: any) => visibility.activeIds.has(String(loc.id)))
         : allLocationRows
+      const proIds = visibility?.proIds ?? new Set<string>()
       const { data: applications } = await supabase.from("location_applications").select("location_id").eq("student_user_id", userId)
       setAppliedIds(new Set((applications || []).map((a: any) => a.location_id)))
       const { data: distanceRows } = await supabase
@@ -140,6 +142,7 @@ export default function MatchesPage() {
             matchScore: Math.round(base), preferredJobs: loc.preferred_jobs || [],
             distanceText: dist?.distance_text ?? null, durationText: dist?.duration_text ?? null,
             distanceMeters: dist?.distance_meters ?? undefined,
+            isPro: proIds.has(String(loc.id)),
           }
         })
         setMatchedJobs(updated)
@@ -201,7 +204,7 @@ useEffect(() => {
       case "pay": return parsePay(b.pay) - parsePay(a.pay)
       case "tips": return Number(b.tips) - Number(a.tips)
       case "distance": return (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity)
-      default: return b.matchScore - a.matchScore
+      default: return compareByMatchThenPro(a, b)
     }
   })
   const getMatchColor = (score: number) => {

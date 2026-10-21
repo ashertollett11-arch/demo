@@ -156,7 +156,7 @@ const { data, error } = await supabase
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg text-muted-foreground sm:text-xl">
-            No resumes. No stress. Just opportunity. Connect with local employers looking for motivated students like you.
+            No resumes. No stress. Just opportunity. Connect with local employers looking for motivated students like you — free for everyone, on both sides.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -167,7 +167,7 @@ const { data, error } = await supabase
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="w-full px-8 sm:w-auto" asChild>
-              <Link href="/signup">Hire Students</Link>
+              <Link href="/signup">Hire Students — Free</Link>
             </Button>
           </div>
 
@@ -175,7 +175,7 @@ const { data, error } = await supabase
           <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-accent" />
-              <span>Free for students</span>
+              <span>Free for students and employers</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-accent" />
@@ -279,14 +279,14 @@ const { data, error } = await supabase
                 <Badge className="mb-4 bg-accent text-accent-foreground">For Employers</Badge>
                 <h3 className="text-2xl font-bold text-foreground">Hire motivated students faster</h3>
                 <p className="mt-3 text-muted-foreground">
-                  Stop sorting through stacks of resumes. Find the perfect candidate in minutes.
+                  Free to post and free to hire. Stop sorting through stacks of resumes — find the right candidate in minutes.
                 </p>
                 <ul className="mt-6 space-y-4">
                   {[
                     "Access verified student profiles",
                     "Filter by availability and GPA",
                     "Hire faster with instant matching",
-                    "Free to start",
+                    "Free — no card, no contract",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-3">
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
@@ -296,7 +296,7 @@ const { data, error } = await supabase
                 </ul>
                 <Button variant="outline" className="mt-8 gap-2 border-accent text-accent-foreground hover:bg-accent/10" asChild>
                   <Link href="/login">
-                    Start Hiring
+                    Start Hiring Free
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -398,7 +398,7 @@ const { data, error } = await supabase
               </Link>
             </Button>
             <Button size="lg" variant="outline" className="w-full px-8 sm:w-auto" asChild>
-              <Link href="/signup">Hire Students</Link>
+              <Link href="/signup">Hire Students — Free</Link>
             </Button>
           </div>
         </div>

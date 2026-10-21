@@ -39,14 +39,51 @@ export function activeLocations<T extends { created_at?: string | null }>(
  * Returns null when the lookup fails, which callers treat as "show everything"
  * — an empty job board is a worse failure than a stale listing.
  */
-export async function fetchVisibleLocationIds(): Promise<Set<string> | null> {
+export async function fetchLocationVisibility(): Promise<
+  { activeIds: Set<string>; proIds: Set<string> } | null
+> {
   try {
     const res = await fetch("/api/active-locations")
     if (!res.ok) return null
     const body = await res.json()
     if (!Array.isArray(body?.activeIds)) return null
-    return new Set<string>(body.activeIds.map(String))
+    return {
+      activeIds: new Set<string>(body.activeIds.map(String)),
+      proIds: new Set<string>((body.proIds ?? []).map(String)),
+    }
   } catch {
     return null
   }
+}
+
+export async function fetchVisibleLocationIds(): Promise<Set<string> | null> {
+  return (await fetchLocationVisibility())?.activeIds ?? null
+}
+
+/**
+ * Pro listings win ties within this many match points.
+ *
+ * Ordering only — the percentage a student sees is always their real fit.
+ * Inflating the number would make it a worse signal, which is the thing Pro
+ * employers are paying for in the first place.
+ */
+export const PRO_TIEBREAK_BAND = 3
+
+/**
+ * Orders listings for the student job board: best fit first, with Pro
+ * listings winning ties inside a PRO_TIEBREAK_BAND-point band.
+ *
+ * The band is derived from the score alone, which keeps this a lexicographic
+ * key and therefore a valid total order. A direct "within N points" check
+ * would not be transitive, and Array.sort gives unpredictable output on a
+ * non-transitive comparator.
+ */
+export function compareByMatchThenPro(
+  a: { matchScore: number; isPro?: boolean },
+  b: { matchScore: number; isPro?: boolean }
+): number {
+  const band = (n: number) => Math.floor(n / PRO_TIEBREAK_BAND)
+  if (band(a.matchScore) !== band(b.matchScore)) return b.matchScore - a.matchScore
+  if (Boolean(a.isPro) !== Boolean(b.isPro)) return a.isPro ? -1 : 1
+  return b.matchScore - a.matchScore
 }

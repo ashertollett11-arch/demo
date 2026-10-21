@@ -29,13 +29,13 @@ export default function PricingPage() {
         {/* HERO */}
         <div className="text-center mb-14">
           <Badge variant="secondary" className="mb-4 px-4 py-1.5 text-sm">
-            Free to Start
+            Free to use
           </Badge>
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Simple, honest pricing
           </h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Students are free, always. Employers start free with one location and upgrade to Pro when they're hiring at scale.
+            SimplyApply is free to use. Students never pay, and employers can post a location and hire without a card. Pro is there if you outgrow it.
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
             No contracts and no setup fees — cancel Pro any time and keep your free account.
@@ -83,7 +83,7 @@ export default function PricingPage() {
           <Card className="border-primary/30 bg-card relative overflow-hidden shadow-lg">
             <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
             <div className="absolute top-4 right-4">
-              <Badge className="bg-primary text-primary-foreground text-xs">Pro</Badge>
+              <Badge className="bg-primary text-primary-foreground text-xs">Free to start</Badge>
             </div>
             <CardContent className="p-8">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 mb-4">
@@ -92,20 +92,19 @@ export default function PricingPage() {
               <h2 className="text-xl font-bold text-foreground">For Employers</h2>
               <p className="text-muted-foreground text-sm mt-1">Local businesses hiring motivated students</p>
               <div className="mt-6 mb-1">
-                <span className="text-4xl font-bold text-foreground">$20</span>
-                <span className="text-muted-foreground ml-2 text-sm">/month</span>
+                <span className="text-4xl font-bold text-foreground">Free</span>
+                <span className="text-muted-foreground ml-2 text-sm">to hire</span>
               </div>
               <p className="text-xs text-muted-foreground mb-6">
-                Start free with one location — upgrade when you need more. Cancel anytime.
+                No card required. Post a location and start seeing students today.
               </p>
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-3 mb-6">
                 {[
-                  "Unlimited hiring locations",
-                  "Match scores on every candidate",
-                  "Full student profiles — bio, interests, socials",
+                  "A hiring location, live to local students",
+                  "Unlimited candidate browsing",
                   "Smart availability matching",
                   "Hiring pipeline tools",
-                  "Unlimited candidate browsing",
+                  "Contact students directly",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
                     <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
@@ -113,8 +112,17 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
+              <div className="mb-6 rounded-xl border border-border bg-secondary/30 p-4">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-sm font-semibold text-foreground">Employer Pro</p>
+                  <p className="text-sm font-semibold text-foreground">$20<span className="text-xs font-normal text-muted-foreground">/month</span></p>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Only if you outgrow the free plan: unlimited locations, match scores on every candidate, and full student profiles. Cancel any time.
+                </p>
+              </div>
               <Button className="w-full" asChild>
-                <Link href="/signup">Start free <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/signup">Start hiring free <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
             </CardContent>
           </Card>

@@ -121,7 +121,7 @@ Pricing            </Link>
           </h1>
 
           <p className="mt-6 text-purple-300">
-            No resumes. No stress. Just opportunity.
+            No resumes. No stress. Just opportunity. Free for students and employers.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
