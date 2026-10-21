@@ -340,7 +340,7 @@ export default function LocationsPage() {
                     </button>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-5">
+                <CardContent className="space-y-5 pb-6">
 
                   {/* TWO COLUMN on desktop */}
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -382,11 +382,11 @@ export default function LocationsPage() {
                       <label className="text-sm font-medium block mb-1.5">Does this role earn tips in addition to hourly wage?</label>
                       <div className="flex gap-2 mt-1">
                         <button type="button" onClick={() => setFormTips(true)}
-                          className={`flex-1 py-2 text-sm rounded-lg border font-medium transition-all ${formTips ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
+                          className={`flex-1 py-2.5 text-sm rounded-lg border font-medium transition-all ${formTips ? "bg-primary/10 text-primary border-primary font-semibold" : "border-border text-muted-foreground hover:border-primary/40"}`}>
                           Yes
                         </button>
                         <button type="button" onClick={() => setFormTips(false)}
-                          className={`flex-1 py-2 text-sm rounded-lg border font-medium transition-all ${!formTips ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
+                          className={`flex-1 py-2.5 text-sm rounded-lg border font-medium transition-all ${!formTips ? "bg-primary/10 text-primary border-primary font-semibold" : "border-border text-muted-foreground hover:border-primary/40"}`}>
                           No
                         </button>
                       </div>
@@ -417,7 +417,7 @@ export default function LocationsPage() {
                     <div className="flex gap-2">
                       {["morning", "night", "flexible"].map((type) => (
                         <button key={type} type="button" onClick={() => setFormShiftPref(type as any)}
-                          className={`flex-1 py-2 text-sm rounded-lg border capitalize font-medium transition-all ${formShiftPref === type ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                          className={`flex-1 py-2.5 text-sm rounded-lg border capitalize font-medium transition-all ${formShiftPref === type ? "bg-primary/10 text-primary border-primary font-semibold" : "border-border text-muted-foreground hover:border-primary/40"}`}>
                           {type}
                         </button>
                       ))}
@@ -452,14 +452,24 @@ export default function LocationsPage() {
                     </div>
                   </div>
 
-                  {/* SAVE BUTTONS */}
-                  <div className="flex gap-3 pt-2">
-                    <Button onClick={saveLocation} disabled={saving} className="flex-1">
-                      {saving ? "Saving..." : editingId ? "Update Location" : "Add Location"}
-                    </Button>
-                    <Button onClick={async () => { await saveLocation(); router.push("/employer") }} disabled={saving} variant="outline" className="flex-1">
-                      {saving ? "Saving..." : "Save & Go to Dashboard"}
-                    </Button>
+                  {/* SAVE BUTTONS — pinned to the bottom of the viewport while
+                      the form is open. The form is taller than most screens, so
+                      otherwise the only way to submit is to scroll to the end. */}
+                  <div className="sticky bottom-0 -mx-6 -mb-6 mt-2 border-t border-border bg-card/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+                    <div className="flex gap-3">
+                      <Button onClick={saveLocation} disabled={saving} size="lg" className="flex-1">
+                        {saving ? "Saving..." : editingId ? "Update Location" : "Add Location"}
+                      </Button>
+                      <Button onClick={async () => { await saveLocation(); router.push("/employer") }} disabled={saving} size="lg" variant="outline" className="flex-1">
+                        {saving ? "Saving..." : "Save & Go to Dashboard"}
+                      </Button>
+                    </div>
+                    {atLocationCap && !editingId && (
+                      <p className="mt-2 text-center text-xs text-muted-foreground">
+                        Free plan covers one location —{" "}
+                        <Link href="/pricing/mobile" className="font-medium text-primary">upgrade to add more</Link>
+                      </p>
+                    )}
                   </div>
 
                 </CardContent>
