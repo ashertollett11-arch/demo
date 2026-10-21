@@ -103,8 +103,15 @@ async function sendOnce(
     if (already) return
 
     const { data: profile } = await supabase
-      .from("profiles").select(`email, ${PREF_COLUMNS}`).eq("id", userId).maybeSingle()
+      .from("profiles").select(`email, subscription_status, ${PREF_COLUMNS}`).eq("id", userId).maybeSingle()
     if (!canEmail(profile, category)) return
+
+    // Nothing in the sales category should ever reach someone who is already
+    // paying. Account emails are exempt: those are about their subscription.
+    if (category === "other" && profile?.subscription_status === "active") {
+      console.log(`${kind}: skipped, already subscribed`)
+      return
+    }
 
     const { data: job } = await supabase
       .from("job").select("company, email").eq("user_id", userId).maybeSingle()
@@ -231,19 +238,20 @@ export async function POST(req: Request) {
 
       console.log("SUB DELETED:", { id: sub.id, customerId })
 
-      // Pro has actually stopped — this is the moment the features disappear.
-      {
-        const { data: row } = await supabase
-          .from("profiles").select("id").eq("stripe_subscription_id", sub.id).maybeSingle()
-        if (row?.id) {
-          await sendOnce(supabase, row.id, "winback", "other", (company) => proWinback({ company }))
-        }
-      }
+      const { data: lapsed } = await supabase
+        .from("profiles").select("id").eq("stripe_subscription_id", sub.id).maybeSingle()
 
       await updateProfile(sub.id, customerId, {
         subscription_status: "freeactive",
         current_period_end: periodEndISO(sub),
       })
+
+      // Sent after the downgrade, not before: the sales-category guard reads
+      // subscription_status, and this row is still "active" until the line
+      // above runs.
+      if (lapsed?.id) {
+        await sendOnce(supabase, lapsed.id, "winback", "other", (company) => proWinback({ company }))
+      }
     }
 
     // =====================================================
