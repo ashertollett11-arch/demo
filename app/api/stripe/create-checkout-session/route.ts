@@ -53,6 +53,10 @@ export async function POST(req: Request) {
       mode: "subscription",
       // lets the discount code from the lifecycle emails be entered
       allow_promotion_codes: true,
+      // 30 minutes is Stripe's minimum. A session only expires if it was never
+      // completed, so this controls how soon the abandoned-checkout email can
+      // fire — not whether it fires for people who paid.
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       customer: customerId,
       payment_method_types: ["card"],
       line_items: [

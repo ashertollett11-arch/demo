@@ -243,8 +243,18 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session
       const userId = session.metadata?.userId
       if (userId) {
-        await sendOnce(supabase, userId, "checkout_abandoned", "other",
-          (company) => checkoutAbandoned({ company }))
+        // Stripe never expires a completed session, but someone can abandon
+        // one session and buy on a second. The first then expires afterwards,
+        // which would send "you were one step away" to a paying customer.
+        const { data: profile } = await supabase
+          .from("profiles").select("subscription_status").eq("id", userId).maybeSingle()
+
+        if (profile?.subscription_status === "active") {
+          console.log("checkout_abandoned: skipped, already subscribed", userId)
+        } else {
+          await sendOnce(supabase, userId, "checkout_abandoned", "other",
+            (company) => checkoutAbandoned({ company }))
+        }
       }
     }
 
