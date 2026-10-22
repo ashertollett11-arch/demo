@@ -478,8 +478,46 @@ export default function StudentPage() {
               </Card>
             )}
 
-            {/* RECOMMENDATION */}
-            {recommendation && (
+            {/* RECOMMENDATION — free employers see that one exists and who
+                wrote it, but not what it says. The tease is the point: a
+                teacher vouching for a student is the strongest signal here. */}
+            {recommendation && !isPro(planStatus) && (
+              <Card className="gap-4 border-primary/30 bg-primary/5">
+                <CardHeader className="pb-0">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Star className="h-4 w-4 text-yellow-600" /> Recommendation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-6">
+                  <p className="text-sm text-foreground">
+                    <span className="font-semibold">{recommendation.recommender_name}</span>
+                    <span className="text-muted-foreground"> · {recommendation.recommender_relationship}</span>
+                    <span className="text-muted-foreground"> wrote a recommendation for this student.</span>
+                  </p>
+
+                  {/* the real text, blurred rather than removed */}
+                  <div className="relative mt-3 overflow-hidden rounded-xl border border-border bg-background p-4">
+                    <p className="select-none text-sm italic leading-relaxed text-foreground blur-[5px]" aria-hidden>
+                      "{String(recommendation.description || "").slice(0, 160)}"
+                    </p>
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/40">
+                      <Lock className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/pricing/mobile"
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+                    Read it with Pro — $20/month
+                  </Link>
+                  <p className="mt-2 text-center text-xs text-muted-foreground">
+                    Also unlocks match scores and full profiles. Cancel any time.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {recommendation && isPro(planStatus) && (
               <Card className="border-primary/20 bg-primary/5">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base">
