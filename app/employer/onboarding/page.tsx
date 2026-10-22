@@ -322,11 +322,11 @@ export default function EmployerOnboarding() {
                       <span className="text-sm font-medium">Does this role earn tips in addition to hourly wage?</span>
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setLocTips(true)}
-                          className={`px-4 py-1 text-xs rounded-lg border font-semibold transition-all ${locTips ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
+                          className={`px-4 py-2 text-xs rounded-lg border font-semibold transition-all ${locTips ? "bg-primary/10 text-primary border-primary" : "border-border text-muted-foreground"}`}>
                           Yes
                         </button>
                         <button type="button" onClick={() => setLocTips(false)}
-                          className={`px-4 py-1 text-xs rounded-lg border font-semibold transition-all ${!locTips ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
+                          className={`px-4 py-2 text-xs rounded-lg border font-semibold transition-all ${!locTips ? "bg-primary/10 text-primary border-primary" : "border-border text-muted-foreground"}`}>
                           No
                         </button>
                       </div>
@@ -361,7 +361,7 @@ export default function EmployerOnboarding() {
                       <div className="flex gap-2">
                         {["morning", "night", "flexible"].map((type) => (
                           <button key={type} type="button" onClick={() => setLocShiftPref(type as any)}
-                            className={`flex-1 py-2 text-sm rounded-lg border capitalize font-medium transition-all ${locShiftPref === type ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
+                            className={`flex-1 py-2.5 text-sm rounded-lg border capitalize font-medium transition-all ${locShiftPref === type ? "bg-primary/10 text-primary border-primary font-semibold" : "border-border text-muted-foreground hover:border-primary/40"}`}>
                             {type}
                           </button>
                         ))}
@@ -396,13 +396,19 @@ export default function EmployerOnboarding() {
                   </CardContent>
                 </Card>
 
-                {/* BUTTONS */}
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>Back</Button>
-                  <Button className="flex-1 h-11" onClick={saveStep2} disabled={saving}>
-                    {saving ? "Saving..." : "Finish Setup"}
-                    {!saving && <ArrowRight className="ml-2 h-4 w-4" />}
-                  </Button>
+                {/* BUTTONS — pinned, because this step is taller than most
+                    screens and the only way forward was to scroll to the end */}
+                <div className="sticky bottom-0 z-20 -mx-4 border-t border-border bg-background/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
+                  <div className="mx-auto flex max-w-5xl gap-3">
+                    <Button variant="outline" className="h-12 px-6" onClick={() => setStep(1)}>Back</Button>
+                    <Button className="h-12 flex-1 text-base" onClick={saveStep2} disabled={saving}>
+                      {saving ? "Saving..." : "Add location & finish"}
+                      {!saving && <ArrowRight className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="mx-auto mt-2 max-w-5xl text-center text-xs text-muted-foreground">
+                    You can add more locations later from your dashboard.
+                  </p>
                 </div>
               </div>
 
