@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
+import { shell, firstName } from "@/lib/emails/layout"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const supabase = createClient(
@@ -71,36 +72,25 @@ export async function POST(req: Request) {
 
     const recommendUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/recommend/${token}`
 
+    const first = firstName(studentName)
+
     const { error: emailError } = await resend.emails.send({
       from: "SimplyApply <noreply@simplyapply.app>",
       to: recommenderEmail,
-      subject: `${studentName} is asking for your recommendation`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-          <h2 style="color: #111;">You've been asked to write a recommendation</h2>
-          <p style="color: #444; font-size: 16px;">
-            <strong>${studentName}</strong> listed you as a reference on SimplyApply — 
-            a job matching platform for students ages 14–21.
-          </p>
-          <p style="color: #444; font-size: 16px;">
-            They listed you as their <strong>${relationship}</strong>. 
-            If you know ${studentName} and are happy to recommend them, 
-            click the button below to fill out a short form. It takes about 2 minutes.
-          </p>
-          <a href="${recommendUrl}" style="display: inline-block; margin: 24px 0; padding: 14px 28px; background: #2563eb; color: white; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px;">
-            Write Recommendation
-          </a>
-          <p style="color: #888; font-size: 13px;">
-            If you don't know ${studentName} or weren't expecting this email, you can safely ignore it. 
-            No account is required.
-          </p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-          <p style="color: #aaa; font-size: 12px;">
-            SimplyApply — connecting students with local employers.<br />
-            Questions? Contact us at simplyapplyapp@gmail.com
-          </p>
-        </div>
-      `,
+      subject: `${studentName} asked you for a recommendation`,
+      html: shell({
+        heading: first ? `Got two minutes to help ${first} out?` : "Got two minutes to help out?",
+        intro: `${studentName} listed you as their ${relationship} on SimplyApply, a job-matching platform for students ages 14\u201321.`,
+        body:
+          `<p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">If you know ${studentName} and feel comfortable recommending them, we'd appreciate you filling out a short form. It should take about two minutes, and your recommendation could help them stand out to employers.</p>` +
+          `<p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">Don't know ${studentName}, or weren't expecting this email? No problem. Just ignore it. There's no account to create and no further action needed.</p>`,
+        ctaLabel: "Write a recommendation",
+        ctaHref: recommendUrl,
+        // The recommender has no SimplyApply account, so there is no
+        // preferences page to send them to.
+        footerReason: `You're receiving this because ${studentName} listed you as a reference on SimplyApply.<br/>Questions? Contact us at simplyapplyapp@gmail.com`,
+        prefsPath: "",
+      }),
     })
 
     if (emailError) throw emailError

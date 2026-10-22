@@ -11,14 +11,26 @@ export function shell({
   body,
   ctaLabel,
   ctaHref,
+  ctaNote,
   footerReason,
+  prefsPath = "/student/profile",
 }: {
   heading: string
   intro: string
   body: string
   ctaLabel: string
   ctaHref: string
+  /** Small reassurance under the button, e.g. where the link goes. */
+  ctaNote?: string
   footerReason: string
+  /**
+   * Where "Manage email preferences" points. Employers and students have
+   * separate settings pages; this used to be hardcoded to the student one,
+   * so every employer and billing email sent them to a page that isn't
+   * theirs. Pass "" to drop the link entirely — the recommendation email
+   * goes to someone with no account at all.
+   */
+  prefsPath?: string
 }) {
   return `<!DOCTYPE html>
 <html>
@@ -40,13 +52,13 @@ export function shell({
             <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
               <a href="${ctaHref}" style="display:inline-block;background-color:#2563eb;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;">${ctaLabel}</a>
             </td></tr></table>
+            ${ctaNote ? `<p style="margin:14px 0 0;font-size:13px;color:#9ca3af;text-align:center;">${ctaNote}</p>` : ""}
           </td></tr>
 
           <tr><td style="padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center;">
             <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;">${footerReason}</p>
             <p style="margin:0;font-size:12px;color:#9ca3af;">
-              <a href="${SITE}/student/profile" style="color:#9ca3af;">Manage email preferences</a>
-              &nbsp;·&nbsp; © ${new Date().getFullYear()} SimplyApply
+              ${prefsPath ? `<a href="${SITE}${prefsPath}" style="color:#9ca3af;">Manage email preferences</a>&nbsp;·&nbsp;` : ""}© ${new Date().getFullYear()} SimplyApply
             </p>
           </td></tr>
 
@@ -75,6 +87,11 @@ export function callout(label: string, title: string, detail?: string) {
       ${detail ? `<p style="margin:0;font-size:14px;color:#1e3a8a;">${detail}</p>` : ""}
     </td></tr>
   </table>`
+}
+
+/** First name only, for greetings. Empty string when we have no name. */
+export function firstName(name?: string | null) {
+  return (name || "").trim().split(/\s+/)[0] || ""
 }
 
 export const siteUrl = SITE
