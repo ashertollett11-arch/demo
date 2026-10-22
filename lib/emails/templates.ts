@@ -48,7 +48,6 @@ export function studentUnfinished({ name, signInUrl }: { name?: string | null; s
         callout("What you're missing", "Jobs that work around school", "Find shifts that fit your schedule and employers who can actually reach you."),
       ctaLabel: "Finish my profile",
       ctaHref: signInUrl || `${siteUrl}/student/onboarding`,
-      ctaNote: signInUrl ? "Your magic sign-in link takes you straight back in." : undefined,
       footerReason: "You're receiving this because you started creating a student account on SimplyApply.",
       prefsPath: STUDENT_PREFS,
     }),
@@ -107,7 +106,6 @@ export function employerUnfinished({ company, signInUrl }: { company?: string | 
         callout("What happens when you're live", "Students matched to your shifts", "We help you find students who are actually available when you need them."),
       ctaLabel: "Finish setup",
       ctaHref: signInUrl || `${siteUrl}/employer/onboarding`,
-      ctaNote: signInUrl ? "Pick up right where you left off with your magic sign-in link." : undefined,
       footerReason: "You're receiving this because you started creating an employer account on SimplyApply.",
       prefsPath: EMPLOYER_PREFS,
     }),
@@ -228,7 +226,7 @@ export function proWinback({ company }: { company?: string | null }) {
       intro: "Your subscription has ended, so your extra locations are paused and match scores are no longer available.",
       body:
         para("But don't worry. Your setup is still here. Your locations, your information, your work so far — none of it has been deleted.") +
-        para("Ready to get everything running again? Turn Pro back on, and your extra locations will reactivate.") +
+        para("Ready to get everything running again? Turn Pro back on and your extra locations light up again the same minute, match scores and all.") +
         para("And if price was the sticking point, we've got something for you.") +
         promoBlock("Come back for 25% off", "Use code", "25% off your first month. One use per business."),
       ctaLabel: "Restart Employer Pro",
@@ -320,7 +318,6 @@ export function paymentFailed({
         ),
       ctaLabel: invoiceUrl ? "Fix my payment" : "Update payment method",
       ctaHref: invoiceUrl || `${siteUrl}/pricing/mobile`,
-      ctaNote: invoiceUrl ? "This link takes you to your secure Stripe invoice." : undefined,
       footerReason: "You're receiving this because you have an Employer Pro subscription on SimplyApply.",
       prefsPath: EMPLOYER_PREFS,
     }),

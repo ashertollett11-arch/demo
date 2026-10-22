@@ -26,6 +26,7 @@ export async function POST(request: Request) {
         body:
           callout("Reached out to you", companyName, businessType || undefined) +
           `<p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">Check both when you get a chance, and get back to them as soon as you can. Employers often move quickly, and a quick reply could help you get your foot in the door.</p>` +
+          `<p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">You can also pull up the full details of this opportunity on your SimplyApply profile.</p>` +
           `<p style="margin:0 0 20px;font-size:15px;color:#374151;line-height:1.6;">Good luck!</p>`,
         ctaLabel: "See the details",
         ctaHref: `${process.env.NEXT_PUBLIC_SITE_URL || "https://simplyapply.app"}/student/activity`,

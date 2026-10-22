@@ -11,7 +11,6 @@ export function shell({
   body,
   ctaLabel,
   ctaHref,
-  ctaNote,
   footerReason,
   prefsPath = "/student/profile",
 }: {
@@ -20,8 +19,6 @@ export function shell({
   body: string
   ctaLabel: string
   ctaHref: string
-  /** Small reassurance under the button, e.g. where the link goes. */
-  ctaNote?: string
   footerReason: string
   /**
    * Where "Manage email preferences" points. Employers and students have
@@ -52,7 +49,6 @@ export function shell({
             <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
               <a href="${ctaHref}" style="display:inline-block;background-color:#2563eb;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;">${ctaLabel}</a>
             </td></tr></table>
-            ${ctaNote ? `<p style="margin:14px 0 0;font-size:13px;color:#9ca3af;text-align:center;">${ctaNote}</p>` : ""}
           </td></tr>
 
           <tr><td style="padding:20px 40px;border-top:1px solid #f3f4f6;text-align:center;">
