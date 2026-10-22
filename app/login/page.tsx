@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, CheckCircle2, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { GoogleButton } from "@/components/google-button"
 
 function LoginContent() {
   const router = useRouter()
@@ -123,6 +124,8 @@ function LoginContent() {
                               <p className="mt-2 text-muted-foreground">Log in to your SimplyApply account.</p>
               </div>
               {/* EMAIL */}
+              <GoogleButton label="Continue with Google" />
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Email</label>
                 <input

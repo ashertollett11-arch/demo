@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, CheckCircle2, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { GoogleButton } from "@/components/google-button"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -133,6 +134,8 @@ export default function SignupPage() {
                       Join SimplyApply — free for students, free to start for employers.
                     </p>
                   </div>
+
+                  <GoogleButton label="Sign up with Google" />
 
                   {/* EMAIL */}
                   <div className="space-y-2">
