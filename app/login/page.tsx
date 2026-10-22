@@ -124,7 +124,14 @@ function LoginContent() {
                               <p className="mt-2 text-muted-foreground">Log in to your SimplyApply account.</p>
               </div>
               {/* EMAIL */}
-              <GoogleButton label="Continue with Google" />
+              {/* Hidden until Supabase has a custom domain. Google shows the
+                  host that receives the callback, which is currently the raw
+                  project URL (rdjrfqtazjynchlzbktx.supabase.co) — that reads as
+                  a phishing domain to a 15-year-old. Supabase sends that value
+                  from its own config and ignores forwarded host headers, so a
+                  proxy cannot change it; only the paid add-on can.
+                  Re-enable by uncommenting this line. */}
+              {/* <GoogleButton label="Continue with Google" /> */}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Email</label>
