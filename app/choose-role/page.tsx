@@ -57,12 +57,20 @@ export default function ChooseRolePage() {
         return
       }
       // No session yet — listen for it (handles mobile email confirmation links)
+      let arrived = false
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
+          arrived = true
           handleUserRedirect(session.user.id)
         }
       })
-      setTimeout(() => subscription.unsubscribe(), 10000)
+      // If none turns up, send them to log in and come back. Without this the
+      // page sits there with role buttons that can't work — which is where the
+      // "pick a role" reminder email used to land people.
+      setTimeout(() => {
+        subscription.unsubscribe()
+        if (!arrived) router.replace("/login?redirect=/choose-role")
+      }, 4000)
     }
   
     checkAuth()

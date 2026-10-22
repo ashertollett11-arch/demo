@@ -34,14 +34,18 @@ function LoginContent() {
         .eq("id", session.user.id)
         .single()
       if (!mounted) return
-      if (error || !roleData?.role) { router.replace("/choose-role"); setCheckingSession(false); return }
+      // ?redirect= is honoured for every role, including users with none —
+      // the reminder emails link to pages that bounce through here, and
+      // dropping it leaves people stranded on a dashboard.
+      const redirect = searchParams.get("redirect")
+      if (error || !roleData?.role) { router.replace(redirect || "/choose-role"); setCheckingSession(false); return }
       if (window.location.pathname !== "/login") { setCheckingSession(false); return }
-      if (roleData.role === "student") {
+      if (redirect) {
+        router.replace(redirect)
+      } else if (roleData.role === "student") {
         router.replace(isMobileDevice() ? "/matching/student" : "/student")
-      }
-      if (roleData.role === "employer") {
-        const redirect = searchParams.get("redirect")
-        router.replace(redirect || "/employer")
+      } else if (roleData.role === "employer") {
+        router.replace("/employer")
       }
       setCheckingSession(false)
     }
@@ -76,13 +80,14 @@ function LoginContent() {
       .select("role")
       .eq("id", user.id)
       .single()
-    if (roleError || !roleData?.role) { router.push("/choose-role"); return }
-    if (roleData.role === "student") {
+    const redirect = searchParams.get("redirect")
+    if (roleError || !roleData?.role) { router.push(redirect || "/choose-role"); return }
+    if (redirect) {
+      router.push(redirect)
+    } else if (roleData.role === "student") {
       router.push(isMobileDevice() ? "/matching/student" : "/student")
-    }
-    if (roleData.role === "employer") {
-      const redirect = searchParams.get("redirect")
-      router.push(redirect || "/employer")
+    } else if (roleData.role === "employer") {
+      router.push("/employer")
     }
   }
 

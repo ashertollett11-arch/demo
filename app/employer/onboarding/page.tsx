@@ -63,7 +63,7 @@ export default function EmployerOnboarding() {
   useEffect(() => {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.replace("/login"); return }
+      if (!user) { router.replace("/login?redirect=/employer/onboarding"); return }
       const { data: roleData } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle()
       if (roleData?.role !== "employer") { router.replace("/login"); return }
       const { data: profile } = await supabase.from("profiles").select("profile_complete").eq("id", user.id).maybeSingle()

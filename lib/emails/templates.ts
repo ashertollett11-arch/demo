@@ -30,7 +30,7 @@ export function studentWelcome({ name }: { name?: string | null }) {
 }
 
 /** Student signed up but never finished onboarding. */
-export function studentUnfinished({ name }: { name?: string | null }) {
+export function studentUnfinished({ name, signInUrl }: { name?: string | null; signInUrl?: string | null }) {
   const first = firstName(name)
   return {
     subject: first ? `${first}, finish setting up your SimplyApply profile` : "Finish setting up your SimplyApply profile",
@@ -41,7 +41,7 @@ export function studentUnfinished({ name }: { name?: string | null }) {
         `<p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">Nothing really happens until it's done. Employers can't see you, and we can't match you to anything. It's about two minutes of work: when you're free, and a few basics. No resume.</p>` +
         callout("What you're missing", "Jobs that fit around school", "Shifts you can actually work, and employers who can actually reach you."),
       ctaLabel: "Finish my profile",
-      ctaHref: `${siteUrl}/student/onboarding`,
+      ctaHref: signInUrl || `${siteUrl}/student/onboarding`,
       footerReason: "You're receiving this because you started creating a student account on SimplyApply.",
     }),
   }
@@ -83,7 +83,7 @@ export function employerWelcome({
 }
 
 /** Employer signed up but never finished onboarding. */
-export function employerUnfinished({ company }: { company?: string | null }) {
+export function employerUnfinished({ company, signInUrl }: { company?: string | null; signInUrl?: string | null }) {
   const name = (company || "").trim()
   return {
     subject: name ? `Finish setting up ${name} on SimplyApply` : "Finish setting up your SimplyApply account",
@@ -94,7 +94,7 @@ export function employerUnfinished({ company }: { company?: string | null }) {
         `<p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">We need your company details and one location before students can see you. It's a few minutes, and matching starts the moment you're done. There's no job ad to write and no pile of applications to read.</p>` +
         callout("Once you're set up", "Students matched to your shifts", "Sorted by how well they cover the hours you actually need filled."),
       ctaLabel: "Finish setup",
-      ctaHref: `${siteUrl}/employer/onboarding`,
+      ctaHref: signInUrl || `${siteUrl}/employer/onboarding`,
       footerReason: "You're receiving this because you started creating an employer account on SimplyApply.",
     }),
   }
@@ -104,7 +104,7 @@ export function employerUnfinished({ company }: { company?: string | null }) {
  * Confirmed their email but never chose a role, so we don't know whether they
  * came to find work or to hire. One tap resolves it.
  */
-export function chooseRoleUnfinished({ name }: { name?: string | null }) {
+export function chooseRoleUnfinished({ name, signInUrl }: { name?: string | null; signInUrl?: string | null }) {
   const first = firstName(name)
   return {
     // Deliberately task-shaped, matching the reminder that reaches Primary.
@@ -118,7 +118,7 @@ export function chooseRoleUnfinished({ name }: { name?: string | null }) {
         `<p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">One tap sorts it, and you can switch later if you pick the wrong one.</p>` +
         callout("What's left", "Student or employer", "Students find jobs that fit around school. Employers get matched to students who are free when they need cover."),
       ctaLabel: "Finish setting up",
-      ctaHref: `${siteUrl}/choose-role`,
+      ctaHref: signInUrl || `${siteUrl}/choose-role`,
       footerReason: "You're receiving this because you created an account on SimplyApply.",
     }),
   }

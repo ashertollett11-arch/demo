@@ -18,6 +18,33 @@ const PRO_INTEREST_THRESHOLD = 3 // paywall views before the value email is wort
  * Scheduled by vercel.json; protected by CRON_SECRET so it can't be triggered
  * by anyone who finds the URL.
  */
+
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || "https://simplyapply.app"
+
+/**
+ * A one-click sign-in link, so a reminder doesn't drop someone on a login
+ * form. These people already stalled once; asking for a password they may
+ * never have set is another reason to give up.
+ *
+ * Returns null on failure, and the caller falls back to the plain URL. The
+ * link expires (Supabase's OTP setting, 1h by default), but an expired one
+ * now lands on /login?redirect=... rather than a dead end.
+ */
+async function signInLink(supabase: any, email: string, redirectTo: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: { redirectTo: `${SITE}${redirectTo}` },
+    })
+    if (error) { console.warn("signInLink failed:", email, error.message); return null }
+    return data?.properties?.action_link ?? null
+  } catch (e: any) {
+    console.warn("signInLink threw:", email, e.message)
+    return null
+  }
+}
+
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
   const auth = request.headers.get("authorization")
@@ -96,17 +123,20 @@ export async function GET(request: Request) {
       if (role !== "student" && role !== "employer") {
         // Confirmed but never chose a role — ask them which they are.
         // A Students row can exist from /choose-role, so use any saved name.
-        email = chooseRoleUnfinished({ name: studentOf.get(user.id)?.name })
+        const link = dryRun ? null : await signInLink(supabase, user.email!, "/choose-role")
+        email = chooseRoleUnfinished({ name: studentOf.get(user.id)?.name, signInUrl: link })
       } else if (role === "student") {
         const student = studentOf.get(user.id)
         if (student?.profile_complete) { skipped.complete++; continue }
         if (student?.email_notifications === false) { skipped.optedOut++; continue }
-        email = studentUnfinished({ name: student?.name })
+        const link = dryRun ? null : await signInLink(supabase, user.email!, "/student/onboarding")
+        email = studentUnfinished({ name: student?.name, signInUrl: link })
       } else {
         const profile = profileOf.get(user.id)
         if (profile?.profile_complete) { skipped.complete++; continue }
         if (profile?.email_notifications === false) { skipped.optedOut++; continue }
-        email = employerUnfinished({ company: jobOf.get(user.id)?.company })
+        const link = dryRun ? null : await signInLink(supabase, user.email!, "/employer/onboarding")
+        email = employerUnfinished({ company: jobOf.get(user.id)?.company, signInUrl: link })
       }
 
       if (dryRun) {

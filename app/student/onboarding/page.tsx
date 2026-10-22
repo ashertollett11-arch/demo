@@ -29,7 +29,7 @@ export default function StudentOnboarding() {
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.replace("/login"); return }
+      if (!user) { router.replace("/login?redirect=/student/onboarding"); return }
       const { data: roleData } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle()
       if (!roleData?.role) { router.replace("/choose-role"); return }
       if (roleData.role !== "student") { router.replace("/login"); return }
