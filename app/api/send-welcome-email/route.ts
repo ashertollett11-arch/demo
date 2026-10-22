@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js"
 import { getCallerId } from "@/lib/apiAuth"
 import { studentWelcome, employerWelcome } from "@/lib/emails/templates"
 import { isSuppressed } from "@/lib/emails/suppress"
+import { claimEmail, releaseEmail } from "@/lib/emails/claim"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 
@@ -72,12 +73,21 @@ export async function POST(request: Request) {
     if (!to) return NextResponse.json({ error: "No address" }, { status: 400 })
     if (isSuppressed(to)) return NextResponse.json({ success: true, skipped: "suppressed" })
 
+    // Claim before sending. The `already` check above handles the common
+    // retry; this is what holds when a send succeeds but the process dies
+    // before it can be recorded.
+    if (!(await claimEmail(supabase, userId, "welcome"))) {
+      return NextResponse.json({ success: true, skipped: "already sent" })
+    }
+
     const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
       from: FROM, to, subject: email.subject, html: email.html,
     })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      await releaseEmail(supabase, userId, "welcome")
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
-    await supabase.from("onboarding_emails").insert({ user_id: userId, kind: "welcome" })
     return NextResponse.json({ success: true })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
