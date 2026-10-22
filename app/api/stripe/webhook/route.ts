@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
 import { proWelcome, cancelConfirm, proWinback, checkoutAbandoned, paymentFailed } from "@/lib/emails/templates"
+import { claimEmail, releaseEmail } from "@/lib/emails/claim"
 import { canEmail, PREF_COLUMNS, type EmailCategory } from "@/lib/emails/prefs"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -120,12 +121,20 @@ async function sendOnce(
     if (!to) { console.warn(`${kind}: no address for`, userId); return }
 
     const mail = build(job?.company)
+
+    // Claim before sending. The `already` check above saves the work in the
+    // common case; this is what makes it exactly-once under a retried or
+    // interrupted webhook.
+    if (!(await claimEmail(supabase, userId, kind))) return
+
     const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
       from: FROM, to, subject: mail.subject, html: mail.html,
     })
-    if (error) { console.error(`${kind} SEND ERROR:`, error.message); return }
-
-    await supabase.from("onboarding_emails").insert({ user_id: userId, kind })
+    if (error) {
+      console.error(`${kind} SEND ERROR:`, error.message)
+      await releaseEmail(supabase, userId, kind)
+      return
+    }
   } catch (e: any) {
     console.error(`${kind} ERROR:`, e.message)
   }

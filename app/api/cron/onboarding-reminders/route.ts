@@ -5,6 +5,7 @@ import { studentUnfinished, employerUnfinished, chooseRoleUnfinished } from "@/l
 import { isSuppressed } from "@/lib/emails/suppress"
 import { proValue } from "@/lib/emails/templates"
 import { canEmail, PREF_COLUMNS } from "@/lib/emails/prefs"
+import { claimEmail, releaseEmail } from "@/lib/emails/claim"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 const REMIND_AFTER_HOURS = 24
@@ -144,12 +145,18 @@ export async function GET(request: Request) {
         continue
       }
 
+      // Claim before sending. The pre-check above is only an optimisation —
+      // this is what actually guarantees one send.
+      if (!(await claimEmail(supabase, user.id, "reminder"))) { skipped.alreadySent++; continue }
+
       const { error } = await resend.emails.send({
         from: FROM, to: user.email!, subject: email.subject, html: email.html,
       })
-      if (error) { console.error("REMINDER SEND ERROR:", user.id, error.message); continue }
-
-      await supabase.from("onboarding_emails").insert({ user_id: user.id, kind: "reminder" })
+      if (error) {
+        console.error("REMINDER SEND ERROR:", user.id, error.message)
+        await releaseEmail(supabase, user.id, "reminder")
+        continue
+      }
       sent++
     }
 
@@ -180,10 +187,15 @@ export async function GET(request: Request) {
 
         if (dryRun) { wouldProValue.push({ email: to, hits: prof.pro_paywall_hits }); continue }
 
+        if (!(await claimEmail(supabase, prof.id, "pro_interest"))) continue
+
         const mail = proValue({ company: jobOf.get(prof.id)?.company })
         const { error } = await resend.emails.send({ from: FROM, to, subject: mail.subject, html: mail.html })
-        if (error) { console.error("PRO VALUE SEND ERROR:", prof.id, error.message); continue }
-        await supabase.from("onboarding_emails").insert({ user_id: prof.id, kind: "pro_interest" })
+        if (error) {
+          console.error("PRO VALUE SEND ERROR:", prof.id, error.message)
+          await releaseEmail(supabase, prof.id, "pro_interest")
+          continue
+        }
         proValueSent++
       }
     }
