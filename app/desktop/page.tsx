@@ -458,6 +458,12 @@ const { data, error } = await supabase
         Privacy Policy
       </Link>
     </li>
+
+    <li>
+      <Link href="/terms" className="hover:text-foreground">
+        Terms of Service
+      </Link>
+    </li>
   </ul>
 </div>
 </div>
