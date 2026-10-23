@@ -10,7 +10,7 @@ import { claimEmail, releaseEmail } from "@/lib/emails/claim"
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 const REMIND_AFTER_HOURS = 24
 const MAX_AGE_DAYS = 14 // don't email people who signed up and vanished months ago
-const PRO_INTEREST_THRESHOLD = 3 // paywall views before the value email is worth sending
+const PRO_INTEREST_THRESHOLD = 4 // paywall views before the value email is worth sending
 
 /**
  * Daily sweep: nudge anyone who signed up, confirmed their email, and never
