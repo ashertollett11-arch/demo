@@ -270,8 +270,8 @@ export default function EmployerOnboarding() {
                   </div>
                 </div>
                 <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
-                  <p className="text-sm font-semibold text-foreground mb-2">✅ Free during early access</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">SimplyApply is completely free for employers right now. No credit card needed — just set up your profile and start finding candidates.</p>
+                  <p className="text-sm font-semibold text-foreground mb-2">✅ Free to post, always</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">Setting up your profile, getting matched with students and hiring them is free. No credit card needed. There is a paid plan if you ever want multiple locations and match scores, but nothing here depends on it.</p>
                 </div>
               </div>
             </div>
@@ -345,7 +345,11 @@ export default function EmployerOnboarding() {
                   <CardContent className="p-6 space-y-4">
                     <p className="text-sm font-semibold text-foreground">Hiring Preferences</p>
                     <div>
-                      <label className="text-sm font-medium block mb-2">Hiring Roles <span className="text-red-500">*</span> <span className="text-muted-foreground font-normal">(up to 3)</span></label>
+                      <label className="text-sm font-medium block mb-2">Hiring Roles <span className="text-red-500">*</span>{" "}
+                        <span className={`font-normal ${locJobs.length >= 3 ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                          {locJobs.length} of 3 selected
+                        </span>
+                      </label>
                       <div className="flex flex-wrap gap-2">
                         {JOB_ROLES.map((role) => (
                           <button key={role} type="button"
@@ -389,6 +393,9 @@ export default function EmployerOnboarding() {
                               {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                             <button type="button"
+                              role="switch"
+                              aria-checked={day.active}
+                              aria-label={`Hiring on ${day.day}`}
                               onClick={() => { const n = [...locShifts]; n[index].active = !n[index].active; setLocShifts(n) }}
                               className={`ml-auto relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${day.active ? "bg-primary" : "bg-gray-300"}`}>
                               <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${day.active ? "translate-x-4" : "translate-x-0.5"}`} />

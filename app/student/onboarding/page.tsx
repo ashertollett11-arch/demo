@@ -6,7 +6,19 @@ import { supabase } from "@/lib/supabase"
 import { authedFetch } from "@/lib/authedFetch"
 import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 5
+
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const
+
+/**
+ * Onboarding asks which days, not which hours. Picking seven start/end times
+ * is a lot to ask before anyone has seen a single job, so every chosen day is
+ * stored as a broad 10am-10pm window and students narrow it later in their
+ * profile. The matcher reads `available`, `start` and `end`, so a wide window
+ * over-matches slightly rather than hiding jobs — the safe direction to err.
+ */
+const DAY_START = "10:00 AM"
+const DAY_END = "10:00 PM"
 
 export default function StudentOnboarding() {
   const router = useRouter()
@@ -25,6 +37,7 @@ export default function StudentOnboarding() {
   const [gpa, setGpa] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
+  const [availDays, setAvailDays] = useState<string[]>([])
 
   useEffect(() => {
     const load = async () => {
@@ -87,6 +100,7 @@ export default function StudentOnboarding() {
       case 2: return address.trim().length > 0 && zipRegex.test(zipCode)
       case 3: const g = parseFloat(gpa); return school.trim().length > 0 && gpa.trim().length > 0 && !isNaN(g) && g >= 0 && g <= 4
       case 4: return emailRegex.test(email) && phone.length === 10
+      case 5: return availDays.length > 0
       default: return false
     }
   }
@@ -97,19 +111,17 @@ export default function StudentOnboarding() {
     finishedRef.current = true
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSaving(false); return }
-    const defaultAvailability = [
-      { day: "Monday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
-      { day: "Tuesday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
-      { day: "Wednesday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
-      { day: "Thursday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
-      { day: "Friday", start: "9:00 AM", end: "5:00 PM", available: false, hours: "8" },
-      { day: "Saturday", start: "3:00 PM", end: "10:00 PM", available: true, hours: "7" },
-      { day: "Sunday", start: "3:00 PM", end: "10:00 PM", available: true, hours: "7" },
-    ]
+    // Built from what they actually picked in step 5. This used to be a fixed
+    // weekends-only block written for everyone, so every student looked
+    // identical to the matcher no matter when they could really work.
+    const chosenAvailability = DAYS.map((day) => {
+      const available = availDays.includes(day)
+      return { day, start: DAY_START, end: DAY_END, available, hours: available ? "12" : "-" }
+    })
     const { error } = await supabase.from("Students").upsert({
       user_id: user.id, name, age: Number(age), gender,
       location: address, zip_code: zipCode, school, gpa: Number(gpa), email, phone,
-      availability: defaultAvailability, shift_preference: "flexible",
+      availability: chosenAvailability, shift_preference: "flexible",
       interests: ["School", "Hanging out with friends"],
       preferred_jobs: ["Busser", "Customer Service", "Dishwasher"],
       profile_complete: true,
@@ -194,7 +206,7 @@ export default function StudentOnboarding() {
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 1 of 4</p>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 1 of 5</p>
                 <h1 className="text-3xl font-bold text-foreground">Let's get started</h1>
                 <p className="text-muted-foreground mt-2">Tell us a little about yourself.</p>
               </div>
@@ -228,7 +240,7 @@ export default function StudentOnboarding() {
           {step === 2 && (
             <div className="space-y-6">
               <div>
-                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 2 of 4</p>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 2 of 5</p>
                 <h1 className="text-3xl font-bold text-foreground">Where are you?</h1>
                 <p className="text-muted-foreground mt-2">We use this to find jobs near you.</p>
               </div>
@@ -251,7 +263,7 @@ export default function StudentOnboarding() {
           {step === 3 && (
             <div className="space-y-6">
               <div>
-                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 3 of 4</p>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 3 of 5</p>
                 <h1 className="text-3xl font-bold text-foreground">Your education</h1>
                 <p className="text-muted-foreground mt-2">Employers love seeing your academic info.</p>
               </div>
@@ -275,7 +287,7 @@ export default function StudentOnboarding() {
           {step === 4 && (
             <div className="space-y-6">
               <div>
-                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 4 of 4</p>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 4 of 5</p>
                 <h1 className="text-3xl font-bold text-foreground">Almost there!</h1>
                 <p className="text-muted-foreground mt-2">How can employers reach you?</p>
               </div>
@@ -305,6 +317,32 @@ export default function StudentOnboarding() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* STEP 5 */}
+          {step === 5 && (
+            <div className="space-y-6">
+              <div>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 5 of 5</p>
+                <h1 className="text-3xl font-bold text-foreground">When can you work?</h1>
+                <p className="text-muted-foreground mt-2">Tap the days you&apos;re usually free.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {DAYS.map((day) => {
+                  const on = availDays.includes(day)
+                  return (
+                    <button key={day} type="button" role="switch" aria-checked={on}
+                      onClick={() => setAvailDays(prev => on ? prev.filter(d => d !== day) : [...prev, day])}
+                      className={`py-3.5 rounded-2xl border text-sm font-semibold transition-all ${on ? "bg-foreground text-background border-foreground" : "bg-secondary/40 border-border text-foreground"}`}>
+                      {day}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground -mt-2">
+                We&apos;ll set these to 10:00 AM – 10:00 PM for now. You can set exact hours for each day in your profile whenever you like.
+              </p>
             </div>
           )}
 
