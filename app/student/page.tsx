@@ -23,6 +23,7 @@ import {
   TrendingUp,
   Home,
   Activity,
+  CalendarClock,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -368,6 +369,20 @@ export default function StudentDasShboard() {
               <div>
                 <p className="font-semibold text-white text-sm">Employer Activity</p>
                 <p className="text-xs text-white/70">See who's interested in hiring you</p>
+              </div>
+            </div>
+            <ArrowRight className="h-4 w-4 text-white/80 shrink-0" />
+          </Link>
+
+          {/* AVAILABILITY BANNER */}
+          <Link href="/student/profile#availability" className="mb-5 flex items-center justify-between rounded-2xl bg-primary px-5 py-4 hover:bg-primary/90 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
+                <CalendarClock className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="font-semibold text-white text-sm">Your Availability</p>
+                <p className="text-xs text-white/70">Set the days and hours you can work</p>
               </div>
             </div>
             <ArrowRight className="h-4 w-4 text-white/80 shrink-0" />

@@ -624,7 +624,10 @@ export default function ProfilePage() {
         </div>
 
         {/* AVAILABILITY */}
-        <div className="px-4 pt-4 pb-2">
+        {/* The id is what /student/profile#availability scrolls to. Two pages
+            already linked there before it existed, so both quietly landed at
+            the top of the profile instead. */}
+        <div id="availability" className="scroll-mt-20 px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
         </div>
         <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
