@@ -623,6 +623,54 @@ export default function ProfilePage() {
           <Row label="Zip Code" value={zipCode} field="zipCode" placeholder="5-digit zip" />
         </div>
 
+        {/* AVAILABILITY */}
+        <div className="px-4 pt-4 pb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
+        </div>
+        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
+          {/* SHIFT PREFERENCE */}
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-xs text-muted-foreground mb-2">Shift Preference</p>
+            <div className="flex gap-2">
+              {["morning", "night", "flexible"].map((type) => (
+                <button key={type}
+                  onClick={() => setShiftPreference(type as any)}
+                  className={`flex-1 py-1.5 text-xs rounded-full border font-medium capitalize transition-all ${shiftPreference === type ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* DAYS */}
+          {availability.map((day, index) => (
+            <div key={day.day} className="flex items-center justify-between px-4 py-3 border-b border-border last:border-0">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">{day.day}</p>
+                {day.available && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <select value={day.start}
+                      onChange={(e) => { const n = [...availability]; n[index].start = e.target.value; setAvailability(n) }}
+                      className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
+                      {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <span className="text-xs text-muted-foreground">to</span>
+                    <select value={day.end}
+                      onChange={(e) => { const n = [...availability]; n[index].end = e.target.value; setAvailability(n) }}
+                      className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
+                      {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => { const n = [...availability]; n[index].available = !n[index].available; if (!n[index].available) n[index].hours = "-"; setAvailability(n) }}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-3 shrink-0 ${day.available ? "bg-primary" : "bg-gray-300"}`}>
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${day.available ? "translate-x-6" : "translate-x-1"}`} />
+              </button>
+            </div>
+          ))}
+        </div>
+
         {/* PREFERRED JOBS */}
         <div className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Preferred Positions</p>
@@ -732,54 +780,6 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
-        {/* AVAILABILITY */}
-        <div className="px-4 pt-4 pb-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Availability</p>
-        </div>
-        <div className="rounded-2xl mx-4 border border-border bg-card overflow-hidden mb-6">
-          {/* SHIFT PREFERENCE */}
-          <div className="px-4 py-3 border-b border-border">
-            <p className="text-xs text-muted-foreground mb-2">Shift Preference</p>
-            <div className="flex gap-2">
-              {["morning", "night", "flexible"].map((type) => (
-                <button key={type}
-                  onClick={() => setShiftPreference(type as any)}
-                  className={`flex-1 py-1.5 text-xs rounded-full border font-medium capitalize transition-all ${shiftPreference === type ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"}`}>
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* DAYS */}
-          {availability.map((day, index) => (
-            <div key={day.day} className="flex items-center justify-between px-4 py-3 border-b border-border last:border-0">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-foreground">{day.day}</p>
-                {day.available && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <select value={day.start}
-                      onChange={(e) => { const n = [...availability]; n[index].start = e.target.value; setAvailability(n) }}
-                      className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
-                      {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <span className="text-xs text-muted-foreground">to</span>
-                    <select value={day.end}
-                      onChange={(e) => { const n = [...availability]; n[index].end = e.target.value; setAvailability(n) }}
-                      className="text-xs border border-border rounded-lg px-2 py-1 bg-background text-foreground">
-                      {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => { const n = [...availability]; n[index].available = !n[index].available; if (!n[index].available) n[index].hours = "-"; setAvailability(n) }}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ml-3 shrink-0 ${day.available ? "bg-primary" : "bg-gray-300"}`}>
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${day.available ? "translate-x-6" : "translate-x-1"}`} />
-              </button>
-            </div>
-          ))}
-        </div>
-
         {/* RECOMMENDATION */}
         <div id="recommendation" className="px-4 pt-4 pb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Recommendation</p>
