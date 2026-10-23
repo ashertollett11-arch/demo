@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import { recordProInterest } from "@/lib/proInterest"
+import { calculateDistancesFor, DISTANCE_FAILED_MESSAGE } from "@/lib/calculateDistances"
 import { useLoadingMessage } from "@/lib/useLoadingMessage"
 import { isPro, activeLocations, FREE_LOCATION_LIMIT } from "@/lib/plan"
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, MapPin, X, Clock, DollarSign, Briefcase, Lock} from "lucide-react"
@@ -186,7 +187,9 @@ export default function LocationsPage() {
     await loadLocations(jobId)
     setShowForm(false); resetForm(); setSaving(false)
     if (savedLocationId) {
-      await fetch("/api/calculate-distances", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ locationId: savedLocationId }) }).catch(() => {})
+      // See lib/calculateDistances: silence here means a location nobody can see.
+      const distances = await calculateDistancesFor(savedLocationId)
+      if (!distances.ok) toast.error(DISTANCE_FAILED_MESSAGE, { duration: 10000 })
     }
   }
 

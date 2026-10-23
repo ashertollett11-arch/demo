@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase"
 import { authedFetch } from "@/lib/authedFetch"
+import { calculateDistancesFor, DISTANCE_FAILED_MESSAGE } from "@/lib/calculateDistances"
 import { Building2, MapPin, CheckCircle2, ChevronRight, ArrowRight } from "lucide-react"
 
 const DEFAULT_SHIFTS = [
@@ -129,7 +130,10 @@ export default function EmployerOnboarding() {
       await supabase.from("profiles").upsert({ id: user.id, email: user.email, profile_complete: true, subscription_status: "freeactive" }, { onConflict: "id" })
     }
     if (locData?.id) {
-      await fetch("/api/calculate-distances", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ locationId: locData.id }) }).catch(() => {})
+      // Not fire-and-forget: without distances this location is invisible to
+      // every student, so a failure has to reach the employer.
+      const distances = await calculateDistancesFor(locData.id)
+      if (!distances.ok) toast.error(DISTANCE_FAILED_MESSAGE, { duration: 10000 })
     // Welcome email — not awaited, same reasoning as the student flow.
     authedFetch("/api/send-welcome-email", { method: "POST" }).catch(() => {})
     }
