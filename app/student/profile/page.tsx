@@ -250,9 +250,8 @@ export default function ProfilePage() {
       ...(gpaStatus === "rejected" || gpaStatus === "none" ? { gpa_proof_url: gpaProofUrl, gpa_verification_status: gpaStatus } : {}),
     }, { onConflict: "user_id" })
     if (error) { toast.error(error.message); return false }
-    await fetch("/api/calculate-distances", {
+    await authedFetch("/api/calculate-distances", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ studentUserId: user.id }),
     }).catch(() => {})
     return true

@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { authedFetch } from "@/lib/authedFetch"
 import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react"
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 6
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const
 
@@ -17,8 +17,34 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
  * profile. The matcher reads `available`, `start` and `end`, so a wide window
  * over-matches slightly rather than hiding jobs — the safe direction to err.
  */
-const DAY_START = "10:00 AM"
-const DAY_END = "10:00 PM"
+/**
+ * One window applied to every chosen day. Picking seven start/end pairs
+ * before seeing a single job is far too much to ask, so onboarding offers
+ * three shapes and the profile editor handles anything more precise.
+ *
+ * `pref` also sets Students.shift_preference, which the matcher reads and
+ * which used to be hardcoded to "flexible" for everyone.
+ */
+const TIME_PRESETS = [
+  { id: "morning", label: "Mornings", hint: "5:00 AM – 12:00 PM", start: "5:00 AM", end: "12:00 PM", hours: "7", pref: "morning" },
+  { id: "allday", label: "All day", hint: "10:00 AM – 10:00 PM", start: "10:00 AM", end: "10:00 PM", hours: "12", pref: "flexible" },
+  { id: "night", label: "Evenings", hint: "3:00 PM – 10:00 PM", start: "3:00 PM", end: "10:00 PM", hours: "7", pref: "night" },
+] as const
+
+/** Everything on step 6 arrives pre-filled so it costs one tap to accept. */
+const INTEREST_OPTIONS = [
+  "School", "Hanging out with friends", "Sports", "Music", "Gaming", "Art",
+  "Fitness", "Cooking", "Reading", "Photography", "Outdoors", "Volunteering",
+]
+const JOB_OPTIONS = [
+  "Cashier", "Server", "Busser", "Barista", "Cook", "Dishwasher", "Host/Hostess", "Food Runner", "Ice Cream Scooper",
+  "Sales Associate", "Stock Associate", "Bagger", "Fitting Room Attendant", "Cart Attendant",
+  "Customer Service", "Front Desk", "Receptionist",
+  "Lifeguard", "Camp Counselor", "Theme Park Attendant", "Movie Theater Attendant", "Bowling Alley Attendant",
+  "Car Wash Attendant", "Car Detailer",
+  "Tutor", "Library Assistant", "Office Assistant",
+]
+const MAX_PICKS = 3
 
 export default function StudentOnboarding() {
   const router = useRouter()
@@ -38,6 +64,9 @@ export default function StudentOnboarding() {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [availDays, setAvailDays] = useState<string[]>([])
+  const [timePreset, setTimePreset] = useState<string>("allday")
+  const [interests, setInterests] = useState<string[]>(["School", "Hanging out with friends"])
+  const [preferredJobs, setPreferredJobs] = useState<string[]>(["Busser", "Customer Service", "Dishwasher"])
 
   useEffect(() => {
     const load = async () => {
@@ -101,6 +130,7 @@ export default function StudentOnboarding() {
       case 3: const g = parseFloat(gpa); return school.trim().length > 0 && gpa.trim().length > 0 && !isNaN(g) && g >= 0 && g <= 4
       case 4: return emailRegex.test(email) && phone.length === 10
       case 5: return availDays.length > 0
+      case 6: return interests.length > 0 && preferredJobs.length > 0
       default: return false
     }
   }
@@ -114,16 +144,16 @@ export default function StudentOnboarding() {
     // Built from what they actually picked in step 5. This used to be a fixed
     // weekends-only block written for everyone, so every student looked
     // identical to the matcher no matter when they could really work.
+    const preset = TIME_PRESETS.find(p => p.id === timePreset) ?? TIME_PRESETS[1]
     const chosenAvailability = DAYS.map((day) => {
       const available = availDays.includes(day)
-      return { day, start: DAY_START, end: DAY_END, available, hours: available ? "12" : "-" }
+      return { day, start: preset.start, end: preset.end, available, hours: available ? preset.hours : "-" }
     })
     const { error } = await supabase.from("Students").upsert({
       user_id: user.id, name, age: Number(age), gender,
       location: address, zip_code: zipCode, school, gpa: Number(gpa), email, phone,
-      availability: chosenAvailability, shift_preference: "flexible",
-      interests: ["School", "Hanging out with friends"],
-      preferred_jobs: ["Busser", "Customer Service", "Dishwasher"],
+      availability: chosenAvailability, shift_preference: preset.pref,
+      interests, preferred_jobs: preferredJobs,
       profile_complete: true,
     }, { onConflict: "user_id" })
     if (error) { toast.error("Failed to save. Please try again."); setSaving(false); return }
@@ -131,8 +161,8 @@ export default function StudentOnboarding() {
     // on an empty board. Say so rather than letting it look like "no jobs".
     let distancesOk = false
     try {
-      const res = await fetch("/api/calculate-distances", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await authedFetch("/api/calculate-distances", {
+        method: "POST",
         body: JSON.stringify({ studentUserId: user.id }),
       })
       const body = await res.json().catch(() => null)
@@ -324,7 +354,7 @@ export default function StudentOnboarding() {
           {step === 5 && (
             <div className="space-y-6">
               <div>
-                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 5 of 5</p>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 5 of 6</p>
                 <h1 className="text-3xl font-bold text-foreground">When can you work?</h1>
                 <p className="text-muted-foreground mt-2">Tap the days you&apos;re usually free.</p>
               </div>
@@ -340,9 +370,80 @@ export default function StudentOnboarding() {
                   )
                 })}
               </div>
+              <div>
+                <p className="text-sm font-medium text-foreground mb-2">What time, roughly?</p>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {TIME_PRESETS.map((p) => {
+                    const on = timePreset === p.id
+                    return (
+                      <button key={p.id} type="button" role="radio" aria-checked={on}
+                        onClick={() => setTimePreset(p.id)}
+                        className={`py-3 px-2 rounded-2xl border transition-all ${on ? "bg-foreground text-background border-foreground" : "bg-secondary/40 border-border text-foreground"}`}>
+                        <span className="block text-sm font-semibold">{p.label}</span>
+                        <span className={`block text-[11px] mt-0.5 ${on ? "text-background/70" : "text-muted-foreground"}`}>{p.hint}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground -mt-2">
-                We&apos;ll set these to 10:00 AM – 10:00 PM for now. You can set exact hours for each day in your profile whenever you like.
+                This applies to every day you picked. You can set exact hours for each day in your profile whenever you like.
               </p>
+            </div>
+          )}
+
+          {/* STEP 6 */}
+          {step === 6 && (
+            <div className="space-y-6">
+              <div>
+                <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Step 6 of 6</p>
+                <h1 className="text-3xl font-bold text-foreground">A bit about you</h1>
+                <p className="text-muted-foreground mt-2">We&apos;ve filled these in — change anything that isn&apos;t right.</p>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-foreground mb-2">
+                  Interests{" "}
+                  <span className={`font-normal ${interests.length >= MAX_PICKS ? "text-primary" : "text-muted-foreground"}`}>
+                    {interests.length} of {MAX_PICKS}
+                  </span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {INTEREST_OPTIONS.map((item) => {
+                    const on = interests.includes(item)
+                    return (
+                      <button key={item} type="button" aria-pressed={on}
+                        onClick={() => setInterests(prev =>
+                          on ? prev.filter(i => i !== item) : prev.length >= MAX_PICKS ? prev : [...prev, item])}
+                        className={`px-3 py-1.5 text-xs rounded-full border transition-all ${on ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground"}`}>
+                        {item}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-foreground mb-2">
+                  Jobs you&apos;d like{" "}
+                  <span className={`font-normal ${preferredJobs.length >= MAX_PICKS ? "text-primary" : "text-muted-foreground"}`}>
+                    {preferredJobs.length} of {MAX_PICKS}
+                  </span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {JOB_OPTIONS.map((role) => {
+                    const on = preferredJobs.includes(role)
+                    return (
+                      <button key={role} type="button" aria-pressed={on}
+                        onClick={() => setPreferredJobs(prev =>
+                          on ? prev.filter(r => r !== role) : prev.length >= MAX_PICKS ? prev : [...prev, role])}
+                        className={`px-3 py-1.5 text-xs rounded-full border transition-all ${on ? "bg-foreground text-background border-foreground" : "border-border text-muted-foreground"}`}>
+                        {role}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
           )}
 

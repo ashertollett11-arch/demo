@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { getCallerId } from "@/lib/apiAuth"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,11 +41,33 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 export async function POST(request: Request) {
   try {
+    // This route spends Google Distance Matrix quota on every call and took
+    // its target straight from the body, so anyone who found the URL could
+    // run up the bill in a loop. The acting user now comes from a verified
+    // token, and the target has to belong to them.
+    const callerId = await getCallerId(request)
+    if (!callerId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
     const body = await request.json()
-    const { studentUserId, locationId } = body
+    const { locationId } = body
+    // A student may only ever recalculate their own distances, so the body
+    // value is ignored entirely in favour of the token.
+    const studentUserId = body.studentUserId ? callerId : null
 
     if (!studentUserId && !locationId) {
       return NextResponse.json({ error: "Provide studentUserId or locationId" }, { status: 400 })
+    }
+
+    if (locationId) {
+      // Location ids are readable, so ownership has to be checked rather than
+      // assumed: employer -> job -> location.
+      const { data: loc } = await supabaseAdmin
+        .from("locations").select("employer_id").eq("id", locationId).maybeSingle()
+      const { data: owned } = loc
+        ? await supabaseAdmin
+            .from("job").select("id").eq("id", loc.employer_id).eq("user_id", callerId).maybeSingle()
+        : { data: null }
+      if (!owned) return NextResponse.json({ error: "Not your location" }, { status: 403 })
     }
 
     let pairs: {

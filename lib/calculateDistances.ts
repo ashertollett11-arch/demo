@@ -1,3 +1,5 @@
+import { authedFetch } from "./authedFetch"
+
 /**
  * Trigger the distance calculation for a location, and say whether it worked.
  *
@@ -20,9 +22,8 @@ export type DistanceResult =
   | { ok: false; error: string }
 
 async function attempt(locationId: string): Promise<DistanceResult> {
-  const res = await fetch("/api/calculate-distances", {
+  const res = await authedFetch("/api/calculate-distances", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ locationId }),
   })
   // A 400/500 here still resolves the promise, which is exactly what the old
