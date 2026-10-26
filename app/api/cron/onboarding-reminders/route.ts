@@ -6,6 +6,7 @@ import { isSuppressed } from "@/lib/emails/suppress"
 import { proValue } from "@/lib/emails/templates"
 import { canEmail, PREF_COLUMNS } from "@/lib/emails/prefs"
 import { claimEmail, releaseEmail } from "@/lib/emails/claim"
+import { notifyAdminOfSignup } from "@/lib/adminAlert"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 const REMIND_AFTER_HOURS = 24
@@ -160,6 +161,19 @@ export async function GET(request: Request) {
       sent++
     }
 
+    // ---- signups we have not told ourselves about yet ----
+    // The welcome route alerts the moment someone finishes onboarding, so
+    // this only ever catches the people who stalled before that — which are
+    // the ones most worth knowing about. claimEmail keeps it to one each.
+    let adminAlerts = 0
+    if (!dryRun) {
+      for (const user of candidates) {
+        if (alreadySent.has(`${user.id}:admin_signup_alert`)) continue
+        const res = await notifyAdminOfSignup(supabase, user.id, { trigger: "cron" })
+        if (res.sent) adminAlerts++
+      }
+    }
+
     // ---- second sweep: free employers who keep hitting the paywall ----
     const { data: interested } = await supabase
       .from("profiles")
@@ -206,7 +220,7 @@ export async function GET(request: Request) {
         proValue: { candidates: interested?.length ?? 0, would: wouldProValue },
       })
     }
-    return NextResponse.json({ checked: candidates.length, sent, skipped, proValueSent })
+    return NextResponse.json({ checked: candidates.length, sent, skipped, proValueSent, adminAlerts })
   } catch (err: any) {
     console.error("ONBOARDING REMINDERS ERROR:", err.message)
     return NextResponse.json({ error: err.message }, { status: 500 })

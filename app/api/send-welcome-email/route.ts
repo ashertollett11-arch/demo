@@ -5,6 +5,7 @@ import { getCallerId } from "@/lib/apiAuth"
 import { studentWelcome, employerWelcome } from "@/lib/emails/templates"
 import { isSuppressed } from "@/lib/emails/suppress"
 import { claimEmail, releaseEmail } from "@/lib/emails/claim"
+import { notifyAdminOfSignup } from "@/lib/adminAlert"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 
@@ -87,6 +88,10 @@ export async function POST(request: Request) {
       await releaseEmail(supabase, userId, "welcome")
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // Internal heads-up. Deliberately after the welcome has gone: a problem
+    // telling ourselves about a signup must never fail the signup itself.
+    await notifyAdminOfSignup(supabase, userId, { trigger: "onboarding" })
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
