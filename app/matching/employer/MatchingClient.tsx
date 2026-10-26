@@ -475,27 +475,9 @@ export default function MatchingPage() {
     loadStatuses()
   }, [employerId])
 
-  useEffect(() => {
-    if (!employerId || students.length === 0) return
-    const seedStatuses = async () => {
-      // Only seed statuses for students within distance
-      const rows = students
-        .filter((student) => student.profile_complete === true)
-        .filter((student) => matchesDistance(student.user_id))
-        .map((student) => ({ employer_id: employerId, student_id: student.id, status: "new" }))
-      if (rows.length === 0) return
-      const { error } = await supabase
-        .from("student_statuses")
-        .upsert(rows, { onConflict: "employer_id,student_id", ignoreDuplicates: true })
-      if (error) return
-      const { data } = await supabase
-        .from("student_statuses")
-        .select("*")
-        .eq("employer_id", employerId)
-      setStatuses(data || [])
-    }
-    seedStatuses()
-  }, [employerId, students, distances, selectedLocationMaxMiles])
+  // No seeding. A student with no row is new — the candidate list already
+  // reads it that way (`statusRow?.status || "new"`), so writing a row per
+  // student per location only created work for the database.
 
   useEffect(() => {
     if (!userId) return

@@ -170,18 +170,6 @@ export default function EmployerDashboard() {
   }, [userId])
 
   useEffect(() => {
-    if (!userId || students.length === 0 || statuses.length > 0) return
-    const seedStatuses = async () => {
-      const rows = students.filter((s) => s.profile_complete).filter((s) => { const d = distances[s.user_id]; if (!d) return false; return d <= selectedLocationMaxMiles * 1609.34 }).map((s) => ({ employer_id: userId, student_id: s.id, status: "new" }))
-      if (rows.length === 0) return
-      await supabase.from("student_statuses").upsert(rows, { onConflict: "employer_id,student_id", ignoreDuplicates: true })
-      const { data } = await supabase.from("student_statuses").select("*").eq("employer_id", userId)
-      setStatuses(data || [])
-    }
-    seedStatuses()
-  }, [userId, students, statuses, distances, selectedLocationMaxMiles])
-
-  useEffect(() => {
     if (!userId) return
     const loadStatuses = async () => {
       const { data, error } = await supabase.from("student_statuses").select("*").eq("employer_id", userId)
@@ -215,8 +203,16 @@ export default function EmployerDashboard() {
       })
   }, [students, employerShifts, shiftPreference, preferredJobs, selectedLocationMaxMiles, distances, recommendations])
 
-  const visibleStudentIds = new Set(candidatesWithScores.map((c) => c.id))
-  const visibleStatuses = statuses.filter((s) => visibleStudentIds.has(s.student_id))
+  // Counted from the students actually in range, not from stored rows. A row
+  // only exists once someone is contacted or hired, so anyone without one is
+  // new — the same rule the candidate list uses. The old version counted rows
+  // instead, so a student whose row had not been written yet showed up in no
+  // column at all.
+  const statusById = new Map(statuses.map((s: any) => [s.student_id, s.status]))
+  const statusOf = (id: string) => statusById.get(id) || "new"
+  const countNew = candidatesWithScores.filter((c) => statusOf(c.id) === "new").length
+  const countContacted = candidatesWithScores.filter((c) => statusOf(c.id) === "contacted").length
+  const countHired = candidatesWithScores.filter((c) => statusOf(c.id) === "hired").length
   const greatCandidates = candidatesWithScores.filter((c) => c.matchScore >= 75).length
   const perfectMatches = candidatesWithScores.filter((c) => c.matchScore === 100).length
   const topMatch = Math.max(0, ...candidatesWithScores.map((c) => c.matchScore || 0))
@@ -369,7 +365,7 @@ export default function EmployerDashboard() {
                   </div>
                   <span className="text-sm text-muted-foreground font-medium">New</span>
                 </div>
-                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{visibleStatuses.filter((s) => s.status === "new").length}</p>}
+                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{countNew}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">candidates to review</p>
               </CardContent>
             </Card>
@@ -383,7 +379,7 @@ export default function EmployerDashboard() {
                   </div>
                   <span className="text-sm text-muted-foreground font-medium">Contacted</span>
                 </div>
-                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{visibleStatuses.filter((s) => s.status === "contacted").length}</p>}
+                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{countContacted}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">awaiting response</p>
               </CardContent>
             </Card>
@@ -397,7 +393,7 @@ export default function EmployerDashboard() {
                   </div>
                   <span className="text-sm text-muted-foreground font-medium">Hired</span>
                 </div>
-                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{visibleStatuses.filter((s) => s.status === "hired").length}</p>}
+                {locationLoading ? <div className="h-9 w-16 rounded bg-secondary animate-pulse mt-1" /> : <p className="text-3xl font-bold text-foreground">{countHired}</p>}
                                 <p className="text-xs text-muted-foreground mt-1">students hired</p>
               </CardContent>
             </Card>
