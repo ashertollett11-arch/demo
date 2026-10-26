@@ -16,7 +16,9 @@ delete from student_statuses           where student_id in (
 delete from location_applications      where student_user_id in (select id from _seed_students);
 delete from employer_student_distances where student_user_id in (select id from _seed_students);
 delete from student_notifications      where student_user_id in (select id from _seed_students);
-delete from notifications              where student_user_id in (select id from _seed_students);
+-- notifications.student_user_id is text, not uuid, unlike every sibling
+-- column, so the id has to be cast or Postgres refuses to compare them.
+delete from notifications              where student_user_id in (select id::text from _seed_students);
 delete from recommendations            where student_user_id in (select id from _seed_students);
 delete from onboarding_emails          where user_id         in (select id from _seed_students);
 
