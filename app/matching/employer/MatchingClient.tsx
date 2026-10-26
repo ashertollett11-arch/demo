@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, Bell, MapPin, Building2, CreditCard, LogOut, HelpCircle, Lock } from "lucide-react"
+import { ChevronDown, Bell, MapPin, Building2, CreditCard, LogOut, HelpCircle, Lock, RotateCcw } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
   Star,
@@ -216,6 +216,18 @@ export default function MatchingPage() {
   const [specificAges, setSpecificAges] = useState<number[]>([])
   const searchParams = useSearchParams()
   const statusParam = searchParams.get("status")
+
+  // Arriving from the dashboard's "perfect matches" link filters the list to
+  // 100% scores only. Nothing on screen said so and nothing undid it, so the
+  // list looked stuck at one candidate. Reloading does not help either: the
+  // filter lives in the URL, so it survives a refresh.
+  const perfectOnly = searchParams.get("perfect") === "true"
+  const clearPerfectFilter = () => {
+    const next = new URLSearchParams(searchParams.toString())
+    next.delete("perfect")
+    const qs = next.toString()
+    router.replace(qs ? `/matching/employer?${qs}` : "/matching/employer")
+  }
   const [employerShifts, setEmployerShifts] = useState<any[]>([])
   const [shiftPreference, setShiftPreference] = useState<"morning" | "night" | "flexible">("flexible")
   const [scoredCandidates, setScoredCandidates] = useState<any[]>([])
@@ -570,8 +582,7 @@ export default function MatchingPage() {
       if (!matchesDistance(candidate.user_id)) return false
       if (!matchesAge(candidate.age)) return false
       if (candidate.gpa < minGpa[0]) return false
-      const perfect = searchParams.get("perfect")
-      if (isPro(planStatus) && perfect === "true" && candidate.matchScore !== 100) return false
+      if (isPro(planStatus) && perfectOnly && candidate.matchScore !== 100) return false
       if (verifiedOnly && !candidate.is_gpa_verified) return false
       const safeAvailability = candidate.availability ?? []
       if (selectedDays.length > 0) {
@@ -1013,6 +1024,21 @@ export default function MatchingPage() {
                     <button onClick={() => setSelectedDays([])}><X className="h-3 w-3" /></button>
                   </Badge>
                 )}
+              </div>
+            )}
+
+            {/* PERFECT-MATCH NOTICE */}
+            {perfectOnly && isPro(planStatus) && (
+              <div className="mb-6 flex flex-col items-center gap-2 rounded-2xl border border-primary/20 bg-primary/5 px-5 py-6 text-center">
+                <p className="text-sm font-semibold text-foreground">Showing perfect matches only</p>
+                <p className="max-w-md text-xs text-muted-foreground leading-relaxed">
+                  You followed the perfect matches link, so everyone below scores 100%. Your other
+                  candidates are still here.
+                </p>
+                <Button onClick={clearPerfectFilter} className="mt-2 gap-2">
+                  <RotateCcw className="h-4 w-4" />
+                  Show all candidates
+                </Button>
               </div>
             )}
 
