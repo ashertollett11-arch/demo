@@ -7,6 +7,7 @@ import { proValue } from "@/lib/emails/templates"
 import { canEmail, PREF_COLUMNS } from "@/lib/emails/prefs"
 import { claimEmail, releaseEmail } from "@/lib/emails/claim"
 import { notifyAdminOfSignup } from "@/lib/adminAlert"
+import { REPLY_TO } from "@/lib/emails/sender"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 const REMIND_AFTER_HOURS = 24
@@ -151,7 +152,7 @@ export async function GET(request: Request) {
       if (!(await claimEmail(supabase, user.id, "reminder"))) { skipped.alreadySent++; continue }
 
       const { error } = await resend.emails.send({
-        from: FROM, to: user.email!, subject: email.subject, html: email.html,
+        from: FROM, reply_to: REPLY_TO, to: user.email!, subject: email.subject, html: email.html,
       })
       if (error) {
         console.error("REMINDER SEND ERROR:", user.id, error.message)
@@ -204,7 +205,7 @@ export async function GET(request: Request) {
         if (!(await claimEmail(supabase, prof.id, "pro_interest"))) continue
 
         const mail = proValue({ company: jobOf.get(prof.id)?.company })
-        const { error } = await resend.emails.send({ from: FROM, to, subject: mail.subject, html: mail.html })
+        const { error } = await resend.emails.send({ from: FROM, reply_to: REPLY_TO, to, subject: mail.subject, html: mail.html })
         if (error) {
           console.error("PRO VALUE SEND ERROR:", prof.id, error.message)
           await releaseEmail(supabase, prof.id, "pro_interest")

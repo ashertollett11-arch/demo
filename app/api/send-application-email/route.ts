@@ -3,6 +3,7 @@ import { Resend } from "resend"
 import { createClient } from "@supabase/supabase-js"
 import { canEmail, PREF_COLUMNS } from "@/lib/emails/prefs"
 import { shell, callout, firstName } from "@/lib/emails/layout"
+import { REPLY_TO } from "@/lib/emails/sender"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const supabase = createClient(
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
 
     const { error } = await resend.emails.send({
       from: "SimplyApply <noreply@simplyapply.app>",
+      reply_to: REPLY_TO,
       to: employerEmail,
       subject: `New applicant for ${locationName}: ${studentName}`,
       html: shell({

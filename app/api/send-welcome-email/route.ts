@@ -6,6 +6,7 @@ import { studentWelcome, employerWelcome } from "@/lib/emails/templates"
 import { isSuppressed } from "@/lib/emails/suppress"
 import { claimEmail, releaseEmail } from "@/lib/emails/claim"
 import { notifyAdminOfSignup } from "@/lib/adminAlert"
+import { REPLY_TO } from "@/lib/emails/sender"
 
 const FROM = "SimplyApply <noreply@simplyapply.app>"
 
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
     }
 
     const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
-      from: FROM, to, subject: email.subject, html: email.html,
+      from: FROM, reply_to: REPLY_TO, to, subject: email.subject, html: email.html,
     })
     if (error) {
       await releaseEmail(supabase, userId, "welcome")

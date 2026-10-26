@@ -5,6 +5,7 @@ import { Resend } from "resend"
 import { proWelcome, cancelConfirm, proWinback, checkoutAbandoned, paymentFailed } from "@/lib/emails/templates"
 import { claimEmail, releaseEmail } from "@/lib/emails/claim"
 import { canEmail, PREF_COLUMNS, type EmailCategory } from "@/lib/emails/prefs"
+import { REPLY_TO } from "@/lib/emails/sender"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20",
@@ -128,7 +129,7 @@ async function sendOnce(
     if (!(await claimEmail(supabase, userId, kind))) return
 
     const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
-      from: FROM, to, subject: mail.subject, html: mail.html,
+      from: FROM, reply_to: REPLY_TO, to, subject: mail.subject, html: mail.html,
     })
     if (error) {
       console.error(`${kind} SEND ERROR:`, error.message)
@@ -297,7 +298,7 @@ export async function POST(req: Request) {
                 nextAttempt: next ? new Date(next * 1000).toISOString() : null,
               })
               const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({
-                from: FROM, to, subject: mail.subject, html: mail.html,
+                from: FROM, reply_to: REPLY_TO, to, subject: mail.subject, html: mail.html,
               })
               if (error) console.error("PAYMENT FAILED SEND ERROR:", error.message)
             } else {
