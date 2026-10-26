@@ -326,18 +326,35 @@ export default function EmployerDashboard() {
           </Button>
         </div>
 
-        {/* LOCATION SELECTOR */}
-        {allLocations.length > 1 && (
-          <div className="mb-6 rounded-xl border border-border bg-card p-4">
-            <p className="text-sm font-medium text-foreground mb-3">Viewing stats for location:</p>
-            <div className="flex flex-wrap gap-2">
-              {allLocations.map((loc) => (
-                <button key={loc.id} onClick={() => handleLocationChange(loc.id)}
-                  className={`px-3 py-1.5 text-xs rounded-full border transition-all ${selectedLocationId === loc.id ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
-                  {loc.name}
-                </button>
-              ))}
-            </div>
+        {/* LOCATION TOOLBAR */}
+        {/* Same shape as the one on Find Candidates, so switching location
+            works identically in both places. */}
+        {selectedLocationId && (
+          <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-4 py-3">
+            <MapPin className="h-4 w-4 shrink-0 text-primary" />
+            {allLocations.length > 1 ? (
+              <>
+                <label htmlFor="dash-loc" className="text-sm text-muted-foreground">Stats for</label>
+                <select
+                  id="dash-loc"
+                  value={selectedLocationId}
+                  onChange={(e) => handleLocationChange(e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground outline-none focus:border-primary"
+                >
+                  {allLocations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>{loc.name}</option>
+                  ))}
+                </select>
+              </>
+            ) : (
+              <span className="text-sm font-medium text-foreground">
+                {allLocations.find((l) => l.id === selectedLocationId)?.name ?? "Your location"}
+              </span>
+            )}
+            <span className="hidden text-border sm:inline">|</span>
+            <span className="text-sm text-muted-foreground">
+              students within <span className="font-medium text-foreground">{selectedLocationMaxMiles} miles</span>
+            </span>
           </div>
         )}
 
