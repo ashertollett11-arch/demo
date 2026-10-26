@@ -316,11 +316,11 @@ export default function EmployerOnboarding() {
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm font-medium block mb-1.5">Max Hiring Distance</label>
+                      <label className="text-sm font-medium block mb-1.5">Default matching distance</label>
                       <select value={locMaxDistance} onChange={(e) => setLocMaxDistance(Number(e.target.value))} className={inputClass}>
                         {[1,3,5,10,15,20,25,35].map(m => <option key={m} value={m}>{m} miles</option>)}
                       </select>
-                      <p className="text-xs text-muted-foreground mt-1">Only students within this distance will see your listing.</p>
+                      <p className="text-xs text-muted-foreground mt-1">Students within this distance see your listing, and it is the default range when you browse candidates. Narrowing the distance filter while browsing does not change this.</p>
                     </div>
                     <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5">
                       <span className="text-sm font-medium">Does this role earn tips in addition to hourly wage?</span>

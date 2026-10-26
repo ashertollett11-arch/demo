@@ -54,6 +54,7 @@ const getStatusBadge = (status: string) => {
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 const ALL_AGES = [14, 15, 16, 17, 18, 19, 20, 21]
+const DISTANCE_OPTIONS = [1, 3, 5, 10, 15, 20, 25, 35, 50]
 
 function FilterContent({
   minGpa, setMinGpa,
@@ -66,21 +67,35 @@ function FilterContent({
   activeFiltersCount,
   clearFilters,
   selectedLocationMaxMiles,
+  customMaxMiles,
+  setCustomMaxMiles,
 }: any) {
+  const radius = customMaxMiles ?? selectedLocationMaxMiles
   return (
     <div className="space-y-6">
-      {selectedLocationMaxMiles && (
-        <div className="rounded-lg border border-border bg-secondary/30 p-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <MapPin className="h-3.5 w-3.5 text-primary" />
-            Distance Filter
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Showing students within{" "}
-            <span className="font-medium text-foreground">{selectedLocationMaxMiles} miles</span>{" "}
-                        of this location.
+      {selectedLocationMaxMiles != null && (
+        <div>
+          <Label className="text-sm font-medium">Distance</Label>
+          <select
+            value={radius}
+            onChange={(e) => setCustomMaxMiles(Number(e.target.value))}
+            className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          >
+            {DISTANCE_OPTIONS.map((m) => (
+              <option key={m} value={m}>
+                Within {m} miles{m === selectedLocationMaxMiles ? " (default)" : ""}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            {customMaxMiles !== null && customMaxMiles !== selectedLocationMaxMiles ? (
+              <button onClick={() => setCustomMaxMiles(null)} className="text-primary hover:underline">
+                Back to this location&apos;s default ({selectedLocationMaxMiles} mi)
+              </button>
+            ) : (
+              <>Only changes what you see here. Your location&apos;s default matching distance stays as it is.</>
+            )}
           </p>
-          <p className="text-[11px] text-muted-foreground mt-1">Adjust using the dropdown on the main page.</p>
         </div>
       )}
       <div>
@@ -620,6 +635,7 @@ export default function MatchingPage() {
     if (studentsLoaded && distancesLoaded && scoresLoaded) setLoading(false)
   }, [studentsLoaded, distancesLoaded, scoresLoaded])
   const clearFilters = () => {
+    setCustomMaxMiles(null)
     setMinGpa([1.0])
     setSelectedDays([])
     setVerifiedOnly(false)
@@ -634,6 +650,7 @@ export default function MatchingPage() {
     selectedDays.length > 0,
     verifiedOnly,
     ageMode === "range" ? (ageMin > 14 || ageMax < 21) : specificAges.length > 0,
+    customMaxMiles !== null && customMaxMiles !== selectedLocationMaxMiles,
   ].filter(Boolean).length
 
   if (loading) {
@@ -809,64 +826,42 @@ export default function MatchingPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Find Your Perfect Match</h1>
           <p className="mt-2 text-muted-foreground">Browse verified students filtered by availability, GPA, age, and distance.</p>
-          <div className="mt-3 flex items-center gap-3 flex-wrap">
-            <div className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-1.5 text-sm">
-              <MapPin className="h-3.5 w-3.5 text-primary" />
-              <span className="text-muted-foreground">Showing students within</span>
-              <span className="font-semibold text-foreground">{customMaxMiles ?? selectedLocationMaxMiles} miles</span>
-            </div>
-            <select
-              value={customMaxMiles ?? selectedLocationMaxMiles}
-              onChange={async (e) => {
-                const miles = Number(e.target.value)
-                setCustomMaxMiles(miles)
-                setSelectedLocationMaxMiles(miles)
-                setAllLocations(prev => prev.map(l =>
-                  l.id === selectedLocationId ? { ...l, max_distance_miles: miles } : l
-                ))
-                if (selectedLocationId) {
-                  await supabase
-                    .from("locations")
-                    .update({ max_distance_miles: miles })
-                    .eq("id", selectedLocationId)
-                }
-              }}
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary"
-            >
-              {[1, 3, 5, 10, 15, 20, 25, 35, 50].map(m => (
-                <option key={m} value={m}>{m} miles</option>
-              ))}
-            </select>
-            {customMaxMiles !== null && customMaxMiles !== selectedLocationMaxMiles && (
-              <button onClick={() => setCustomMaxMiles(null)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                <X className="h-3 w-3" /> Reset to location default ({selectedLocationMaxMiles} mi)
-              </button>
-            )}
-          </div>
         </div>
 
-        {/* LOCATION SELECTOR */}
-        {allLocations.length > 1 && (
-          <div className="mb-6 rounded-xl border border-border bg-card p-4">
-            <p className="text-sm font-medium text-foreground mb-3">Scoring match % for location:</p>
-            <div className="flex flex-wrap gap-2">
-              {allLocations.map((loc) => (
-                <button
-                  key={loc.id}
-                  onClick={() => handleLocationChange(loc.id)}
-                  className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
-                    selectedLocationId === loc.id
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border text-muted-foreground hover:border-primary/50"
-                  }`}
+        {/* LOCATION TOOLBAR */}
+        {/* One row instead of a heading chip, a radius select and a separate
+            card: which location is being scored, how far out, how many fit.
+            Distance itself now lives with the other filters. */}
+        {selectedLocationId && (
+          <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-4 py-3">
+            <MapPin className="h-4 w-4 shrink-0 text-primary" />
+            {allLocations.length > 1 ? (
+              <>
+                <label htmlFor="loc-switch" className="text-sm text-muted-foreground">Scoring for</label>
+                <select
+                  id="loc-switch"
+                  value={selectedLocationId}
+                  onChange={(e) => handleLocationChange(e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground outline-none focus:border-primary"
                 >
-                  {loc.name}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Switch locations to see match scores and distance filtering based on each location.
-            </p>
+                  {allLocations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>{loc.name}</option>
+                  ))}
+                </select>
+              </>
+            ) : (
+              <span className="text-sm font-medium text-foreground">
+                {allLocations.find((l) => l.id === selectedLocationId)?.name ?? "Your location"}
+              </span>
+            )}
+            <span className="hidden text-border sm:inline">|</span>
+            <span className="text-sm text-muted-foreground">
+              within <span className="font-medium text-foreground">{customMaxMiles ?? selectedLocationMaxMiles} miles</span>
+            </span>
+            <span className="ml-auto text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground">{filteredCandidates.length}</span>
+              {filteredCandidates.length === 1 ? " student" : " students"}
+            </span>
           </div>
         )}
 
@@ -923,7 +918,6 @@ export default function MatchingPage() {
               </CardHeader>
               <CardContent>
                 <FilterContent
-                                    selectedLocationMaxMiles={customMaxMiles ?? selectedLocationMaxMiles}
                   minGpa={minGpa} setMinGpa={setMinGpa}
                   selectedDays={selectedDays} setSelectedDays={setSelectedDays}
                   verifiedOnly={verifiedOnly} setVerifiedOnly={setVerifiedOnly}
@@ -935,6 +929,7 @@ export default function MatchingPage() {
                   activeFiltersCount={activeFiltersCount}
                   clearFilters={clearFilters}
                   selectedLocationMaxMiles={selectedLocationMaxMiles}
+                  customMaxMiles={customMaxMiles} setCustomMaxMiles={setCustomMaxMiles}
                 />
               </CardContent>
             </Card>
@@ -980,6 +975,7 @@ export default function MatchingPage() {
                       activeFiltersCount={activeFiltersCount}
                       clearFilters={clearFilters}
                       selectedLocationMaxMiles={selectedLocationMaxMiles}
+                  customMaxMiles={customMaxMiles} setCustomMaxMiles={setCustomMaxMiles}
                     />
                   </div>
                 </SheetContent>

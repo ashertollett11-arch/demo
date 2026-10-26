@@ -381,11 +381,11 @@ export default function LocationsPage() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="text-sm font-medium block mb-1.5">Max Hiring Distance</label>
+                      <label className="text-sm font-medium block mb-1.5">Default matching distance</label>
                       <select value={formMaxDistance} onChange={(e) => setFormMaxDistance(Number(e.target.value))} className={inputClass}>
                         {[1,3,5,10,15,20,25,35].map(m => <option key={m} value={m}>{m} miles</option>)}
                       </select>
-                      <p className="text-xs text-muted-foreground mt-1">Only students within this distance see your listing.</p>
+                      <p className="text-xs text-muted-foreground mt-1">Students within this distance see your listing, and it is the default range when you browse candidates. Narrowing the distance filter while browsing does not change this.</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium block mb-1.5">Does this role earn tips in addition to hourly wage?</label>
