@@ -36,7 +36,7 @@ export default function StudentPage() {
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
   const [distance, setDistance] = useState<{ distance: string; duration: string } | null>(null)
   const [loadingDistance, setLoadingDistance] = useState(false)
-  const [allLocations, setAllLocations] = useState<any[]>([])
+  const [rawLocations, setRawLocations] = useState<any[]>([])
   // "active" = Pro, "freeactive" = Free; drives every paywall on this page
   const [planStatus, setPlanStatus] = useState<string | null>(null)
   // A free employer seeing the locked state is the interest signal the
@@ -44,6 +44,13 @@ export default function StudentPage() {
   useEffect(() => {
     if (planStatus && !isPro(planStatus)) recordProInterest("student-profile")
   }, [planStatus])
+  // Derived from planStatus, like the other two pages. This page used to show
+  // every location regardless of plan, so a free employer could score a
+  // student against a location that is locked and invisible to students.
+  const allLocations = useMemo(
+    () => activeLocations(rawLocations, planStatus),
+    [rawLocations, planStatus]
+  )
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [companyName, setCompanyName] = useState("")
   const [notes, setNotes] = useState("")
@@ -81,7 +88,7 @@ export default function StudentPage() {
         const { data: locations } = await supabase.from("locations").select("id, name, available_shifts, shift_preference, preferred_jobs, address, zip_code").eq("employer_id", employerJob.id).order("created_at", { ascending: true })
         if (locations?.length) {
           locId = locations[0].id
-          setAllLocations(locations); setSelectedLocationId(locations[0].id)
+          setRawLocations(locations); setSelectedLocationId(locations[0].id)
           const first = locations[0]
           setEmployerShifts(first.available_shifts ?? []); setShiftPreference(first.shift_preference ?? "flexible")
           if (first.preferred_jobs?.length > 0) setPreferredJobs(first.preferred_jobs)
@@ -143,6 +150,24 @@ export default function StudentPage() {
     setSelectedLocationId(locationId); setEmployerShifts(loc.available_shifts ?? []); setShiftPreference(loc.shift_preference ?? "flexible")
     if (loc.preferred_jobs?.length > 0) setPreferredJobs(loc.preferred_jobs)
     if (student?.user_id) await loadDistance(locationId, student.user_id)
+
+    // Pipeline, notes and the "contacted elsewhere" tag all belong to a
+    // location, so they have to follow the switch rather than stay on
+    // whatever loaded first.
+    const { data: userData } = await supabase.auth.getUser()
+    const empId = userData?.user?.id
+    if (empId) {
+      const { data: rows } = await supabase
+        .from("student_statuses").select("status, notes, location_id")
+        .eq("student_id", studentId).eq("employer_id", empId)
+      const here = (rows ?? []).find((r: any) => r.location_id === locationId)
+      setOtherLocationStatuses(
+        (rows ?? []).filter((r: any) =>
+          r.location_id !== locationId && (r.status === "contacted" || r.status === "hired"))
+      )
+      setStudent((prev: any) => prev ? { ...prev, status: here?.status || "new" } : prev)
+      setNotes(here?.notes || "")
+    }
     setLocationLoading(false)
   }
 
@@ -268,17 +293,29 @@ export default function StudentPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {allLocations.length > 1 && (
-          <div className="mb-6 flex items-center gap-3 flex-wrap">
-            <p className="text-sm text-muted-foreground shrink-0">Scoring for:</p>
-            <div className="flex flex-wrap gap-2">
-              {allLocations.map(loc => (
-                <button key={loc.id} onClick={() => handleLocationChange(loc.id)}
-                  className={`px-3 py-1.5 text-xs rounded-full border transition-all ${selectedLocationId === loc.id ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}>
-                  {loc.name}
-                </button>
-              ))}
-            </div>
+        {/* Same toolbar as the dashboard and Find Candidates. */}
+        {selectedLocationId && (
+          <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-4 py-3">
+            <MapPin className="h-4 w-4 shrink-0 text-primary" />
+            {allLocations.length > 1 ? (
+              <>
+                <label htmlFor="detail-loc" className="text-sm text-muted-foreground">Scoring for</label>
+                <select
+                  id="detail-loc"
+                  value={selectedLocationId}
+                  onChange={(e) => handleLocationChange(e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground outline-none focus:border-primary"
+                >
+                  {allLocations.map((loc) => (
+                    <option key={loc.id} value={loc.id}>{loc.name}</option>
+                  ))}
+                </select>
+              </>
+            ) : (
+              <span className="text-sm font-medium text-foreground">
+                {allLocations.find((l) => l.id === selectedLocationId)?.name ?? "Your location"}
+              </span>
+            )}
           </div>
         )}
         <div className="grid gap-8 lg:grid-cols-3">
@@ -571,6 +608,26 @@ export default function StudentPage() {
                 <CardTitle className="text-base">Contact Student</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Sits above the phone number on purpose: the point is to be
+                    read before someone dials, not after. Pipelines are per
+                    location, so this is the only thing stopping two managers
+                    at the same company ringing one student twice. */}
+                {otherLocationStatuses.length > 0 && (
+                  <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+                    <p className="text-sm font-semibold text-amber-900">
+                      Already {otherLocationStatuses.some((r: any) => r.status === "hired") ? "hired" : "contacted"} by your company
+                    </p>
+                    <p className="mt-1 text-xs leading-relaxed text-amber-800">
+                      {otherLocationStatuses
+                        .map((r: any) =>
+                          `${r.status === "hired" ? "Hired" : "Contacted"} at ${
+                            rawLocations.find((l: any) => l.id === r.location_id)?.name ?? "another location"
+                          }`)
+                        .join(" · ")}
+                      . They may already be expecting a call, so check before reaching out again.
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/30 px-4 py-3">
                     <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
