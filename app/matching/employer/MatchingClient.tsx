@@ -260,11 +260,9 @@ export default function MatchingPage() {
   const [statuses, setStatuses] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [preferredJobs, setPreferredJobs] = useState<string[]>([])
-  const [allLocations, setAllLocations] = useState<any[]>([])
+  const [rawLocations, setRawLocations] = useState<any[]>([])
   // "active" = Pro, "freeactive" = Free; drives every paywall on this page
   const [planStatus, setPlanStatus] = useState<string | null>(null)
-  // mirrored in a ref: the location loader runs in a different effect
-  const planStatusRef = useRef<string | null>(null)
   // A free employer seeing the locked state is the interest signal the
   // daily sweep counts; recordProInterest dedupes per session.
   useEffect(() => {
@@ -272,6 +270,15 @@ export default function MatchingPage() {
   }, [planStatus])
   // Free has no match score, so "Best Match" is not a valid sort for them
   useEffect(() => { if (planStatus && !isPro(planStatus) && sortBy === "matchScore") setSortBy("gpa") }, [planStatus, sortBy])
+  // Derived, not stored. This used to be filtered once inside the location
+  // loader using a ref that a *different* async effect set, so whichever
+  // network call landed first decided the result: if locations arrived before
+  // the profile the ref was still null, isPro(null) was false, and a Pro
+  // employer silently got the free plan's single location and no switcher.
+  const allLocations = useMemo(
+    () => activeLocations(rawLocations, planStatus),
+    [rawLocations, planStatus]
+  )
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [distances, setDistances] = useState<Record<string, { distance_text: string; duration_text: string; distance_meters: number }>>({})
   const [locationLoading, setLocationLoading] = useState(false)
@@ -310,7 +317,6 @@ export default function MatchingPage() {
           .maybeSingle()
         const isSubscribed = hasEmployerAccess(profile?.subscription_status)
         setPlanStatus(profile?.subscription_status ?? null)
-        planStatusRef.current = profile?.subscription_status ?? null
         if (!isSubscribed) {
           if (!profile?.profile_complete) {
             router.replace("/employer/profile?missing=true")
@@ -416,13 +422,13 @@ export default function MatchingPage() {
         .select("id, name, available_shifts, shift_preference, preferred_jobs, zip_code, max_distance_miles, created_at")
         .eq("employer_id", jobData.id)
         .order("created_at", { ascending: true })
-      // Free employers match against their oldest location only; the rest are
-      // locked, not deleted, so re-subscribing restores them immediately.
-      const unlocked = activeLocations(locations ?? [], planStatusRef.current)
-      if (unlocked.length) {
-        setAllLocations(unlocked)
-        setSelectedLocationId(unlocked[0].id)
-        const first = unlocked[0]
+      // Store them raw; which ones are unlocked is worked out from planStatus
+      // above. The first entry is the oldest either way, so the initial
+      // selection does not depend on the plan at all.
+      setRawLocations(locations ?? [])
+      if (locations?.length) {
+        setSelectedLocationId(locations[0].id)
+        const first = locations[0]
         setEmployerShifts(first.available_shifts ?? [])
         setShiftPreference(first.shift_preference ?? "flexible")
         setSelectedLocationMaxMiles(first.max_distance_miles ?? 10)

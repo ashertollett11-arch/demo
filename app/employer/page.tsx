@@ -37,7 +37,7 @@ export default function EmployerDashboard() {
   const [studentsLoaded, setStudentsLoaded] = useState(false)
   const [statusesLoaded, setStatusesLoaded] = useState(false)
   const [distancesLoaded, setDistancesLoaded] = useState(false)
-  const [allLocations, setAllLocations] = useState<any[]>([])
+  const [rawLocations, setRawLocations] = useState<any[]>([])
   // "active" = Pro, "freeactive" = Free; drives every paywall on this page
   const [planStatus, setPlanStatus] = useState<string | null>(null)
   // A free employer seeing the locked state is the interest signal the
@@ -45,8 +45,13 @@ export default function EmployerDashboard() {
   useEffect(() => {
     if (planStatus && !isPro(planStatus)) recordProInterest("dashboard")
   }, [planStatus])
-  // mirrored in a ref: the location loader runs in a different effect
-  const planStatusRef = useRef<string | null>(null)
+  // Derived, not stored — see the note in MatchingClient. Filtering once
+  // inside the loader using a ref another async effect set meant a Pro
+  // employer whose locations loaded first was treated as free.
+  const allLocations = useMemo(
+    () => activeLocations(rawLocations, planStatus),
+    [rawLocations, planStatus]
+  )
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null)
   const [distances, setDistances] = useState<Record<string, number>>({})
   const [recommendations, setRecommendations] = useState<Record<string, boolean>>({})
@@ -62,7 +67,6 @@ export default function EmployerDashboard() {
         const { data: profile } = await supabase.from("profiles").select("subscription_status, profile_complete").eq("id", user.id).maybeSingle()
         const isSubscribed = hasEmployerAccess(profile?.subscription_status)
         setPlanStatus(profile?.subscription_status ?? null)
-        planStatusRef.current = profile?.subscription_status ?? null
         if (!isSubscribed) { router.replace(!profile?.profile_complete ? "/employer/profile?missing=true" : "/pricing/mobile"); return }
         const { data: jobData } = await supabase.from("job").select("id").eq("user_id", user.id).maybeSingle()
         if (!jobData) { router.replace("/employer/profile?missing=true"); return }
@@ -122,12 +126,11 @@ export default function EmployerDashboard() {
       setShiftPreference(jobData.shift_preference || "flexible")
       setPreferredJobs(jobData.preferred_jobs || [])
       const { data: locations } = await supabase.from("locations").select("id, name, available_shifts, shift_preference, preferred_jobs, max_distance_miles, created_at").eq("employer_id", jobData.id).order("created_at", { ascending: true })
-      // Free employers see only their oldest location; extras are locked.
-      const unlocked = activeLocations(locations ?? [], planStatusRef.current)
-      if (unlocked.length) {
-        setAllLocations(unlocked)
-        setSelectedLocationId(unlocked[0].id)
-        const first = unlocked[0]
+      // Raw here; which are unlocked is derived from planStatus above.
+      setRawLocations(locations ?? [])
+      if (locations?.length) {
+        setSelectedLocationId(locations[0].id)
+        const first = locations[0]
         setEmployerShifts(first.available_shifts ?? [])
         setShiftPreference(first.shift_preference ?? "flexible")
         setSelectedLocationMaxMiles(first.max_distance_miles ?? 10)
