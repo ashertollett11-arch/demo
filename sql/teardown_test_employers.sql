@@ -29,7 +29,9 @@ delete from location_applications      where location_id          in (select id 
 delete from employer_student_distances where employer_location_id in (select id from _seed_locs);
 
 -- 2. the seed employers' hiring pipeline -----------------------------------
-delete from student_statuses where employer_id in (select id from _seed_jobs);
+-- student_statuses.employer_id holds the employer's AUTH USER id, not job.id,
+-- so matching against job ids here never deleted anything.
+delete from student_statuses where employer_id in (select id from _seed_users);
 
 -- 3. notifications on both sides -------------------------------------------
 --    Both tables key employer_id to the employer's auth user id.

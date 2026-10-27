@@ -51,6 +51,7 @@ export default function StudentPage() {
   const [notesSaved, setNotesSaved] = useState(false)
   const [notificationSent, setNotificationSent] = useState(false)
   const [locationLoading, setLocationLoading] = useState(false)
+  const [otherLocationStatuses, setOtherLocationStatuses] = useState<any[]>([])
   
   useEffect(() => {
     if (!studentId) return
@@ -73,9 +74,13 @@ export default function StudentPage() {
       if (!locCheck || locCheck.length === 0) { router.replace("/employer/profile?missing=true"); return }
       setShiftPreference(employerJob?.shift_preference ?? "flexible")
       setPreferredJobs(employerJob?.preferred_jobs ?? [])
+      // Which location this page is scoped to. Held in a local as well as
+      // state, because the status read below runs before state settles.
+      let locId: string | null = null
       if (employerJob?.id) {
         const { data: locations } = await supabase.from("locations").select("id, name, available_shifts, shift_preference, preferred_jobs, address, zip_code").eq("employer_id", employerJob.id).order("created_at", { ascending: true })
         if (locations?.length) {
+          locId = locations[0].id
           setAllLocations(locations); setSelectedLocationId(locations[0].id)
           const first = locations[0]
           setEmployerShifts(first.available_shifts ?? []); setShiftPreference(first.shift_preference ?? "flexible")
@@ -84,8 +89,17 @@ export default function StudentPage() {
       }
       const { data, error } = await supabase.from("Students").select("*").eq("id", studentId).single()
       if (error || !data) { setLoading(false); return }
-      const { data: statusRow } = await supabase.from("student_statuses").select("status").eq("student_id", studentId).eq("employer_id", userId).maybeSingle()
-      setStudent({ ...data, status: statusRow?.status || "new" })
+      // Pipelines are per location, so read every row and pick this one out;
+      // the rest become the "already contacted elsewhere" note.
+      const { data: statusRows } = await supabase
+        .from("student_statuses").select("status, location_id")
+        .eq("student_id", studentId).eq("employer_id", userId)
+      const here = (statusRows ?? []).find((r: any) => r.location_id === locId)
+      setOtherLocationStatuses(
+        (statusRows ?? []).filter((r: any) =>
+          r.location_id !== locId && (r.status === "contacted" || r.status === "hired"))
+      )
+      setStudent({ ...data, status: here?.status || "new" })
       const { data: rec } = await supabase.from("recommendations").select("*").eq("student_user_id", data.user_id).eq("submitted", true).maybeSingle()
       if (rec) setRecommendation(rec)
         const { data: existingNotes } = await supabase
@@ -93,6 +107,7 @@ export default function StudentPage() {
       .select("notes")
       .eq("student_id", studentId)
       .eq("employer_id", userId)
+      .eq("location_id", locId)
       .maybeSingle()
     if (existingNotes?.notes) setNotes(existingNotes.notes)
      
@@ -147,7 +162,10 @@ export default function StudentPage() {
     const { data: userData } = await supabase.auth.getUser()
     const employerId = userData?.user?.id
     if (!employerId) return
-    await supabase.from("student_statuses").upsert({ student_id: studentId, employer_id: employerId, status: newStatus }, { onConflict: "student_id,employer_id" })
+    await supabase.from("student_statuses").upsert(
+      { student_id: studentId, employer_id: employerId, location_id: selectedLocationId, status: newStatus },
+      { onConflict: "student_id,employer_id,location_id" }
+    )
     if (newStatus === "contacted" && student?.email) {
       const { data: jobData } = await supabase.from("job").select("company, business_type").eq("user_id", employerId).single()
       fetch("/api/send-contacted-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ studentEmail: student.email, studentName: student.name, companyName: jobData?.company || "An employer", businessType: jobData?.business_type || "" }) }).catch(() => {})
@@ -160,8 +178,8 @@ export default function StudentPage() {
     if (!employerId) return
     setSavingNotes(true)
     await supabase.from("student_statuses").upsert(
-      { student_id: studentId, employer_id: employerId, notes: value },
-      { onConflict: "student_id,employer_id" }
+      { student_id: studentId, employer_id: employerId, location_id: selectedLocationId, notes: value },
+      { onConflict: "student_id,employer_id,location_id" }
     )
     setSavingNotes(false)
     setNotesSaved(true)

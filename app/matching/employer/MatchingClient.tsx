@@ -571,8 +571,22 @@ export default function MatchingPage() {
         const matchesJob = candidate.preferred_jobs?.some((j: string) => j.toLowerCase().includes(q))
         if (!matchesName && !matchesJob) return null
       }
-      const statusRow = statuses.find((s) => s.student_id === candidate.id)
-      return { ...candidate, status: statusRow?.status || "new" }
+      // Pipelines are per location. A row for another location does not set
+      // the status here, but it is surfaced as `alsoAt` so nobody rings the
+      // same student twice on behalf of the same company.
+      const statusRow = statuses.find(
+        (s) => s.student_id === candidate.id && s.location_id === selectedLocationId
+      )
+      const alsoAt = statuses
+        .filter((s) =>
+          s.student_id === candidate.id &&
+          s.location_id !== selectedLocationId &&
+          (s.status === "contacted" || s.status === "hired"))
+        .map((s) => ({
+          status: s.status,
+          name: allLocations.find((l) => l.id === s.location_id)?.name ?? "another location",
+        }))
+      return { ...candidate, status: statusRow?.status || "new", alsoAt }
     })
     .filter((candidate): candidate is NonNullable<typeof candidate> => {
       if (!candidate) return false
@@ -1089,6 +1103,15 @@ export default function MatchingPage() {
                               </p>
                             )}
                             {getStatusBadge(candidate.status)}
+                            {/* What happened at your other locations. Keeps
+                                the pipelines separate without letting two
+                                managers ring the same student. */}
+                            {candidate.alsoAt?.length > 0 && (
+                              <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-800">
+                                {candidate.alsoAt[0].status === "hired" ? "Hired" : "Contacted"} at {candidate.alsoAt[0].name}
+                                {candidate.alsoAt.length > 1 ? ` +${candidate.alsoAt.length - 1}` : ""}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                         {isPro(planStatus) ? <Badge className="bg-primary/10 text-primary">{candidate.matchScore}% match</Badge> : <Badge className="bg-secondary text-muted-foreground"><Lock className="mr-1 h-3 w-3" />Pro</Badge>}
@@ -1113,23 +1136,23 @@ export default function MatchingPage() {
                           View Profile
                         </Button>
                         <Select
-                          value={statuses.find((s) => s.student_id === candidate.id && s.employer_id === employerId)?.status || "new"}
+                          value={statuses.find((s) => s.student_id === candidate.id && s.employer_id === employerId && s.location_id === selectedLocationId)?.status || "new"}
                           onValueChange={async (value) => {
                             if (!employerId) return
                             const newStatus = value as "new" | "contacted" | "hired"
                             setStatuses((prev) => {
-                              const exists = prev.find((s) => s.student_id === candidate.id && s.employer_id === employerId)
+                              const exists = prev.find((s) => s.student_id === candidate.id && s.employer_id === employerId && s.location_id === selectedLocationId)
                               if (exists) {
                                 return prev.map((s) =>
-                                  s.student_id === candidate.id && s.employer_id === employerId
+                                  s.student_id === candidate.id && s.employer_id === employerId && s.location_id === selectedLocationId
                                     ? { ...s, status: newStatus } : s
                                 )
                               }
-                              return [...prev, { student_id: candidate.id, employer_id: employerId, status: newStatus }]
+                              return [...prev, { student_id: candidate.id, employer_id: employerId, location_id: selectedLocationId, status: newStatus }]
                             })
                             await supabase.from("student_statuses").upsert(
-                              { student_id: candidate.id, employer_id: employerId, status: newStatus },
-                              { onConflict: "student_id,employer_id" }
+                              { student_id: candidate.id, employer_id: employerId, location_id: selectedLocationId, status: newStatus },
+                              { onConflict: "student_id,employer_id,location_id" }
                             )
                             setActiveStatus(newStatus)
                             if (newStatus === "contacted" && candidate.email) {

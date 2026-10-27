@@ -208,7 +208,13 @@ export default function EmployerDashboard() {
   // new — the same rule the candidate list uses. The old version counted rows
   // instead, so a student whose row had not been written yet showed up in no
   // column at all.
-  const statusById = new Map(statuses.map((s: any) => [s.student_id, s.status]))
+  // Scoped to the selected location: each location runs its own pipeline, so
+  // a student contacted elsewhere is still new here.
+  const statusById = new Map(
+    statuses
+      .filter((s: any) => s.location_id === selectedLocationId)
+      .map((s: any) => [s.student_id, s.status])
+  )
   const statusOf = (id: string) => statusById.get(id) || "new"
   const countNew = candidatesWithScores.filter((c) => statusOf(c.id) === "new").length
   const countContacted = candidatesWithScores.filter((c) => statusOf(c.id) === "contacted").length

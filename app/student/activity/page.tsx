@@ -67,8 +67,10 @@ export default function StudentActivityPage() {
       }
 
       // EMPLOYER ACTIVITY (contacted/hired statuses)
+      // One row per location now, so a company with two sites can appear
+      // twice — which is correct, and the location name says which.
       const { data: statuses } = await supabase
-        .from("student_statuses").select("id, employer_id, status, updated_at")
+        .from("student_statuses").select("id, employer_id, location_id, status, updated_at")
         .eq("student_id", studentData.id).in("status", ["contacted", "hired"])
         .order("updated_at", { ascending: false })
       if (statuses?.length) {
@@ -76,11 +78,17 @@ export default function StudentActivityPage() {
         const { data: jobs } = await supabase.from("job").select("user_id, company, business_type").in("user_id", employerIds)
         const jobMap: Record<string, { company: string; business_type: string }> = {}
         ;(jobs || []).forEach(j => { jobMap[j.user_id] = { company: j.company, business_type: j.business_type } })
+        const statusLocIds = statuses.map(s => s.location_id).filter(Boolean)
+        const { data: statusLocs } = statusLocIds.length
+          ? await supabase.from("locations").select("id, name").in("id", statusLocIds)
+          : { data: [] }
+        const locNameById: Record<string, string> = {}
+        ;(statusLocs || []).forEach((l: any) => { locNameById[l.id] = l.name })
         setContacted(statuses.map(s => ({
           id: s.id, employer_id: s.employer_id, status: s.status, updated_at: s.updated_at,
           company: jobMap[s.employer_id]?.company || "Unknown Business",
           business_type: jobMap[s.employer_id]?.business_type || "",
-          location_name: null,
+          location_name: locNameById[s.location_id] ?? null,
         })))
       }
 
@@ -99,13 +107,15 @@ export default function StudentActivityPage() {
           .in("id", locationIds)
 
         // Get employer statuses for this student
+        // Keyed by location, not employer: an application is to one site, so
+        // that site's pipeline is the one that answers it.
         const { data: empStatuses } = await supabase
           .from("student_statuses")
-          .select("employer_id, status")
+          .select("location_id, status")
           .eq("student_id", studentData.id)
 
-        const statusByEmployer: Record<string, string> = {}
-        ;(empStatuses || []).forEach(s => { statusByEmployer[s.employer_id] = s.status })
+        const statusByLocation: Record<string, string> = {}
+        ;(empStatuses || []).forEach(s => { if (s.location_id) statusByLocation[s.location_id] = s.status })
 
         const locMap: Record<string, any> = {}
         ;(locations || []).forEach(l => { locMap[l.id] = l })
@@ -114,7 +124,7 @@ export default function StudentActivityPage() {
           const loc = locMap[a.location_id]
           const jobData = Array.isArray(loc?.job) ? loc?.job[0] : loc?.job
           const employerUserId = jobData?.user_id || ""
-          const empStatus = statusByEmployer[employerUserId] || "new"
+          const empStatus = statusByLocation[a.location_id] || "new"
           return {
             id: a.id,
             location_id: a.location_id,
